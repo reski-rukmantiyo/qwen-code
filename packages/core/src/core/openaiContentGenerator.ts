@@ -1148,9 +1148,37 @@ export class OpenAIContentGenerator implements ContentGenerator {
           let args: Record<string, unknown> = {};
           if (toolCall.function.arguments) {
             try {
-              args = JSON.parse(toolCall.function.arguments);
+              // Handle edge case where toolCall.function.arguments might be incomplete or malformed
+              // by checking if it looks like valid JSON before parsing
+              const trimmedArgs = toolCall.function.arguments.trim();
+              if (trimmedArgs) {
+                // Check if it looks like complete JSON (starts and ends with {} or [])
+                const isOpenBrace = trimmedArgs.startsWith('{');
+                const isCloseBrace = trimmedArgs.endsWith('}');
+                const isOpenBracket = trimmedArgs.startsWith('[');
+                const isCloseBracket = trimmedArgs.endsWith(']');
+
+                // Only attempt to parse if it looks like complete JSON
+                if (
+                  (isOpenBrace && isCloseBrace) ||
+                  (isOpenBracket && isCloseBracket)
+                ) {
+                  args = JSON.parse(toolCall.function.arguments);
+                } else {
+                  // Log incomplete JSON but don't fail
+                  console.warn(
+                    'Skipping incomplete function arguments:',
+                    toolCall.function.arguments,
+                  );
+                }
+              }
             } catch (error) {
-              console.error('Failed to parse function arguments:', error);
+              console.error(
+                'Failed to parse function arguments:',
+                error,
+                'Arguments string:',
+                toolCall.function.arguments,
+              );
               args = {};
             }
           }
@@ -1265,11 +1293,36 @@ export class OpenAIContentGenerator implements ContentGenerator {
             let args: Record<string, unknown> = {};
             if (accumulatedCall.arguments) {
               try {
-                args = JSON.parse(accumulatedCall.arguments);
+                // Handle edge case where accumulatedCall.arguments might be incomplete or malformed
+                // by checking if it looks like valid JSON before parsing
+                const trimmedArgs = accumulatedCall.arguments.trim();
+                if (trimmedArgs) {
+                  // Check if it looks like complete JSON (starts and ends with {} or [])
+                  const isOpenBrace = trimmedArgs.startsWith('{');
+                  const isCloseBrace = trimmedArgs.endsWith('}');
+                  const isOpenBracket = trimmedArgs.startsWith('[');
+                  const isCloseBracket = trimmedArgs.endsWith(']');
+
+                  // Only attempt to parse if it looks like complete JSON
+                  if (
+                    (isOpenBrace && isCloseBrace) ||
+                    (isOpenBracket && isCloseBracket)
+                  ) {
+                    args = JSON.parse(accumulatedCall.arguments);
+                  } else {
+                    // Log incomplete JSON but don't fail
+                    console.warn(
+                      'Skipping incomplete tool call arguments:',
+                      accumulatedCall.arguments,
+                    );
+                  }
+                }
               } catch (error) {
                 console.error(
                   'Failed to parse final tool call arguments:',
                   error,
+                  'Arguments string:',
+                  accumulatedCall.arguments,
                 );
               }
             }
