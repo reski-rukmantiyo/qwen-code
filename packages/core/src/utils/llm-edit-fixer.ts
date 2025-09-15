@@ -6,6 +6,7 @@
 
 import { Content, GenerateContentConfig } from '@google/genai';
 import { LruCache } from './LruCache.js';
+import { GeminiClient } from '../core/client.js';
 import { DEFAULT_QWEN_FLASH_MODEL } from '../config/models.js';
 import { promptIdContext } from './promptIdContext.js';
 
@@ -17,7 +18,7 @@ You are an expert code-editing assistant specializing in debugging and correctin
 # Primary Goal
 Your task is to analyze a failed edit attempt and provide a corrected \`search\` string that will match the text in the file precisely. The correction should be as minimal as possible, staying very close to the original, failed \`search\` string. Do NOT invent a completely new edit based on the instruction; your job is to fix the provided parameters.
 
-It is important that you do no try to figure out if the instruction is correct. DO NOT GIVE ADVICE. Your only goal here is to do your best to perform the search and replace task! 
+It is important that you do no try to figure out if the instruction is correct. DO NOT GIVE ADVICE. Your only goal here is to do your best to perform the search and replace task!
 
 # Input Context
 You will be given:
@@ -30,7 +31,7 @@ You will be given:
 1.  **Minimal Correction:** Your new \`search\` string must be a close variation of the original. Focus on fixing issues like whitespace, indentation, line endings, or small contextual differences.
 2.  **Explain the Fix:** Your \`explanation\` MUST state exactly why the original \`search\` failed and how your new \`search\` string resolves that specific failure. (e.g., "The original search failed due to incorrect indentation; the new search corrects the indentation to match the source file.").
 3.  **Preserve the \`replace\` String:** Do NOT modify the \`replace\` string unless the instruction explicitly requires it and it was the source of the error. Your primary focus is fixing the \`search\` string.
-4.  **No Changes Case:** CRUCIAL: if the change is already present in the file,  set \`noChangesRequired\` to True and explain why in the \`explanation\`. It is crucial that you only do this if the changes outline in \`replace\` are alredy in the file and suits the instruction!! 
+4.  **No Changes Case:** CRUCIAL: if the change is already present in the file,  set \`noChangesRequired\` to True and explain why in the \`explanation\`. It is crucial that you only do this if the changes outline in \`replace\` are alredy in the file and suits the instruction!!
 5.  **Exactness:** The final \`search\` field must be the EXACT literal text from the file. Do not escape characters.
 `;
 
@@ -109,7 +110,7 @@ export async function FixLLMEditWithInstruction(
   new_string: string,
   error: string,
   current_content: string,
-  baseLlmClient: any,
+  baseLlmClient: GeminiClient,
   abortSignal: AbortSignal,
 ): Promise<SearchReplaceEdit> {
   let promptId = promptIdContext.getStore();
