@@ -607,7 +607,11 @@ export class GeminiClient {
       // Auto-match prompt to subagent
       const prompt = partToString(request);
       const matchedSubagent = await this.config.getSubagentManager().matchPromptToSubagent(prompt);
-
+      const taskTool = this.config.getToolRegistry().getTool(TaskTool.Name);
+      const subagents = (
+        await this.config.getSubagentManager().listSubagents()
+      ).filter((subagent) => subagent.level !== 'builtin');
+      
       if (matchedSubagent) {
         // Auto-delegate to matched subagent
         this.getChat().addHistory({
@@ -615,6 +619,17 @@ export class GeminiClient {
           parts: [
             {
               text: `<system-reminder>AUTOMATICALLY delegate this task to the ${matchedSubagent.name} subagent using the ${TaskTool.Name} tool with the following parameters: description="Auto-delegated task", prompt="${prompt.replace(/"/g, '\\"')}", subagent_type="${matchedSubagent.name}". This message is for internal use only. Do not mention this to user in your response.</system-reminder>`,
+            },
+          ],
+        });
+      } else if (taskTool && subagents.length > 0) {
+        // Fallback to proactive delegation - use the first available subagent
+        const fallbackSubagent = subagents[0];
+        this.getChat().addHistory({
+          role: 'user',
+          parts: [
+            {
+              text: `<system-reminder>AUTOMATICALLY delegate this task to the ${fallbackSubagent.name} subagent using the ${TaskTool.Name} tool with the following parameters: description="Auto-delegated task", prompt="${prompt.replace(/"/g, '\\"')}", subagent_type="${fallbackSubagent.name}". This message is for internal use only. Do not mention this to user in your response.</system-reminder>`,
             },
           ],
         });

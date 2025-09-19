@@ -786,7 +786,7 @@ export class SubagentManager {
    */
   async matchPromptToSubagent(
     prompt: string,
-    threshold: number = 0,
+    threshold: number = 0.7,
   ): Promise<SubagentConfig | null> {
     const subagents = await this.listSubagents();
     let bestMatch: SubagentConfig | null = null;
