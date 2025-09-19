@@ -39,6 +39,7 @@ import { getErrorMessage } from '../utils/errors.js';
 import { getFunctionCalls } from '../utils/generateContentResponseUtilities.js';
 import { isFunctionResponse } from '../utils/messageInspectors.js';
 import { checkNextSpeaker } from '../utils/nextSpeakerChecker.js';
+import { partToString } from '../utils/partUtils.js';
 import { retryWithBackoff } from '../utils/retry.js';
 import type {
   ContentGenerator,
@@ -604,7 +605,22 @@ export class GeminiClient {
         await this.config.getSubagentManager().listSubagents()
       ).filter((subagent) => subagent.level !== 'builtin');
 
-      if (taskTool && subagents.length > 0) {
+      // Auto-match prompt to subagent
+      const prompt = partToString(request);
+      const matchedSubagent = await this.config.getSubagentManager().matchPromptToSubagent(prompt);
+
+      if (matchedSubagent) {
+        // Auto-delegate to matched subagent
+        this.getChat().addHistory({
+          role: 'user',
+          parts: [
+            {
+              text: `<system-reminder>AUTOMATICALLY delegate this task to the ${matchedSubagent.name} subagent using the ${TaskTool.Name} tool with the following parameters: description="Auto-delegated task", prompt="${prompt.replace(/"/g, '\\"')}", subagent_type="${matchedSubagent.name}". This message is for internal use only. Do not mention this to user in your response.</system-reminder>`,
+            },
+          ],
+        });
+      } else if (taskTool && subagents.length > 0) {
+        // Fallback to proactive delegation
         this.getChat().addHistory({
           role: 'user',
           parts: [
