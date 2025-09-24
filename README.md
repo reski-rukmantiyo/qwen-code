@@ -35,7 +35,7 @@ Get started with Qwen Code at no cost using any of these free options:
 
 - **2,000 requests per day** with no token limits
 - **60 requests per minute** rate limit
-- Simply run `qwen` and authenticate with your qwen.ai account
+- Simply run `rcode` and authenticate with your qwen.ai account
 - Automatic credential management and refresh
 - Use `/auth` command to switch to Qwen OAuth if you have initialized with OpenAI compatible mode
 
@@ -70,7 +70,7 @@ curl -qL https://www.npmjs.com/install.sh | sh
 
 ```bash
 npm install -g @qwen-code/qwen-code@latest
-qwen --version
+rcode --version
 ```
 
 ### Install from source
@@ -92,7 +92,7 @@ brew install qwen-code
 
 ```bash
 # Start Qwen Code
-qwen
+rcode
 
 # Example commands
 > Explain this codebase structure
@@ -151,13 +151,13 @@ You can also set the behavior via command line:
 
 ```bash
 # Switch once per query
-qwen --vlm-switch-mode once
+rcode --vlm-switch-mode once
 
 # Switch for entire session
-qwen --vlm-switch-mode session
+rcode --vlm-switch-mode session
 
 # Never switch automatically
-qwen --vlm-switch-mode persist
+rcode --vlm-switch-mode persist
 ```
 
 #### Disable Vision Models (Optional)
@@ -184,7 +184,7 @@ The easiest way to get started - completely free with generous quotas:
 
 ```bash
 # Just run this command and follow the browser authentication
-qwen
+rcode
 ```
 
 **What happens:**
@@ -282,7 +282,7 @@ export OPENAI_MODEL="qwen/qwen3-coder:free"
 
 ```bash
 cd your-project/
-qwen
+rcode
 
 # Architecture analysis
 > Describe the main pieces of this system's architecture
