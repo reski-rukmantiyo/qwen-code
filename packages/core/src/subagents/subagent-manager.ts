@@ -777,6 +777,52 @@ export class SubagentManager {
   }
 
   /**
+   * Matches a user prompt to the best subagent based on description similarity.
+   * Returns the subagent config if confidence > threshold, else null.
+   *
+   * @param prompt - User prompt to match
+   * @param threshold - Minimum similarity score (0-1)
+   * @returns Best matching subagent or null
+   */
+  async matchPromptToSubagent(
+    prompt: string,
+    threshold: number = 0,
+  ): Promise<SubagentConfig | null> {
+    const subagents = await this.listSubagents();
+    let bestMatch: SubagentConfig | null = null;
+    let bestScore = 0;
+
+    for (const subagent of subagents) {
+      const score = this.calculateSimilarity(prompt, subagent.description);
+      if (score > bestScore && score >= threshold) {
+        bestMatch = subagent;
+        bestScore = score;
+      }
+    }
+
+    return bestMatch;
+  }
+
+  /**
+   * Calculates similarity between prompt and subagent description using keyword overlap.
+   *
+   * @param prompt - User prompt
+   * @param description - Subagent description
+   * @returns Similarity score (0-1)
+   */
+  private calculateSimilarity(prompt: string, description: string): number {
+    const promptWords = new Set(
+      prompt.toLowerCase().split(/\s+/).filter(word => word.length > 2),
+    );
+    const descWords = new Set(
+      description.toLowerCase().split(/\s+/).filter(word => word.length > 2),
+    );
+    const intersection = new Set([...promptWords].filter(x => descWords.has(x)));
+    const union = new Set([...promptWords, ...descWords]);
+    return union.size > 0 ? intersection.size / union.size : 0;
+  }
+
+  /**
    * Validates that a subagent name is available (not already in use).
    *
    * @param name - Name to check
