@@ -33,6 +33,7 @@ import type {
   SubAgentFinishEvent,
   SubAgentErrorEvent,
   SubAgentApprovalRequestEvent,
+  SubAgentStreamTextEvent,
 } from '../subagents/subagent-events.js';
 
 export interface TaskParams {
@@ -445,6 +446,18 @@ class TaskToolInvocation extends BaseToolInvocation<TaskParams, ToolResult> {
         );
       },
     );
+
+    // Accumulate streaming text output from the subagent
+    this.eventEmitter.on(SubAgentEventType.STREAM_TEXT, (...args: unknown[]) => {
+      const event = args[0] as SubAgentStreamTextEvent;
+      const currentOutput = this.currentDisplay?.streamingOutput || '';
+      this.updateDisplay(
+        {
+          streamingOutput: currentOutput + event.text,
+        },
+        updateOutput,
+      );
+    });
   }
 
   getDescription(): string {

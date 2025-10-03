@@ -444,6 +444,9 @@ export interface TaskResultDisplay {
   result?: string;
   executionSummary?: SubagentStatsSummary;
 
+  // Streaming output from the subagent as it executes
+  streamingOutput?: string;
+
   // If the subagent is awaiting approval for a tool call,
   // this contains the confirmation details for inline UI rendering.
   pendingConfirmation?: ToolCallConfirmationDetails;

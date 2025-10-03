@@ -80,7 +80,7 @@ export const AgentExecutionDisplay: React.FC<AgentExecutionDisplayProps> = ({
   childWidth,
   config,
 }) => {
-  const [displayMode, setDisplayMode] = React.useState<DisplayMode>('compact');
+  const [displayMode, setDisplayMode] = React.useState<DisplayMode>('default');
 
   const agentColor = useMemo(() => {
     const colorOption = COLOR_OPTIONS.find(
@@ -222,6 +222,16 @@ export const AgentExecutionDisplay: React.FC<AgentExecutionDisplayProps> = ({
         taskPrompt={data.taskPrompt}
         displayMode={displayMode}
       />
+
+      {/* Streaming output from subagent */}
+      {data.streamingOutput && data.streamingOutput.trim().length > 0 && (
+        <Box flexDirection="column" gap={1}>
+          <Text color={theme.text.primary}>Output:</Text>
+          <Box paddingLeft={1}>
+            <Text wrap="wrap">{data.streamingOutput}</Text>
+          </Box>
+        </Box>
+      )}
 
       {/* Progress section for running tasks */}
       {data.status === 'running' &&
