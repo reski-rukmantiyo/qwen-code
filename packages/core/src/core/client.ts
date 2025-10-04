@@ -502,7 +502,7 @@ export class GeminiClient {
     originalModel?: string,
   ): AsyncGenerator<ServerGeminiStreamEvent, Turn> {
     const isNewPrompt = this.lastPromptId !== prompt_id;
-    if (isNewPrompt) {
+    if (true) {
       this.loopDetector.reset(prompt_id);
       this.lastPromptId = prompt_id;
     }
@@ -603,7 +603,7 @@ export class GeminiClient {
       this.forceFullIdeContext = false;
     }
 
-    if (isNewPrompt) {
+    if (true) {
       // Auto-match prompt to subagent
       const prompt = partToString(request);
       const matchedSubagent = await this.config.getSubagentManager().matchPromptToSubagent(prompt);
@@ -646,22 +646,22 @@ export class GeminiClient {
     if (isNewPrompt) {
       const systemReminders = [];
 
-      // add subagent system reminder if there are subagents
-      const hasTaskTool = this.config.getToolRegistry().getTool(TaskTool.Name);
-      const subagents = (await this.config.getSubagentManager().listSubagents())
-        .filter((subagent) => subagent.level !== 'builtin')
-        .map((subagent) => subagent.name);
-
-      if (hasTaskTool && subagents.length > 0) {
-        systemReminders.push(getSubagentSystemReminder(subagents));
-      }
-
       // add plan mode system reminder if approval mode is plan
       if (this.config.getApprovalMode() === ApprovalMode.PLAN) {
         systemReminders.push(getPlanModeSystemReminder());
       }
 
       requestToSent = [...systemReminders, ...requestToSent];
+    }
+
+    // Always add subagent system reminder if there are subagents (for both new prompts and continuations)
+    const hasTaskTool = this.config.getToolRegistry().getTool(TaskTool.Name);
+    const subagents = (await this.config.getSubagentManager().listSubagents())
+      .filter((subagent) => subagent.level !== 'builtin')
+      .map((subagent) => subagent.name);
+
+    if (hasTaskTool && subagents.length > 0) {
+      requestToSent = [getSubagentSystemReminder(subagents), ...requestToSent];
     }
 
     const resultStream = turn.run(requestToSent, signal);
