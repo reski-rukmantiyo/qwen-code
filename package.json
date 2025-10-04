@@ -1,6 +1,6 @@
 {
-  "name": "@qwen-code/qwen-code",
-  "version": "0.0.14",
+  "name": "@reskiruk/rcode",
+  "version": "0.0.1-4.-res",
   "engines": {
     "node": ">=20.0.0"
   },
@@ -96,6 +96,7 @@
   },
   "dependencies": {
     "@lvce-editor/ripgrep": "^1.6.0",
+    "fast-json-stable-stringify": "^2.1.0",
     "simple-git": "^3.28.0",
     "strip-ansi": "^7.1.0"
   },
