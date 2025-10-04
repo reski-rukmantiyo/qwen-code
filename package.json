@@ -1,6 +1,6 @@
 {
   "name": "@reskiruk/rcode",
-  "version": "0.0.1-4.-res",
+  "version": "0.0.1",
   "engines": {
     "node": ">=20.0.0"
   },
