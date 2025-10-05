@@ -84,6 +84,12 @@ export interface ChatCompressionSettings {
   contextPercentageThreshold?: number;
 }
 
+export interface SubagentDelegationSettings {
+  forceDelegation?: boolean;
+  delegationMode?: 'auto' | 'manual' | 'forced';
+  matchingThreshold?: number;
+}
+
 export interface SummarizeToolOutputSettings {
   tokenBudget?: number;
 }
@@ -217,6 +223,7 @@ export interface ConfigParameters {
   folderTrust?: boolean;
   ideMode?: boolean;
   enableOpenAILogging?: boolean;
+  subagentDelegation?: SubagentDelegationSettings;
   systemPromptMappings?: Array<{
     baseUrls: string[];
     modelNames: string[];
@@ -337,6 +344,7 @@ export class Config {
   private readonly enablePromptCompletion: boolean = false;
   private readonly skipLoopDetection: boolean;
   private readonly vlmSwitchMode: string | undefined;
+  private readonly subagentDelegation: SubagentDelegationSettings;
   private initialized: boolean = false;
   readonly storage: Storage;
   private readonly fileExclusions: FileExclusions;
@@ -423,6 +431,11 @@ export class Config {
     this.shouldUseNodePtyShell = params.shouldUseNodePtyShell ?? false;
     this.skipNextSpeakerCheck = params.skipNextSpeakerCheck ?? false;
     this.skipLoopDetection = params.skipLoopDetection ?? false;
+    this.subagentDelegation = {
+      forceDelegation: params.subagentDelegation?.forceDelegation ?? false,
+      delegationMode: params.subagentDelegation?.delegationMode ?? 'auto',
+      matchingThreshold: params.subagentDelegation?.matchingThreshold ?? 0.0,
+    };
 
     // Web search
     this.tavilyApiKey = params.tavilyApiKey;
@@ -1001,6 +1014,10 @@ export class Config {
 
   getSubagentManager(): SubagentManager {
     return this.subagentManager;
+  }
+
+  getSubagentDelegation(): SubagentDelegationSettings {
+    return this.subagentDelegation;
   }
 
   async createToolRegistry(): Promise<ToolRegistry> {

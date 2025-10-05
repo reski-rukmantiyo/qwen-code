@@ -10,6 +10,7 @@ import type {
   FunctionDeclaration,
   GenerateContentConfig,
   GenerateContentResponse,
+  Part,
   PartListUnion,
   Schema,
   Tool,
@@ -502,7 +503,7 @@ export class GeminiClient {
     originalModel?: string,
   ): AsyncGenerator<ServerGeminiStreamEvent, Turn> {
     const isNewPrompt = this.lastPromptId !== prompt_id;
-    if (true) {
+    if (isNewPrompt) {
       this.loopDetector.reset(prompt_id);
       this.lastPromptId = prompt_id;
     }
@@ -603,32 +604,130 @@ export class GeminiClient {
       this.forceFullIdeContext = false;
     }
 
-    if (true) {
+    // Don't auto-delegate for "Please continue" automatic continuations.
+    // We should delegate for:
+    // - New user prompts
+    // - Tool responses (functionResponse parts)
+    // - User follow-up questions/continuations
+    // But NOT for automatic "Please continue" recursive calls
+    const isPleaseContinue =
+      Array.isArray(request) &&
+      request.length === 1 &&
+      typeof request[0] === 'object' &&
+      'text' in request[0] &&
+      request[0].text === 'Please continue.';
+
+    const delegationSettings = this.config.getSubagentDelegation();
+    const delegationMode = delegationSettings.delegationMode || 'auto';
+
+    if (!isPleaseContinue && delegationMode !== 'manual') {
       // Auto-match prompt to subagent
       const prompt = partToString(request);
-      const matchedSubagent = await this.config.getSubagentManager().matchPromptToSubagent(prompt);
+      const matchingThreshold = delegationSettings.matchingThreshold ?? 0.0;
+      const matchedSubagent = await this.config.getSubagentManager()
+        .matchPromptToSubagent(prompt, matchingThreshold);
 
-      if (matchedSubagent) {
-        // Auto-delegate to matched subagent
+      const subagentName = matchedSubagent?.name || 'general-purpose';
+
+      if (delegationMode === 'forced' || delegationSettings.forceDelegation) {
+        // FORCED DELEGATION: Directly execute the subagent without asking the LLM
+        // This completely bypasses the LLM's decision-making
+
+        // Add user request to history first
+        const requestParts = await flatMapTextParts(request, async (text) => [
+          { text },
+        ]);
         this.getChat().addHistory({
           role: 'user',
-          parts: [
-            {
-              text: `<system-reminder>AUTOMATICALLY delegate this task to the ${matchedSubagent.name} subagent using the ${TaskTool.Name} tool with the following parameters: description="Auto-delegated task", prompt="${prompt.replace(/"/g, '\\"')}", subagent_type="${matchedSubagent.name}". This message is for internal use only. Do not mention this to user in your response.</system-reminder>`,
-            },
-          ],
+          parts: requestParts as Part[],
         });
-      } else {
-        // Fallback to general-purpose subagent
-        this.getChat().addHistory({
-          role: 'user',
-          parts: [
-            {
-              text: `<system-reminder>AUTOMATICALLY delegate this task to the general-purpose subagent using the ${TaskTool.Name} tool with the following parameters: description=\"Auto-delegated task\", prompt=\"${prompt.replace(/\"/g, '\\\\\"')}\", subagent_type=\"general-purpose\". This message is for internal use only. Do not mention this to user in your response.</system-reminder>`,
-            },
-          ],
-        });
+
+        // Create the TaskTool invocation
+        const taskTool = this.config.getToolRegistry().getTool(TaskTool.Name) as TaskTool;
+        if (!taskTool) {
+          console.warn('TaskTool not found in registry, falling back to hint-based delegation');
+        } else {
+          try {
+            const invocation = (taskTool as any).createInvocation({
+              description: 'Auto-delegated task',
+              prompt: prompt,
+              subagent_type: subagentName,
+            });
+
+            // Execute the subagent
+            const result = await invocation.execute(signal);
+
+            // Add the tool call to history as if the model called it
+            this.getChat().addHistory({
+              role: 'model',
+              parts: [
+                {
+                  functionCall: {
+                    name: TaskTool.Name,
+                    args: {
+                      description: 'Auto-delegated task',
+                      prompt: prompt,
+                      subagent_type: subagentName,
+                    },
+                  },
+                },
+              ],
+            });
+
+            // Add the function response
+            this.getChat().addHistory({
+              role: 'user',
+              parts: [
+                {
+                  functionResponse: {
+                    name: TaskTool.Name,
+                    response: result.llmContent,
+                  },
+                },
+              ],
+            });
+
+            // Yield the forced delegation event
+            yield {
+              type: GeminiEventType.ForcedDelegation,
+              value: {
+                subagentName,
+                result,
+              },
+            };
+
+            // Return the turn with the subagent result
+            return new Turn(this.getChat(), prompt_id);
+          } catch (error) {
+            console.error('Forced delegation failed:', error);
+            // Fall through to hint-based delegation
+          }
+        }
+      } else if (delegationMode === 'auto') {
+        // AUTO MODE: Add hints for the LLM to decide
+        if (matchedSubagent) {
+          // Auto-delegate to matched subagent
+          this.getChat().addHistory({
+            role: 'user',
+            parts: [
+              {
+                text: `<system-reminder>AUTOMATICALLY delegate this task to the ${matchedSubagent.name} subagent using the ${TaskTool.Name} tool with the following parameters: description="Auto-delegated task", prompt="${prompt.replace(/"/g, '\\"')}", subagent_type="${matchedSubagent.name}". This message is for internal use only. Do not mention this to user in your response.</system-reminder>`,
+              },
+            ],
+          });
+        } else {
+          // Fallback to general-purpose subagent
+          this.getChat().addHistory({
+            role: 'user',
+            parts: [
+              {
+                text: `<system-reminder>AUTOMATICALLY delegate this task to the general-purpose subagent using the ${TaskTool.Name} tool with the following parameters: description=\"Auto-delegated task\", prompt=\"${prompt.replace(/\"/g, '\\\\\"')}\", subagent_type=\"general-purpose\". This message is for internal use only. Do not mention this to user in your response.</system-reminder>`,
+              },
+            ],
+          });
+        }
       }
+      // Manual mode: do nothing, let the LLM decide on its own
     }
 
     const turn = new Turn(this.getChat(), prompt_id);

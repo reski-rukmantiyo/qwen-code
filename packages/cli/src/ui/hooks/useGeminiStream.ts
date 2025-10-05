@@ -655,6 +655,10 @@ export const useGeminiStream = (
           case ServerGeminiEventType.Retry:
             // Will add the missing logic later
             break;
+          case ServerGeminiEventType.ForcedDelegation:
+            // Forced delegation completed, subagent result is already in history
+            // Just continue processing
+            break;
           default: {
             // enforces exhaustive switch-case
             const unreachable: never = event;

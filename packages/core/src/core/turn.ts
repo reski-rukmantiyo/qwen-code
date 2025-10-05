@@ -57,6 +57,7 @@ export enum GeminiEventType {
   LoopDetected = 'loop_detected',
   Citation = 'citation',
   Retry = 'retry',
+  ForcedDelegation = 'forced_delegation',
 }
 
 export type ServerGeminiRetryEvent = {
@@ -182,6 +183,14 @@ export type ServerGeminiLoopDetectedEvent = {
 };
 
 // The original union type, now composed of the individual types
+export type ServerGeminiForcedDelegationEvent = {
+  type: GeminiEventType.ForcedDelegation;
+  value: {
+    subagentName: string;
+    result: ToolResult;
+  };
+};
+
 export type ServerGeminiStreamEvent =
   | ServerGeminiContentEvent
   | ServerGeminiToolCallRequestEvent
@@ -195,7 +204,8 @@ export type ServerGeminiStreamEvent =
   | ServerGeminiSessionTokenLimitExceededEvent
   | ServerGeminiFinishedEvent
   | ServerGeminiLoopDetectedEvent
-  | ServerGeminiRetryEvent;
+  | ServerGeminiRetryEvent
+  | ServerGeminiForcedDelegationEvent;
 
 // A turn manages the agentic loop turn within the server context.
 export class Turn {
