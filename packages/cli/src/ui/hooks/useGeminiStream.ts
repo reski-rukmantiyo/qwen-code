@@ -61,6 +61,7 @@ import {
 } from './useReactToolScheduler.js';
 import { useSessionStats } from '../contexts/SessionContext.js';
 import { useKeypress } from './useKeypress.js';
+import type { LoadedSettings } from '../../config/settings.js';
 
 enum StreamProcessingStatus {
   Completed,
@@ -90,6 +91,7 @@ export const useGeminiStream = (
   onEditorClose: () => void,
   onCancelSubmit: () => void,
   visionModelPreviewEnabled: boolean,
+  settings: LoadedSettings,  // Add settings parameter
   onVisionSwitchRequired?: (query: PartListUnion) => Promise<{
     modelOverride?: string;
     persistSessionModel?: string;
@@ -746,6 +748,27 @@ export const useGeminiStream = (
       if (!options?.isContinuation) {
         startNewPrompt();
         setThought(null); // Reset thought when starting a new prompt
+        
+        // Auto-save the conversation after adding the user message but before sending to Gemini
+        try {
+          // Check if conversation auto-save is enabled
+          const autoSaveEnabled = settings.merged?.general?.conversationAutoSave?.enabled;
+          if (autoSaveEnabled === true) {
+            const chat = await geminiClient.getChat();
+            if (chat) {
+              const timestamp = new Date()
+                .toISOString()
+                .replace(/[:.]/g, '-')
+                .replace('T', '_')
+                .replace('Z', '');
+              const autoSaveTag = `auto_${timestamp}`;
+              await logger?.saveCheckpoint(chat.getHistory(), autoSaveTag);
+            }
+          }
+        } catch (error) {
+          console.error('Auto-save failed:', error);
+          // Don't fail the submission if auto-save fails
+        }
       }
 
       setIsResponding(true);
@@ -809,6 +832,20 @@ export const useGeminiStream = (
           );
         }
       } finally {
+        // Create checkpoint after each conversation turn if checkpointing is enabled
+        if (config.getCheckpointingEnabled()) {
+          try {
+            if (gitService) {
+              const checkpointMessage = `Checkpoint after conversation turn ${getPromptCount()}`;
+              gitService.createFileSnapshot(checkpointMessage).catch((error) => {
+                console.error('Failed to create conversation turn checkpoint:', error);
+              });
+            }
+          } catch (checkpointError) {
+            console.error('Error during checkpoint creation:', checkpointError);
+          }
+        }
+
         setIsResponding(false);
         isSubmittingQueryRef.current = false;
       }
@@ -944,6 +981,20 @@ export const useGeminiStream = (
         },
         prompt_ids[0],
       );
+
+      // Create checkpoint after tool responses are submitted if checkpointing is enabled
+      if (config.getCheckpointingEnabled()) {
+        try {
+          if (gitService) {
+            const checkpointMessage = `Checkpoint after tool call ${getPromptCount()}`;
+            gitService.createFileSnapshot(checkpointMessage).catch((error) => {
+              console.error('Failed to create tool call checkpoint:', error);
+            });
+          }
+        } catch (checkpointError) {
+          console.error('Error during tool call checkpoint creation:', checkpointError);
+        }
+      }
     },
     [
       isResponding,
@@ -952,6 +1003,9 @@ export const useGeminiStream = (
       geminiClient,
       performMemoryRefresh,
       modelSwitchedFromQuotaError,
+      config,
+      gitService,
+      getPromptCount,
     ],
   );
 

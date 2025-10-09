@@ -21,4 +21,6 @@ export const ToolNames = {
   MEMORY: 'save_memory',
   TASK: 'task',
   EXIT_PLAN_MODE: 'exit_plan_mode',
+  STORE_CONVERSATION_TURN: 'store_conversation_turn',
+  SEARCH_CONVERSATION_HISTORY: 'search_conversation_history',
 } as const;

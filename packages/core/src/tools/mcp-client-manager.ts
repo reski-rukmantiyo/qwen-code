@@ -14,6 +14,8 @@ import {
 } from './mcp-client.js';
 import { getErrorMessage } from '../utils/errors.js';
 import type { WorkspaceContext } from '../utils/workspaceContext.js';
+import { MemoriToolManager } from '../extensions/memori/memori-tool-manager.js';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 
 /**
  * Manages the lifecycle of multiple MCP clients, including local child processes.
@@ -28,6 +30,7 @@ export class McpClientManager {
   private readonly promptRegistry: PromptRegistry;
   private readonly debugMode: boolean;
   private readonly workspaceContext: WorkspaceContext;
+  private memoriToolManager: MemoriToolManager | null = null;
   private discoveryState: MCPDiscoveryState = MCPDiscoveryState.NOT_STARTED;
 
   constructor(
@@ -44,6 +47,11 @@ export class McpClientManager {
     this.promptRegistry = promptRegistry;
     this.debugMode = debugMode;
     this.workspaceContext = workspaceContext;
+    
+    // Initialize memori tool manager if we have MCP servers configured
+    if (mcpServers && Object.keys(mcpServers).length > 0) {
+      this.memoriToolManager = new MemoriToolManager(toolRegistry);
+    }
   }
 
   /**
@@ -73,6 +81,12 @@ export class McpClientManager {
         try {
           await client.connect();
           await client.discover();
+          
+          // Initialize memori extension with the first connected client
+          if (this.memoriToolManager && name === 'local-memori') {
+            this.memoriToolManager.initialize(client as unknown as Client);
+            this.memoriToolManager.registerTools();
+          }
         } catch (error) {
           // Log the error but don't let a single failed server stop the others
           console.error(
