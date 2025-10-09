@@ -773,6 +773,7 @@ const App = ({ config, settings, startupWarnings = [], version }: AppProps) => {
     refreshStatic,
     () => cancelHandlerRef.current(),
     settings.merged.experimental?.visionModelPreview ?? true,
+    settings,
     handleVisionSwitchRequired,
   );
 

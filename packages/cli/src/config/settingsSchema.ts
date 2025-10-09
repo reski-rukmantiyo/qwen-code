@@ -135,6 +135,26 @@ export const SETTINGS_SCHEMA = {
         description: 'Enable debug logging of keystrokes to the console.',
         showInDialog: true,
       },
+      conversationAutoSave: {
+        type: 'object',
+        label: 'Conversation Auto Save',
+        category: 'General',
+        requiresRestart: false,
+        default: {},
+        description: 'Settings for automatic conversation saving.',
+        showInDialog: false,
+        properties: {
+          enabled: {
+            type: 'boolean',
+            label: 'Enable Conversation Auto Save',
+            category: 'General',
+            requiresRestart: false,
+            default: false,
+            description: 'Automatically save conversations after each interaction.',
+            showInDialog: true,
+          },
+        },
+      },
     },
   },
 
