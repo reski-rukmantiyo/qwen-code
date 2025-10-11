@@ -141,6 +141,14 @@ const PATTERNS: Array<[RegExp, TokenCount]> = [
   // Generic vision-model: same as qwen-vl-max (128K token context)
   [/^vision-model$/, LIMITS['128k']],
 
+  // Catch-all for any other Qwen3 variants not matched above (256K default for Qwen3 family)
+  [/^qwen3-.*$/, LIMITS['256k']],
+  [/^qwen3$/, LIMITS['256k']],
+
+  // Catch-all for any other Qwen variants (128K for older/generic Qwen models)
+  [/^qwen-.*$/, LIMITS['128k']],
+  [/^qwen$/, LIMITS['128k']],
+
   // -------------------
   // ByteDance Seed-OSS (512K)
   // -------------------
