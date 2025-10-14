@@ -36,10 +36,19 @@ const LIMITS = {
 export function normalize(model: string): string {
   let s = (model ?? '').toLowerCase().trim();
 
-  // keep final path segment (strip provider prefixes), handle pipe/colon
-  s = s.replace(/^.*\//, '');
+  // Special handling for xAI models to preserve the full model name
+  if (s.startsWith('x-ai/')) {
+    // For xAI models, we want to keep the full name including the provider prefix
+    s = s.replace(/\//g, '__SLASH__'); // Temporarily replace slash to avoid stripping
+  } else {
+    // keep final path segment (strip provider prefixes), handle pipe/colon
+    s = s.replace(/^.*\//, '');
+  }
   s = s.split('|').pop() ?? s;
   s = s.split(':').pop() ?? s;
+
+  // Restore slash for xAI models
+  s = s.replace(/__SLASH__/g, '/');
 
   // collapse whitespace to single hyphen
   s = s.replace(/\s+/g, '-');
@@ -114,6 +123,9 @@ const PATTERNS: Array<[RegExp, TokenCount]> = [
   // Generic coder-model: same as qwen3-coder-plus (1M token context)
   [/^coder-model$/, LIMITS['1m']],
 
+  // xAI Grok models: 256K token context
+  [/^x-ai\/grok-code-fast-1$/, LIMITS['256k']],
+
   // Commercial Qwen3-Max-Preview: 256K token context
   [/^qwen3-max-preview(-.*)?$/, LIMITS['256k']], // catches "qwen3-max-preview" and date variants
 
@@ -186,6 +198,9 @@ const OUTPUT_PATTERNS: Array<[RegExp, TokenCount]> = [
 
   // Generic coder-model: same as qwen3-coder-plus (64K max output tokens)
   [/^coder-model$/, LIMITS['64k']],
+
+  // xAI Grok models: 65,536 max output tokens
+  [/^x-ai\/grok-code-fast-1$/, LIMITS['64k']],
 
   // Qwen3-Max-Preview: 65,536 max output tokens
   [/^qwen3-max-preview(-.*)?$/, LIMITS['64k']],
