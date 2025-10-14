@@ -32,7 +32,7 @@ export const AutoAcceptIndicator: React.FC<AutoAcceptIndicatorProps> = ({
       subText = ' (shift + tab to cycle)';
       break;
     case ApprovalMode.YOLO:
-      textColor = Colors.AccentRed;
+      textColor = Colors.AccentYellow;
       textContent = 'YOLO mode';
       subText = ' (shift + tab to cycle)';
       break;
