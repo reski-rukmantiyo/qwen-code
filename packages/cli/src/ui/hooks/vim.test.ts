@@ -14,7 +14,7 @@ import { textBufferReducer } from '../components/shared/text-buffer.js';
 // Mock the VimModeContext
 const mockVimContext = {
   vimEnabled: true,
-  vimMode: 'NORMAL' as const,
+  vimMode: 'INSERT' as const,  // Changed to INSERT to match new default
   toggleVimEnabled: vi.fn(),
   setVimMode: vi.fn(),
 };

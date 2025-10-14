@@ -65,7 +65,7 @@ type VimAction =
   | { type: 'ESCAPE_TO_NORMAL' };
 
 const initialVimState: VimState = {
-  mode: 'NORMAL',
+  mode: 'INSERT',  // Start in INSERT mode to allow immediate typing
   count: 0,
   pendingOperator: null,
   lastCommand: null,
