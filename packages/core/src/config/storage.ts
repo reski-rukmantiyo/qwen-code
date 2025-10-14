@@ -13,11 +13,48 @@ export const GEMINI_DIR = '.qwen';
 export const GOOGLE_ACCOUNTS_FILENAME = 'google_accounts.json';
 const TMP_DIR_NAME = 'tmp';
 
+// Helper function to get nested property from an object
+function getNestedProperty(obj: Record<string, unknown>, path: string): unknown {
+  const keys = path.split('.');
+  let current: unknown = obj;
+  for (const key of keys) {
+    if (typeof current !== 'object' || current === null || !(key in current)) {
+      return undefined;
+    }
+    current = (current as Record<string, unknown>)[key];
+  }
+  return current;
+}
+
+// Helper function to set nested property in an object
+function setNestedProperty(obj: Record<string, unknown>, path: string, value: unknown) {
+  const keys = path.split('.');
+  const lastKey = keys.pop();
+  if (!lastKey) return;
+
+  let current: Record<string, unknown> = obj;
+  for (const key of keys) {
+    if (current[key] === undefined) {
+      current[key] = {};
+    }
+    const next = current[key];
+    if (typeof next === 'object' && next !== null) {
+      current = next as Record<string, unknown>;
+    } else {
+      // This path is invalid, so we stop.
+      return;
+    }
+  }
+  current[lastKey] = value;
+}
+
 export class Storage {
   private readonly targetDir: string;
+  private storageData: Record<string, unknown> = {};
 
   constructor(targetDir: string) {
     this.targetDir = targetDir;
+    this.loadStorageData();
   }
 
   static getGlobalGeminiDir(): string {
@@ -110,5 +147,62 @@ export class Storage {
 
   getHistoryFilePath(): string {
     return path.join(this.getProjectTempDir(), 'shell_history');
+  }
+
+  /**
+   * Get a value from the storage.
+   * @param key The key to retrieve the value for.
+   * @returns The value associated with the key, or undefined if not found.
+   */
+  getValue(key: string): unknown {
+    return getNestedProperty(this.storageData, key);
+  }
+
+  /**
+   * Set a value in the storage.
+   * @param key The key to set the value for.
+   * @param value The value to set.
+   */
+  setValue(key: string, value: unknown): void {
+    setNestedProperty(this.storageData, key, value);
+    this.saveStorageData();
+  }
+
+  /**
+   * Load storage data from the workspace settings file.
+   */
+  private loadStorageData(): void {
+    try {
+      const settingsPath = this.getWorkspaceSettingsPath();
+      if (fs.existsSync(settingsPath)) {
+        const content = fs.readFileSync(settingsPath, 'utf-8');
+        const settings = JSON.parse(content);
+        if (typeof settings === 'object' && settings !== null) {
+          this.storageData = settings;
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load storage data:', error);
+    }
+  }
+
+  /**
+   * Save storage data to the workspace settings file.
+   */
+  private saveStorageData(): void {
+    try {
+      const settingsPath = this.getWorkspaceSettingsPath();
+      const dirPath = path.dirname(settingsPath);
+      
+      // Ensure the directory exists
+      if (!fs.existsSync(dirPath)) {
+        fs.mkdirSync(dirPath, { recursive: true });
+      }
+      
+      // Write the data to the file
+      fs.writeFileSync(settingsPath, JSON.stringify(this.storageData, null, 2), 'utf-8');
+    } catch (error) {
+      console.warn('Failed to save storage data:', error);
+    }
   }
 }

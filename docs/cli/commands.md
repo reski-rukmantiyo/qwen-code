@@ -148,6 +148,10 @@ Slash commands provide meta-level control over the CLI itself.
     - **`manage`**:
       - **Description:** Open an interactive management dialog to view, edit, and delete existing subagents. Shows both project-level and user-level agents.
       - **Usage:** `/agents manage`
+    - **`default`**:
+      - **Description:** Set the default subagent for task delegation. Use arrow keys (↑/↓) or j/k to navigate through the list of available agents, then press Enter to select one as the default.
+      - **Usage:** `/agents default`
+      - **Instructions:** When you run this command, a dialog will appear showing all available subagents. Use the arrow keys or j/k to navigate through the list, and press Enter to select the agent you want to set as default. Press Esc to cancel.
   - **Storage Locations:**
     - **Project-level:** `.qwen/agents/` (shared with team, takes precedence)
     - **User-level:** `~/.qwen/agents/` (personal agents, available across projects)

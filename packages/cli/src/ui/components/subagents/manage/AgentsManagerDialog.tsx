@@ -14,15 +14,19 @@ import { AgentDeleteStep } from './AgentDeleteStep.js';
 import { ToolSelector } from '../create/ToolSelector.js';
 import { ColorSelector } from '../create/ColorSelector.js';
 import { MANAGEMENT_STEPS } from '../types.js';
+import { MessageType } from '../../../types.js';
 import { Colors } from '../../../colors.js';
 import { theme } from '../../../semantic-colors.js';
 import { getColorForDisplay, shouldShowColor } from '../utils.js';
 import type { SubagentConfig, Config } from '@qwen-code/qwen-code-core';
+import type { UseHistoryManagerReturn } from '../../../hooks/useHistoryManager.js';
 import { useKeypress } from '../../../hooks/useKeypress.js';
 
 interface AgentsManagerDialogProps {
   onClose: () => void;
   config: Config | null;
+  mode?: 'manage' | 'select-default';
+  addItem: UseHistoryManagerReturn['addItem'];
 }
 
 /**
@@ -31,6 +35,8 @@ interface AgentsManagerDialogProps {
 export function AgentsManagerDialog({
   onClose,
   config,
+  mode: initialMode = 'manage',
+  addItem,
 }: AgentsManagerDialogProps) {
   // Simple state management with useState hooks
   const [availableAgents, setAvailableAgents] = useState<SubagentConfig[]>([]);
@@ -38,6 +44,8 @@ export function AgentsManagerDialog({
   const [navigationStack, setNavigationStack] = useState<string[]>([
     MANAGEMENT_STEPS.AGENT_SELECTION,
   ]);
+  const [defaultSubagentUpdated, setDefaultSubagentUpdated] = useState(false);
+  const mode = initialMode;
 
   // Memoized selectedAgent based on index
   const selectedAgent = useMemo(
@@ -61,6 +69,8 @@ export function AgentsManagerDialog({
   // Load agents when component mounts or config changes
   useEffect(() => {
     loadAgents();
+    // Reset the defaultSubagentUpdated flag when loading agents
+    setDefaultSubagentUpdated(false);
   }, [loadAgents]);
 
   // Helper to get current step
@@ -71,10 +81,34 @@ export function AgentsManagerDialog({
     [navigationStack],
   );
 
-  const handleSelectAgent = useCallback((agentIndex: number) => {
+  const handleSelectAgent = useCallback((agentIndex: number, mode?: 'manage' | 'select-default') => {
+    if (mode === 'select-default') {
+      // Handle setting default subagent
+      const agent = availableAgents[agentIndex];
+      if (config) {
+        // Save the default subagent preference
+        config.storage.setValue('default_subagent', agent.name);
+        addItem(
+          {
+            type: MessageType.INFO,
+            text: `Default subagent set to: ${agent.name}`,
+          },
+          Date.now(),
+        );
+        // Mark that the default subagent was updated
+        setDefaultSubagentUpdated(true);
+        // Reset the flag after a short delay to allow UI to update
+        setTimeout(() => {
+          setDefaultSubagentUpdated(false);
+        }, 1000);
+        onClose();
+      }
+      return;
+    }
+    
     setSelectedAgentIndex(agentIndex);
     setNavigationStack((prev) => [...prev, MANAGEMENT_STEPS.ACTION_SELECTION]);
-  }, []);
+  }, [availableAgents, config, addItem, onClose]);
 
   const handleNavigateToStep = useCallback((step: string) => {
     setNavigationStack((prev) => [...prev, step]);
@@ -121,6 +155,7 @@ export function AgentsManagerDialog({
       const currentStep = getCurrentStep();
       if (currentStep === MANAGEMENT_STEPS.AGENT_SELECTION) {
         // On first step, ESC cancels the entire dialog
+        setDefaultSubagentUpdated(false);
         onClose();
       } else {
         // On other steps, ESC goes back to previous step in navigation stack
@@ -186,7 +221,10 @@ export function AgentsManagerDialog({
         if (availableAgents.length === 0) {
           return 'Esc to close';
         }
-        return 'Enter to select, ↑↓ to navigate, Esc to close';
+        if (mode === 'select-default') {
+          return 'Use ↑/↓ or j/k to navigate agents, then press Enter to set selected agent as default, or Esc to close';
+        }
+        return 'Use ↑/↓ or j/k to navigate agents, then press Enter to select an agent, or Esc to close';
       }
 
       if (currentStep === MANAGEMENT_STEPS.AGENT_VIEWER) {
@@ -197,7 +235,7 @@ export function AgentsManagerDialog({
         return 'Enter to confirm, Esc to cancel';
       }
 
-      return 'Enter to select, ↑↓ to navigate, Esc to go back';
+      return 'Enter to select, ↑/↓ or j/k to navigate, Esc to go back';
     };
 
     return (
@@ -205,7 +243,7 @@ export function AgentsManagerDialog({
         <Text color={theme.text.secondary}>{getNavigationInstructions()}</Text>
       </Box>
     );
-  }, [getCurrentStep, availableAgents]);
+  }, [getCurrentStep, availableAgents, mode]);
 
   const renderStepContent = useCallback(() => {
     const currentStep = getCurrentStep();
@@ -215,6 +253,9 @@ export function AgentsManagerDialog({
           <AgentSelectionStep
             availableAgents={availableAgents}
             onAgentSelect={handleSelectAgent}
+            mode={mode}
+            config={config}
+            defaultSubagentUpdated={defaultSubagentUpdated}
             {...commonProps}
           />
         );

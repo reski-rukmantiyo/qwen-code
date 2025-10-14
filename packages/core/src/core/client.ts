@@ -603,29 +603,23 @@ export class GeminiClient {
     if (isNewPrompt) {
       // Auto-match prompt to subagent
       const prompt = partToString(request);
-      const matchedSubagent = await this.config.getSubagentManager().matchPromptToSubagent(prompt);
+      // Use configured default subagent
+      const defaultSubagent = this.config.getDefaultSubagent();
+      
+      // Try to find a better matching subagent for the prompt
+      const matchedSubagent = await this.config.getSubagentManager().matchPromptToSubagent(prompt, 0.1);
 
-      if (matchedSubagent) {
-        // Auto-delegate to matched subagent
-        this.getChat().addHistory({
-          role: 'user',
-          parts: [
-            {
-              text: `<system-reminder>AUTOMATICALLY delegate this task to the ${matchedSubagent.name} subagent using the ${TaskTool.Name} tool with the following parameters: description="Auto-delegated task", prompt="${prompt.replace(/"/g, '\\"')}", subagent_type="${matchedSubagent.name}". This message is for internal use only. Do not mention this to user in your response.</system-reminder>`,
-            },
-          ],
-        });
-      } else {
-        // Fallback to general-purpose subagent
-        this.getChat().addHistory({
-          role: 'user',
-          parts: [
-            {
-              text: `<system-reminder>AUTOMATICALLY delegate this task to the general-purpose subagent using the ${TaskTool.Name} tool with the following parameters: description=\"Auto-delegated task\", prompt=\"${prompt.replace(/\"/g, '\\\\\"')}\", subagent_type=\"general-purpose\". This message is for internal use only. Do not mention this to user in your response.</system-reminder>`,
-            },
-          ],
-        });
-      }
+      // Auto-delegate to the matched subagent if found, otherwise use default
+      const subagentToUse = matchedSubagent ? matchedSubagent.name : defaultSubagent;
+      
+      this.getChat().addHistory({
+        role: 'user',
+        parts: [
+          {
+            text: `<system-reminder>AUTOMATICALLY delegate this task to the ${subagentToUse} subagent using the ${TaskTool.Name} tool with the following parameters: description="Default Subagent Set", prompt="${prompt.replace(/"/g, '\\"')}", subagent_type="${subagentToUse}". This message is for internal use only. Do not mention this to user in your response.</system-reminder>`,
+          },
+        ],
+      });
     }
 
     const turn = new Turn(this.getChat(), prompt_id);

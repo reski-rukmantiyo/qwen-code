@@ -912,6 +912,16 @@ export const SETTINGS_SCHEMA = {
       'Show welcome back dialog when returning to a project with conversation history.',
     showInDialog: true,
   },
+
+  defaultSubagent: {
+    type: 'string',
+    label: 'Default Subagent',
+    category: 'Subagents',
+    requiresRestart: false,
+    default: undefined as string | undefined,
+    description: 'The name of the default subagent to use for task delegation when no specific subagent is specified.',
+    showInDialog: false,
+  },
 } as const;
 
 type InferSettings<T extends SettingsSchema> = {

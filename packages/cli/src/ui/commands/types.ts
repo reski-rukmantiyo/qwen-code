@@ -118,7 +118,8 @@ export interface OpenDialogActionReturn {
     | 'settings'
     | 'model'
     | 'subagent_create'
-    | 'subagent_list';
+    | 'subagent_list'
+    | 'subagent_default';
 }
 
 /**

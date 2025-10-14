@@ -55,7 +55,7 @@ export const useSlashCommandProcessor = (
   openSettingsDialog: () => void,
   openModelSelectionDialog: () => void,
   openSubagentCreateDialog: () => void,
-  openAgentsManagerDialog: () => void,
+  openAgentsManagerDialog: (mode?: 'manage' | 'select-default') => void,
   toggleVimEnabled: () => Promise<boolean>,
   setIsProcessing: (isProcessing: boolean) => void,
   setGeminiMdFileCount: (count: number) => void,
@@ -412,7 +412,10 @@ export const useSlashCommandProcessor = (
                       openSubagentCreateDialog();
                       return { type: 'handled' };
                     case 'subagent_list':
-                      openAgentsManagerDialog();
+                      openAgentsManagerDialog('manage');
+                      return { type: 'handled' };
+                    case 'subagent_default':
+                      openAgentsManagerDialog('select-default');
                       return { type: 'handled' };
                     case 'help':
                       return { type: 'handled' };

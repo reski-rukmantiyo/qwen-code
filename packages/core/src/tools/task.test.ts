@@ -66,12 +66,24 @@ describe('TaskTool', () => {
     // Setup fake timers
     vi.useFakeTimers();
 
+    // Create mock storage
+    const mockStorage = {
+      getValue: vi.fn().mockImplementation((key: string) => {
+        if (key === 'defaultSubagent') {
+          return null; // No default subagent by default
+        }
+        return undefined;
+      }),
+      setValue: vi.fn(),
+    };
+
     // Create mock config
     config = {
       getProjectRoot: vi.fn().mockReturnValue('/test/project'),
       getSessionId: vi.fn().mockReturnValue('test-session-id'),
       getSubagentManager: vi.fn(),
       getGeminiClient: vi.fn().mockReturnValue(undefined),
+      storage: mockStorage,
     } as unknown as Config;
 
     changeListeners = [];
@@ -245,6 +257,34 @@ describe('TaskTool', () => {
       expect(result).toBe(
         'Subagent "non-existent" not found. Available subagents: file-search, code-review',
       );
+    });
+
+    it('should use default subagent when subagent_type is not provided', async () => {
+      // Set up mock to return a default subagent
+      vi.mocked(config.storage.getValue).mockImplementation((key: string) => {
+        if (key === 'defaultSubagent') {
+          return 'file-search';
+        }
+        return undefined;
+      });
+
+      const result = taskTool.validateToolParams({
+        description: 'Search files',
+        prompt: 'Find all TypeScript files in the project',
+        // Note: subagent_type is intentionally omitted
+      });
+      
+      expect(result).toBeNull();
+    });
+
+    it('should reject when no subagent_type provided', async () => {
+      const result = taskTool.validateToolParams({
+        description: 'Search files',
+        prompt: 'Find all TypeScript files in the project',
+        // Note: subagent_type is intentionally omitted
+      });
+      
+      expect(result).toBe('Parameter "subagent_type" must be explicitly provided. Tasks must use a specific subagent.');
     });
   });
 

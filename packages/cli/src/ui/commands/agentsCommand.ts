@@ -33,5 +33,14 @@ export const agentsCommand: SlashCommand = {
         dialog: 'subagent_create',
       }),
     },
+    {
+      name: 'default',
+      description: 'Set the default subagent for task delegation.',
+      kind: CommandKind.BUILT_IN,
+      action: (): OpenDialogActionReturn => ({
+        type: 'dialog',
+        dialog: 'subagent_default',
+      }),
+    },
   ],
 };

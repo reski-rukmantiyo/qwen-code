@@ -33,6 +33,12 @@ export interface SubagentConfig {
   tools?: string[];
 
   /**
+   * Optional list of file extensions that this subagent is designed to work with.
+   * If provided, the subagent will be suggested when working with files matching these extensions.
+   */
+  fileExtensions?: string[];
+
+  /**
    * System prompt content that defines the subagent's behavior.
    * Supports ${variable} templating via ContextState.
    */

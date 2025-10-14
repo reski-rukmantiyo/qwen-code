@@ -9,7 +9,7 @@ import { Box, Text } from 'ink';
 import { theme } from '../../../semantic-colors.js';
 import { Colors } from '../../../colors.js';
 import { useKeypress } from '../../../hooks/useKeypress.js';
-import { type SubagentConfig } from '@qwen-code/qwen-code-core';
+import { type SubagentConfig, type Config } from '@qwen-code/qwen-code-core';
 
 interface NavigationState {
   currentBlock: 'project' | 'user' | 'builtin';
@@ -20,12 +20,18 @@ interface NavigationState {
 
 interface AgentSelectionStepProps {
   availableAgents: SubagentConfig[];
-  onAgentSelect: (agentIndex: number) => void;
+  onAgentSelect: (agentIndex: number, mode?: 'manage' | 'select-default') => void;
+  mode?: 'manage' | 'select-default';
+  config: Config | null;
+  defaultSubagentUpdated?: boolean;
 }
 
 export const AgentSelectionStep = ({
   availableAgents,
   onAgentSelect,
+  mode = 'manage',
+  config,
+  defaultSubagentUpdated,
 }: AgentSelectionStepProps) => {
   const [navigation, setNavigation] = useState<NavigationState>({
     currentBlock: 'project',
@@ -33,6 +39,13 @@ export const AgentSelectionStep = ({
     userIndex: 0,
     builtinIndex: 0,
   });
+
+  // Get the current default subagent
+  const defaultSubagent = useMemo(() => {
+    if (!config) return null;
+    const value = config.storage.getValue('default_subagent');
+    return typeof value === 'string' ? value : null;
+  }, [config, defaultSubagentUpdated]);
 
   // Group agents by level
   const projectAgents = useMemo(
@@ -196,7 +209,7 @@ export const AgentSelectionStep = ({
         }
 
         if (globalIndex >= 0 && globalIndex < availableAgents.length) {
-          onAgentSelect(globalIndex);
+          onAgentSelect(globalIndex, mode);
         }
       }
     },
@@ -224,6 +237,7 @@ export const AgentSelectionStep = ({
     index: number,
     isSelected: boolean,
   ) => {
+    const isDefault = defaultSubagent === agent.name;
     const textColor = isSelected ? theme.text.accent : theme.text.primary;
 
     return (
@@ -235,6 +249,12 @@ export const AgentSelectionStep = ({
         </Box>
         <Text color={textColor} wrap="truncate">
           {agent.name}
+          {isDefault && (
+            <Text color={isSelected ? theme.text.accent : theme.text.secondary}>
+              {' '}
+              (default)
+            </Text>
+          )}
           {agent.isBuiltin && (
             <Text color={isSelected ? theme.text.accent : theme.text.secondary}>
               {' '}
@@ -260,6 +280,29 @@ export const AgentSelectionStep = ({
 
   return (
     <Box flexDirection="column">
+      {/* Mode-specific header */}
+      {mode === 'select-default' && (
+        <Box marginBottom={1}>
+          <Text color={theme.text.secondary}>
+            Select a subagent to set as default for task delegation:
+          </Text>
+          {defaultSubagent && (
+            <Text color={theme.text.secondary}>
+              {' '}Current default: {defaultSubagent}
+            </Text>
+          )}
+        </Box>
+      )}
+      
+      {/* Navigation instructions */}
+      <Box marginBottom={1}>
+        <Text color={theme.text.secondary}>
+          {mode === 'select-default' 
+            ? 'Use ↑/↓ or j/k to navigate through agents, Enter to set as default, Esc to cancel' 
+            : 'Use ↑/↓ or j/k to navigate through agents, Enter to select, Esc to cancel'}
+        </Text>
+      </Box>
+
       {/* Project Level Agents */}
       {projectAgents.length > 0 && (
         <Box flexDirection="column" marginBottom={1}>

@@ -481,6 +481,51 @@ Always follow these standards:
 - Ensure tests are independent and can run in any order
 ```
 
+## Default Subagent Configuration
+
+You can configure a default subagent that will be used for task delegation when no specific subagent is specified. This is done through the `default_subagent` setting in your Qwen Code configuration.
+
+### Configuration
+
+The default subagent is configured through the `default_subagent` setting in your `.qwen/settings.json` file:
+
+```json
+{
+  "default_subagent": "typescript-monorepo-ai-expert"
+}
+```
+
+When this setting is configured, all automatically delegated tasks will be assigned to the specified subagent instead of using the matching algorithm to determine the most appropriate subagent.
+
+### How It Works
+
+1. **Configuration**: The default subagent is set in the `.qwen/settings.json` file using the `default_subagent` key
+2. **Loading**: When Qwen Code starts, it loads this setting from the configuration file
+3. **Usage**: When the Task tool is invoked without a `subagent_type`, it uses the configured default subagent
+4. **Fallback**: If no default subagent is configured, the system falls back to "general-purpose"
+
+### Verification
+
+To verify that your default subagent is properly configured:
+
+1. Check that the setting exists in your `.qwen/settings.json` file
+2. Ensure the specified subagent name matches an available subagent
+3. Restart Qwen Code to ensure the new setting is loaded
+
+## Configuration
+
+You can configure the default subagent behavior through the `default_subagent` setting in your Qwen Code configuration. This setting determines which subagent will be used when the system needs to automatically delegate tasks without a specific subagent being requested.
+
+To set a default subagent, add the following to your `.qwen/settings.json` file:
+
+```json
+{
+  "default_subagent": "typescript-monorepo-ai-expert"
+}
+```
+
+When this setting is configured, all automatically delegated tasks will be assigned to the specified subagent instead of using the matching algorithm to determine the most appropriate subagent.
+
 ## Security Considerations
 
 - **Tool Restrictions**: Subagents only have access to their configured tools

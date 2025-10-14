@@ -38,7 +38,7 @@ import type {
 export interface TaskParams {
   description: string;
   prompt: string;
-  subagent_type: string;
+  subagent_type?: string;
 }
 
 /**
@@ -67,10 +67,10 @@ export class TaskTool extends BaseDeclarativeTool<TaskParams, ToolResult> {
         },
         subagent_type: {
           type: 'string',
-          description: 'The type of specialized agent to use for this task',
+          description: 'The type of specialized agent to use for this task. This parameter is required.',
         },
       },
-      required: ['description', 'prompt', 'subagent_type'],
+      required: ['description', 'prompt'],
       additionalProperties: false,
       $schema: 'http://json-schema.org/draft-07/schema#',
     };
@@ -134,7 +134,7 @@ export class TaskTool extends BaseDeclarativeTool<TaskParams, ToolResult> {
 Available agent types and the tools they have access to:
 ${subagentDescriptions}
 
-When using the Task tool, you must specify a subagent_type parameter to select which agent type to use.
+When using the Task tool, you must specify a subagent_type parameter to select which agent type to use. Tasks must always use a specific subagent.
 
 When NOT to use the Agent tool:
 - If you want to read a specific file path, use the Read or Glob tool instead of the Agent tool, to find the match more quickly
@@ -200,12 +200,20 @@ assistant: "I'm going to use the Task tool to launch the with the greeting-respo
           enum?: string[];
         };
       };
+      required?: string[];
     };
     if (schema.properties && schema.properties.subagent_type) {
       if (subagentNames.length > 0) {
         schema.properties.subagent_type.enum = subagentNames;
       } else {
         delete schema.properties.subagent_type.enum;
+      }
+    }
+    // Update required fields - always require subagent_type
+    if (schema.required) {
+      // Always ensure subagent_type is required, regardless of default settings
+      if (!schema.required.includes('subagent_type')) {
+        schema.required.push('subagent_type');
       }
     }
   }
@@ -228,11 +236,13 @@ assistant: "I'm going to use the Task tool to launch the with the greeting-respo
       return 'Parameter "prompt" must be a non-empty string.';
     }
 
-    if (
-      !params.subagent_type ||
-      typeof params.subagent_type !== 'string' ||
-      params.subagent_type.trim() === ''
-    ) {
+    // Enforce that subagent_type is always provided - no default fallback
+    if (params.subagent_type === undefined || params.subagent_type === null) {
+      return 'Parameter "subagent_type" must be explicitly provided. Tasks must use a specific subagent.';
+    }
+    
+    // If subagent_type is provided but empty, reject it
+    if (params.subagent_type === '') {
       return 'Parameter "subagent_type" must be a non-empty string.';
     }
 
@@ -448,7 +458,12 @@ class TaskToolInvocation extends BaseToolInvocation<TaskParams, ToolResult> {
   }
 
   getDescription(): string {
-    return `${this.params.subagent_type} subagent: "${this.params.description}"`;
+    let subagentType = this.params.subagent_type || 'default';
+    // Display "General Purpose" instead of "general-purpose"
+    if (subagentType === 'general-purpose') {
+      subagentType = 'General Purpose';
+    }
+    return `${subagentType} subagent: "${this.params.description}"`;
   }
 
   override async shouldConfirmExecute(): Promise<false> {
@@ -462,22 +477,40 @@ class TaskToolInvocation extends BaseToolInvocation<TaskParams, ToolResult> {
   ): Promise<ToolResult> {
     try {
       // Load the subagent configuration
-      const subagentConfig = await this.subagentManager.loadSubagent(
-        this.params.subagent_type,
-      );
-
-      if (!subagentConfig) {
+      const subagentType = this.params.subagent_type;
+      if (!subagentType) {
         const errorDisplay = {
           type: 'task_execution' as const,
-          subagentName: this.params.subagent_type,
+          subagentName: 'unknown',
           taskDescription: this.params.description,
           taskPrompt: this.params.prompt,
           status: 'failed' as const,
-          terminateReason: `Subagent "${this.params.subagent_type}" not found`,
+          terminateReason: 'No subagent type specified and no default set',
         };
 
         return {
-          llmContent: `Subagent "${this.params.subagent_type}" not found`,
+          llmContent: 'No subagent type specified and no default set',
+          returnDisplay: errorDisplay,
+        };
+      }
+
+      const subagentConfig = await this.subagentManager.loadSubagent(
+        subagentType,
+      );
+
+      if (!subagentConfig) {
+        const displayName = subagentType === 'general-purpose' ? 'General Purpose' : subagentType;
+        const errorDisplay = {
+          type: 'task_execution' as const,
+          subagentName: displayName,
+          taskDescription: this.params.description,
+          taskPrompt: this.params.prompt,
+          status: 'failed' as const,
+          terminateReason: `Subagent "${subagentType}" not found`,
+        };
+
+        return {
+          llmContent: `Subagent "${subagentType}" not found`,
           returnDisplay: errorDisplay,
         };
       }
@@ -485,7 +518,7 @@ class TaskToolInvocation extends BaseToolInvocation<TaskParams, ToolResult> {
       // Initialize the current display state
       this.currentDisplay = {
         type: 'task_execution' as const,
-        subagentName: subagentConfig.name,
+        subagentName: subagentConfig.name === 'general-purpose' ? 'General Purpose' : subagentConfig.name,
         taskDescription: this.params.description,
         taskPrompt: this.params.prompt,
         status: 'running' as const,

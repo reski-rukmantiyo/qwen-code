@@ -198,6 +198,7 @@ export interface ConfigParameters {
     disableFuzzySearch?: boolean;
   };
   checkpointing?: boolean;
+  defaultSubagent?: string;
   proxy?: string;
   cwd: string;
   fileDiscoveryService?: FileDiscoveryService;
@@ -337,6 +338,7 @@ export class Config {
   private readonly enablePromptCompletion: boolean = false;
   private readonly skipLoopDetection: boolean;
   private readonly vlmSwitchMode: string | undefined;
+  private readonly defaultSubagent: string | undefined;
   private initialized: boolean = false;
   readonly storage: Storage;
   private readonly fileExclusions: FileExclusions;
@@ -347,6 +349,7 @@ export class Config {
     this.embeddingModel =
       params.embeddingModel ?? DEFAULT_GEMINI_EMBEDDING_MODEL;
     this.fileSystemService = new StandardFileSystemService();
+    this.defaultSubagent = params.defaultSubagent;
     this.sandbox = params.sandbox;
     this.targetDir = path.resolve(params.targetDir);
     this.workspaceContext = new WorkspaceContext(
@@ -985,6 +988,10 @@ export class Config {
 
   getVlmSwitchMode(): string | undefined {
     return this.vlmSwitchMode;
+  }
+
+  getDefaultSubagent(): string | undefined {
+    return this.defaultSubagent;
   }
 
   async getGitService(): Promise<GitService> {

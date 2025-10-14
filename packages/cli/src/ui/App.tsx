@@ -340,6 +340,7 @@ const App = ({ config, settings, startupWarnings = [], version }: AppProps) => {
     isAgentsManagerDialogOpen,
     openAgentsManagerDialog,
     closeAgentsManagerDialog,
+    dialogMode,
   } = useAgentsManagerDialog();
 
   const { isFolderTrustDialogOpen, handleFolderTrustSelect, isRestarting } =
@@ -1061,6 +1062,29 @@ const App = ({ config, settings, startupWarnings = [], version }: AppProps) => {
     fetchUserMessages();
   }, [history, logger]);
 
+  // Display default subagent on application startup
+  useEffect(() => {
+    const showDefaultSubagent = async () => {
+      const defaultSubagent = config.storage.getValue('default_subagent');
+      if (defaultSubagent && typeof defaultSubagent === 'string') {
+        addItem(
+          {
+            type: MessageType.INFO,
+            text: `Default subagent set: ${defaultSubagent}`,
+          },
+          Date.now(),
+        );
+      }
+    };
+    
+    // Show the default subagent message shortly after startup
+    const timer = setTimeout(() => {
+      showDefaultSubagent();
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, [config, addItem]);
+
   const isInputActive =
     (streamingState === StreamingState.Idle ||
       streamingState === StreamingState.Responding) &&
@@ -1367,6 +1391,8 @@ const App = ({ config, settings, startupWarnings = [], version }: AppProps) => {
               <AgentsManagerDialog
                 onClose={closeAgentsManagerDialog}
                 config={config}
+                mode={dialogMode}
+                addItem={addItem}
               />
             </Box>
           ) : isAuthenticating ? (

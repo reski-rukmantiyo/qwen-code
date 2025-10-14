@@ -667,6 +667,7 @@ export async function loadCliConfig(
     enablePromptCompletion: settings.general?.enablePromptCompletion ?? false,
     skipLoopDetection: settings.skipLoopDetection ?? false,
     vlmSwitchMode,
+    defaultSubagent: settings.defaultSubagent,
   });
 }
 

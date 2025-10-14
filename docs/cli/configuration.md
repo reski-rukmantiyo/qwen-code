@@ -668,3 +668,11 @@ Note: When usage statistics are enabled, events are sent to an Alibaba Cloud RUM
   - **Requires Restart:** No
   - **Example:** `"enableWelcomeBack": false`
   - **Details:** When enabled, Qwen Code will automatically detect if you're returning to a project with a previously generated project summary (`.qwen/PROJECT_SUMMARY.md`) and show a dialog allowing you to continue your previous conversation or start fresh. This feature integrates with the `/chat summary` command and quit confirmation dialog. See the [Welcome Back documentation](./welcome-back.md) for more details.
+
+- **`default_subagent`** (string):
+  - **Description:** Specifies the name of the default subagent to use for task delegation when no specific subagent is specified. When a new prompt is received, Qwen Code will automatically delegate the task to the specified subagent using the TaskTool.
+  - **Default:** `undefined` (falls back to "general-purpose" when not specified)
+  - **Category:** Subagents
+  - **Requires Restart:** No
+  - **Example:** `"default_subagent": "typescript-monorepo-ai-expert"`
+  - **Details:** This setting allows you to configure which subagent should handle tasks by default. The subagent must be available in your Qwen Code installation. Common subagent types include `general-purpose`, `code-reviewer`, `documentation-writer`, `react-specialist`, `typescript-monorepo-ai-expert`, `devops-expert`, `go-testing-expert`, and `golang-expert`. The value is loaded from the settings file and accessed through the configuration object, rather than being retrieved dynamically.
