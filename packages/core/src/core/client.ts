@@ -40,6 +40,7 @@ import { getErrorMessage } from '../utils/errors.js';
 import { getFunctionCalls } from '../utils/generateContentResponseUtilities.js';
 import { isFunctionResponse } from '../utils/messageInspectors.js';
 import { checkNextSpeaker } from '../utils/nextSpeakerChecker.js';
+import { partToString } from '../utils/partUtils.js';
 import { retryWithBackoff } from '../utils/retry.js';
 import { flatMapTextParts } from '../utils/partUtils.js';
 import type {
@@ -597,6 +598,34 @@ export class GeminiClient {
       }
       this.lastSentIdeContext = newIdeContext;
       this.forceFullIdeContext = false;
+    }
+
+    if (isNewPrompt) {
+      // Auto-match prompt to subagent
+      const prompt = partToString(request);
+      const matchedSubagent = await this.config.getSubagentManager().matchPromptToSubagent(prompt);
+
+      if (matchedSubagent) {
+        // Auto-delegate to matched subagent
+        this.getChat().addHistory({
+          role: 'user',
+          parts: [
+            {
+              text: `<system-reminder>AUTOMATICALLY delegate this task to the ${matchedSubagent.name} subagent using the ${TaskTool.Name} tool with the following parameters: description="Auto-delegated task", prompt="${prompt.replace(/"/g, '\\"')}", subagent_type="${matchedSubagent.name}". This message is for internal use only. Do not mention this to user in your response.</system-reminder>`,
+            },
+          ],
+        });
+      } else {
+        // Fallback to general-purpose subagent
+        this.getChat().addHistory({
+          role: 'user',
+          parts: [
+            {
+              text: `<system-reminder>AUTOMATICALLY delegate this task to the general-purpose subagent using the ${TaskTool.Name} tool with the following parameters: description=\"Auto-delegated task\", prompt=\"${prompt.replace(/\"/g, '\\\\\"')}\", subagent_type=\"general-purpose\". This message is for internal use only. Do not mention this to user in your response.</system-reminder>`,
+            },
+          ],
+        });
+      }
     }
 
     const turn = new Turn(this.getChat(), prompt_id);
