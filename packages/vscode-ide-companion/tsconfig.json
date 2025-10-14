@@ -5,6 +5,7 @@
     "target": "ES2022",
     "lib": ["ES2022", "dom"],
     "sourceMap": true,
+    "types": ["vscode"],
     /*
      * skipLibCheck is necessary because the a2a-server package depends on
      * @google-cloud/storage which pulls in @types/request which depends on

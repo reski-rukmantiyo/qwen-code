@@ -114,7 +114,7 @@ describe('useMessageQueue', () => {
     );
   });
 
-  it('should auto-submit queued messages when transitioning to Idle', () => {
+  it('should auto-submit queued messages when transitioning to Idle', async () => {
     const { result, rerender } = renderHook(
       ({ streamingState }) =>
         useMessageQueue({
@@ -136,12 +136,17 @@ describe('useMessageQueue', () => {
 
     // Transition to Idle
     rerender({ streamingState: StreamingState.Idle });
+    
+    // Advance timers to allow async effects to complete
+    await act(async () => {
+      await vi.advanceTimersToNextTimerAsync();
+    });
 
     expect(mockSubmitQuery).toHaveBeenCalledWith('Message 1\n\nMessage 2');
     expect(result.current.messageQueue).toEqual([]);
   });
 
-  it('should not auto-submit when queue is empty', () => {
+  it('should not auto-submit when queue is empty', async () => {
     const { rerender } = renderHook(
       ({ streamingState }) =>
         useMessageQueue({
@@ -155,11 +160,16 @@ describe('useMessageQueue', () => {
 
     // Transition to Idle with empty queue
     rerender({ streamingState: StreamingState.Idle });
+    
+    // Advance timers to allow async effects to complete
+    await act(async () => {
+      await vi.advanceTimersToNextTimerAsync();
+    });
 
     expect(mockSubmitQuery).not.toHaveBeenCalled();
   });
 
-  it('should not auto-submit when not transitioning to Idle', () => {
+  it('should not auto-submit when not transitioning to Idle', async () => {
     const { result, rerender } = renderHook(
       ({ streamingState }) =>
         useMessageQueue({
@@ -178,12 +188,17 @@ describe('useMessageQueue', () => {
 
     // Transition to WaitingForConfirmation (not Idle)
     rerender({ streamingState: StreamingState.WaitingForConfirmation });
+    
+    // Advance timers to allow async effects to complete
+    await act(async () => {
+      await vi.advanceTimersToNextTimerAsync();
+    });
 
     expect(mockSubmitQuery).not.toHaveBeenCalled();
     expect(result.current.messageQueue).toEqual(['Message 1']);
   });
 
-  it('should handle multiple state transitions correctly', () => {
+  it('should handle multiple state transitions correctly', async () => {
     const { result, rerender } = renderHook(
       ({ streamingState }) =>
         useMessageQueue({
@@ -205,6 +220,11 @@ describe('useMessageQueue', () => {
 
     // Go back to idle - should submit
     rerender({ streamingState: StreamingState.Idle });
+    
+    // Advance timers to allow async effects to complete
+    await act(async () => {
+      await vi.advanceTimersToNextTimerAsync();
+    });
 
     expect(mockSubmitQuery).toHaveBeenCalledWith('First batch');
     expect(result.current.messageQueue).toEqual([]);
@@ -219,6 +239,11 @@ describe('useMessageQueue', () => {
 
     // Go back to idle - should submit again
     rerender({ streamingState: StreamingState.Idle });
+    
+    // Advance timers to allow async effects to complete
+    await act(async () => {
+      await vi.advanceTimersToNextTimerAsync();
+    });
 
     expect(mockSubmitQuery).toHaveBeenCalledWith('Second batch');
     expect(mockSubmitQuery).toHaveBeenCalledTimes(2);

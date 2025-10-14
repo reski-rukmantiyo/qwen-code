@@ -31,6 +31,10 @@ import {
 import * as path from 'node:path';
 import { SCREEN_READER_USER_PREFIX } from '../textConstants.js';
 
+// Smart paste imports
+import { PasteStorage } from '../utils/pasteStorage.js';
+import { PasteSessionManager } from '../utils/pasteSessionManager.js';
+
 export interface InputPromptProps {
   buffer: TextBuffer;
   onSubmit: (value: string) => void;
@@ -70,6 +74,9 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
   const [escPressCount, setEscPressCount] = useState(0);
   const [showEscapePrompt, setShowEscapePrompt] = useState(false);
   const escapeTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Smart paste session manager
+  const pasteSessionManagerRef = useRef<PasteSessionManager>(new PasteSessionManager());
 
   const [dirs, setDirs] = useState<readonly string[]>(
     config.getWorkspaceContext().getDirectories(),
@@ -244,6 +251,21 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
       }
 
       if (key.paste) {
+        // Handle smart paste for large content
+        if (key.sequence.length > 50 && config) {
+          // Get next paste number for this session
+          const sessionId = config.getSessionId();
+          const pasteNumber = pasteSessionManagerRef.current.getNextPasteNumber(sessionId);
+          
+          // Save paste content
+          PasteStorage.savePaste(sessionId, pasteNumber, key.sequence).catch(console.error);
+          
+          // Insert placeholder instead of actual content
+          const placeholder = `[Paste #${pasteNumber}: ${key.sequence.length} chars]`;
+          buffer.insert(placeholder, { paste: true });
+          return;
+        }
+        
         // Ensure we never accidentally interpret paste as regular input.
         buffer.handleInput(key);
         return;

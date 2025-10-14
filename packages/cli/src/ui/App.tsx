@@ -38,6 +38,7 @@ import { useAgentsManagerDialog } from './hooks/useAgentsManagerDialog.js';
 import { useAutoAcceptIndicator } from './hooks/useAutoAcceptIndicator.js';
 import { useMessageQueue } from './hooks/useMessageQueue.js';
 import { useConsoleMessages } from './hooks/useConsoleMessages.js';
+import { PasteStorage } from './utils/pasteStorage.js';
 import { Header } from './components/Header.js';
 import { LoadingIndicator } from './components/LoadingIndicator.js';
 import { AutoAcceptIndicator } from './components/AutoAcceptIndicator.js';
@@ -821,6 +822,7 @@ const App = ({ config, settings, startupWarnings = [], version }: AppProps) => {
     useMessageQueue({
       streamingState,
       submitQuery,
+      config,
     });
 
   // Update the cancel handler with message queue support
@@ -1097,7 +1099,14 @@ const App = ({ config, settings, startupWarnings = [], version }: AppProps) => {
     clearConsoleMessagesState();
     console.clear();
     refreshStatic();
-  }, [clearItems, clearConsoleMessagesState, refreshStatic]);
+    
+    // Clean up paste files for the current session
+    if (config) {
+      PasteStorage.deleteSessionPastes(config.getSessionId()).catch((error) => {
+        console.warn('Failed to clean up paste files:', error);
+      });
+    }
+  }, [clearItems, clearConsoleMessagesState, refreshStatic, config]);
 
   const mainControlsRef = useRef<DOMElement>(null);
   const pendingHistoryItemRef = useRef<DOMElement>(null);

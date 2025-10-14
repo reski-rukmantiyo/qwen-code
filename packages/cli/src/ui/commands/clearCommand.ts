@@ -7,6 +7,7 @@
 import { uiTelemetryService } from '@qwen-code/qwen-code-core';
 import type { SlashCommand } from './types.js';
 import { CommandKind } from './types.js';
+import { PasteStorage } from '../utils/pasteStorage.js';
 
 export const clearCommand: SlashCommand = {
   name: 'clear',
@@ -14,6 +15,7 @@ export const clearCommand: SlashCommand = {
   kind: CommandKind.BUILT_IN,
   action: async (context, _args) => {
     const geminiClient = context.services.config?.getGeminiClient();
+    const config = context.services.config;
 
     if (geminiClient) {
       context.ui.setDebugMessage('Clearing terminal and resetting chat.');
@@ -22,6 +24,15 @@ export const clearCommand: SlashCommand = {
       await geminiClient.resetChat();
     } else {
       context.ui.setDebugMessage('Clearing terminal.');
+    }
+
+    // Clean up paste files for the current session
+    if (config) {
+      try {
+        await PasteStorage.deleteSessionPastes(config.getSessionId());
+      } catch (error) {
+        console.warn('Failed to clean up paste files:', error);
+      }
     }
 
     uiTelemetryService.resetLastPromptTokenCount();
