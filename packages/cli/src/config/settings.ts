@@ -630,6 +630,44 @@ export function loadEnvironment(settings?: Settings): void {
     }
   }
 
+  // Check if project has env files
+  const projectEnvPath = path.join(process.cwd(), '.env');
+  const projectQwenEnvPath = path.join(process.cwd(), GEMINI_DIR, '.env');
+  const projectHasEnv = fs.existsSync(projectEnvPath) || fs.existsSync(projectQwenEnvPath);
+
+  if (envFilePath && projectHasEnv) {
+    // Parse the project's env file to check for OpenAI variables
+    try {
+      const envFileContent = fs.readFileSync(envFilePath, 'utf-8');
+      const parsedEnv = dotenv.parse(envFileContent);
+
+      const openaiVars = ['OPENAI_BASE_URL', 'OPENAI_API_KEY', 'OPENAI_MODEL'];
+      let hasAllOpenAI = openaiVars.every(varName =>
+        parsedEnv[varName] && parsedEnv[varName].trim() !== ''
+      );
+
+      if (!hasAllOpenAI) {
+        // Load entire OpenAI variable set from user-level ~/.qwen/.env
+        const userQwenEnvPath = path.join(homedir(), GEMINI_DIR, '.env');
+        if (fs.existsSync(userQwenEnvPath)) {
+          try {
+            const userEnvContent = fs.readFileSync(userQwenEnvPath, 'utf-8');
+            const userParsedEnv = dotenv.parse(userEnvContent);
+            for (const varName of openaiVars) {
+              if (userParsedEnv[varName]) {
+                process.env[varName] = userParsedEnv[varName];
+              }
+            }
+          } catch (_e) {
+            // Ignore errors from user .env
+          }
+        }
+      }
+    } catch (_e) {
+      // Ignore errors parsing project env
+    }
+  }
+
   if (envFilePath) {
     // Manually parse and load environment variables to handle exclusions correctly.
     // This avoids modifying environment variables that were already set from the shell.
