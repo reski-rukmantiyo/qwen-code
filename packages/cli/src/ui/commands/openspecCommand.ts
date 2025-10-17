@@ -14,10 +14,9 @@ import { showCommand } from './openspec/showCommand.js';
 import { changeCommand } from './openspec/changeCommand.js';
 import { validateCommand } from './openspec/validateCommand.js';
 import { archiveCommand } from './openspec/archiveCommand.js';
-// TODO: Import remaining subcommands once they are implemented
-// import { updateCommand } from './openspec/updateCommand.js';
-// import { viewCommand } from './openspec/viewCommand.js';
-// import { specCommand } from './openspec/specCommand.js';
+import { updateCommand } from './openspec/updateCommand.js';
+import { viewCommand } from './openspec/viewCommand.js';
+import { specCommand } from './openspec/specCommand.js';
 
 export const openspecCommand: SlashCommand = {
   name: 'openspec',
@@ -30,10 +29,9 @@ export const openspecCommand: SlashCommand = {
     changeCommand,
     validateCommand,
     archiveCommand,
-    // TODO: Add remaining subcommands once they are implemented
-    // updateCommand,
-    // viewCommand,
-    // specCommand,
+    updateCommand,
+    viewCommand,
+    specCommand,
   ],
   action: async (context: any, args: string) => {
     // If no subcommand is provided, show help
@@ -52,9 +50,9 @@ Commands:
   change      Create or modify change proposals
   validate    Validate specification formatting
   archive     Move completed changes to archive
-  update      Refresh agent instructions (not yet implemented)
-  view        Display interactive dashboard (not yet implemented)
-  spec        Manage specification files (not yet implemented)
+  update      Refresh agent instructions
+  view        Display interactive dashboard
+  spec        Manage specification files
 
 Use /openspec <command> --help for more information about a command.`,
       };
