@@ -169,6 +169,10 @@ export const useSlashCommandProcessor = (
           type: 'summary',
           summary: message.summary,
         };
+      } else if (message.type === MessageType.OPENSPEC_DASHBOARD) {
+        historyItemContent = {
+          type: 'openspec_dashboard',
+        };
       } else {
         historyItemContent = {
           type: message.type,

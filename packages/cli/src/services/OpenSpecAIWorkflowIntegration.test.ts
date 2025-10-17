@@ -10,7 +10,6 @@ import * as path from 'node:path';
 import * as os from 'node:os';
 import { OpenSpecMemoryIntegration } from '../services/OpenSpecMemoryIntegration.js';
 import { OpenSpecCacheService } from '../services/OpenSpecCacheService.js';
-import { OpenSpecCodeValidator } from '../../../core/src/utils/openSpecCodeValidator.js';
 
 describe('OpenSpec AI Workflow Integration (Task 2.3)', () => {
   let tempDir: string;

@@ -812,14 +812,11 @@ export class SubagentManager {
         const subagentConfig: SubagentConfig = {
           name: `openspec-${changeName}`,
           description,
-          level: 'project',
-          scope: SubAgentScope.PROJECT,
-          model: 'default',
-          tools: ['read_file', 'write_file', 'edit', 'run_shell_command'],
-          prompt: `You are working on the OpenSpec change proposal "${changeName}". 
+          systemPrompt: `You are working on the OpenSpec change proposal "${changeName}". 
 Follow the guidelines in the proposal.md file and ensure all changes conform to the specifications.
 Use the tasks.md file to understand implementation steps and the design.md file for technical details.`,
-          runtime: {} as SubagentRuntimeConfig,
+          level: 'project',
+          filePath: '', // This will be set when the subagent is actually created
         };
         
         subagents.push(subagentConfig);

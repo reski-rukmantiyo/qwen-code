@@ -25,6 +25,7 @@ import { SessionSummaryDisplay } from './SessionSummaryDisplay.js';
 import type { Config } from '@qwen-code/qwen-code-core';
 import { Help } from './Help.js';
 import type { SlashCommand } from '../commands/types.js';
+import { OpenSpecDashboardMessage } from './messages/OpenSpecDashboardMessage.js';
 
 interface HistoryItemDisplayProps {
   item: HistoryItem;
@@ -100,6 +101,7 @@ const HistoryItemDisplayComponent: React.FC<HistoryItemDisplayProps> = ({
       <CompressionMessage compression={item.compression} />
     )}
     {item.type === 'summary' && <SummaryMessage summary={item.summary} />}
+    {item.type === 'openspec_dashboard' && <OpenSpecDashboardMessage />}
   </Box>
 );
 

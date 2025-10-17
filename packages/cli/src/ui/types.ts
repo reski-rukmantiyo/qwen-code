@@ -155,6 +155,11 @@ export type HistoryItemSummary = HistoryItemBase & {
   summary: SummaryProps;
 };
 
+export type HistoryItemOpenSpecDashboard = HistoryItemBase & {
+  type: 'openspec_dashboard';
+  // Dashboard doesn't need text content as it's rendered by the component
+};
+
 // Using Omit<HistoryItem, 'id'> seems to have some issues with typescript's
 // type inference e.g. historyItem.type === 'tool_group' isn't auto-inferring that
 // 'tools' in historyItem.
@@ -175,7 +180,8 @@ export type HistoryItemWithoutId =
   | HistoryItemQuit
   | HistoryItemQuitConfirmation
   | HistoryItemCompression
-  | HistoryItemSummary;
+  | HistoryItemSummary
+  | HistoryItemOpenSpecDashboard;
 
 export type HistoryItem = HistoryItemWithoutId & { id: number };
 
@@ -194,6 +200,7 @@ export enum MessageType {
   GEMINI = 'gemini',
   COMPRESSION = 'compression',
   SUMMARY = 'summary',
+  OPENSPEC_DASHBOARD = 'openspec_dashboard',
 }
 
 // Simplified message structure for internal feedback
@@ -257,6 +264,11 @@ export type Message =
       type: MessageType.SUMMARY;
       summary: SummaryProps;
       timestamp: Date;
+    }
+  | {
+      type: MessageType.OPENSPEC_DASHBOARD;
+      timestamp: Date;
+      content?: string; // Optional content, not really used for OPENSPEC_DASHBOARD
     };
 
 export interface ConsoleMessageItem {
