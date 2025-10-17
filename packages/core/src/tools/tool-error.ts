@@ -56,6 +56,9 @@ export enum ToolErrorType {
   // Shell errors
   SHELL_EXECUTE_ERROR = 'shell_execute_error',
 
+  // Validation errors
+  VALIDATION_FAILURE = 'validation_failure',
+
   // DiscoveredTool-specific Errors
   DISCOVERED_TOOL_EXECUTION_ERROR = 'discovered_tool_execution_error',
 

@@ -16,10 +16,18 @@ export class OpenSpecWatcherService {
   private cacheService: OpenSpecCacheService;
   private lastCheckpointTime: number = 0;
   private readonly CHECKPOINT_MIN_INTERVAL_MS = 30000; // 30 seconds minimum between checkpoints
+  private onMemoryUpdateCallback: (() => void) | null = null;
 
   constructor(logger: Console, cacheService: OpenSpecCacheService) {
     this.logger = logger;
     this.cacheService = cacheService;
+  }
+
+  /**
+   * Sets a callback to be called when OpenSpec files change and memory should be updated
+   */
+  setOnMemoryUpdateCallback(callback: () => void): void {
+    this.onMemoryUpdateCallback = callback;
   }
 
   /**
@@ -136,6 +144,11 @@ export class OpenSpecWatcherService {
     if (eventType === 'change' || eventType === 'rename') {
       this.cacheService.invalidateFileCache(filePath);
       this.logger.debug(`Invalidated cache for file: ${filePath}`);
+      
+      // Notify that memory should be updated
+      if (this.onMemoryUpdateCallback) {
+        this.onMemoryUpdateCallback();
+      }
     }
     
     // For significant changes, consider creating a checkpoint

@@ -49,3 +49,4 @@ logs/
 gha-creds-*.json
 
 QWEN.md
+.claude/settings.local.json

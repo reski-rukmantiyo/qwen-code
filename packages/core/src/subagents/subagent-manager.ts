@@ -745,9 +745,89 @@ export class SubagentManager {
         }
       }
 
+      // If this is the project level, also include OpenSpec changes as dynamic subagents
+      if (level === 'project') {
+        const openSpecSubagents = await this.getOpenSpecSubagents(projectRoot);
+        subagents.push(...openSpecSubagents);
+      }
+
       return subagents;
     } catch (_error) {
       // Directory doesn't exist or can't be read
+      // If this is the project level, still try to include OpenSpec changes
+      if (level === 'project') {
+        const openSpecSubagents = await this.getOpenSpecSubagents(projectRoot);
+        return openSpecSubagents;
+      }
+      return [];
+    }
+  }
+
+  /**
+   * Gets OpenSpec changes as dynamic subagents
+   * @param projectRoot - Root directory of the project
+   * @returns Array of subagent configurations for OpenSpec changes
+   */
+  private async getOpenSpecSubagents(projectRoot: string): Promise<SubagentConfig[]> {
+    try {
+      const openspecDir = path.join(projectRoot, 'openspec');
+      const changesDir = path.join(openspecDir, 'changes');
+      
+      // Check if OpenSpec is initialized
+      if (!await fs.access(openspecDir).then(() => true).catch(() => false)) {
+        return [];
+      }
+      
+      // Check if changes directory exists
+      if (!await fs.access(changesDir).then(() => true).catch(() => false)) {
+        return [];
+      }
+      
+      const subagents: SubagentConfig[] = [];
+      const changeDirs = await fs.readdir(changesDir, { withFileTypes: true });
+      
+      for (const dirent of changeDirs) {
+        if (!dirent.isDirectory()) continue;
+        
+        const changeDir = path.join(changesDir, dirent.name);
+        const changeName = dirent.name;
+        
+        // Read proposal.md for the description
+        let description = `Work on the "${changeName}" change proposal`;
+        const proposalPath = path.join(changeDir, 'proposal.md');
+        if (await fs.access(proposalPath).then(() => true).catch(() => false)) {
+          try {
+            const proposalContent = await fs.readFile(proposalPath, 'utf-8');
+            // Extract the first paragraph as description
+            const firstParagraph = proposalContent.split('\n\n')[0];
+            if (firstParagraph && firstParagraph.trim()) {
+              description = firstParagraph.trim();
+            }
+          } catch (_error) {
+            // Use default description if we can't read the proposal
+          }
+        }
+        
+        // Create a subagent config for this change
+        const subagentConfig: SubagentConfig = {
+          name: `openspec-${changeName}`,
+          description,
+          level: 'project',
+          scope: SubAgentScope.PROJECT,
+          model: 'default',
+          tools: ['read_file', 'write_file', 'edit', 'run_shell_command'],
+          prompt: `You are working on the OpenSpec change proposal "${changeName}". 
+Follow the guidelines in the proposal.md file and ensure all changes conform to the specifications.
+Use the tasks.md file to understand implementation steps and the design.md file for technical details.`,
+          runtime: {} as SubagentRuntimeConfig,
+        };
+        
+        subagents.push(subagentConfig);
+      }
+      
+      return subagents;
+    } catch (_error) {
+      // Return empty array if there are any errors
       return [];
     }
   }
