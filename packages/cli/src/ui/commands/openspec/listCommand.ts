@@ -9,6 +9,7 @@ import { CommandKind } from '../types.js';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import process from 'node:process';
+import { getOpenSpecCacheService } from '../../hooks/useOpenSpecWatcher.js';
 
 export const listCommand: SlashCommand = {
   name: 'list',
@@ -26,6 +27,14 @@ export const listCommand: SlashCommand = {
           messageType: 'error',
           content: 'OpenSpec is not initialized in this project. Run /openspec init first.',
         };
+      }
+      
+      // Get cache service
+      const cacheService = getOpenSpecCacheService();
+      
+      // Preload cache with changes directory content if cache service is available
+      if (cacheService) {
+        cacheService.preloadDirectory(changesDir);
       }
       
       // Read changes directory

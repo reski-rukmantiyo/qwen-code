@@ -9,6 +9,7 @@ import { CommandKind } from '../types.js';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import process from 'node:process';
+import { getOpenSpecCacheService } from '../../hooks/useOpenSpecWatcher.js';
 
 export const initCommand: SlashCommand = {
   name: 'init',
@@ -49,6 +50,12 @@ export const initCommand: SlashCommand = {
         const allExist = requiredDirs.every(dir => fs.existsSync(dir));
         
         if (allExist) {
+          // Clear cache since we're re-initializing
+          const cacheService = getOpenSpecCacheService();
+          if (cacheService) {
+            cacheService.clearCache();
+          }
+          
           return {
             type: 'message',
             messageType: 'info',
@@ -142,6 +149,12 @@ This is a sample specification delta showing what will change.
 `;
       
       fs.writeFileSync(path.join(changeSpecsDir, 'sample-spec.md'), sampleChangeSpecContent);
+      
+      // Clear cache since we've created new files
+      const cacheService = getOpenSpecCacheService();
+      if (cacheService) {
+        cacheService.clearCache();
+      }
       
       // Provide success feedback
       return {

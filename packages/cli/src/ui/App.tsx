@@ -105,6 +105,7 @@ import {
   useSessionStats,
 } from './contexts/SessionContext.js';
 import { useGitBranchName } from './hooks/useGitBranchName.js';
+import { useOpenSpecWatcher } from './hooks/useOpenSpecWatcher.js';
 import { useFocus } from './hooks/useFocus.js';
 import { useBracketedPaste } from './hooks/useBracketedPaste.js';
 import { useTextBuffer } from './components/shared/text-buffer.js';
@@ -1172,6 +1173,7 @@ const App = ({ config, settings, startupWarnings = [], version }: AppProps) => {
   }, [consoleMessages, config]);
 
   const branchName = useGitBranchName(config.getTargetDir());
+  useOpenSpecWatcher(config);
 
   const contextFileNames = useMemo(() => {
     const fromSettings = settings.merged.context?.fileName;

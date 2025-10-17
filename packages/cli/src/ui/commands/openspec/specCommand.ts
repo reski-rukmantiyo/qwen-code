@@ -9,6 +9,7 @@ import { CommandKind } from '../types.js';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import process from 'node:process';
+import { readFileEfficiently, getFileStats } from '../../../services/OpenSpecFileUtils.js';
 
 export const specCommand: SlashCommand = {
   name: 'spec',
@@ -141,7 +142,7 @@ Next steps:
   }
 }
 
-function editSpec(specsDir: string, specPath: string, context: CommandContext): MessageActionReturn {
+async function editSpec(specsDir: string, specPath: string, context: CommandContext): Promise<MessageActionReturn> {
   if (!specPath) {
     return {
       type: 'message',
@@ -161,17 +162,34 @@ function editSpec(specsDir: string, specPath: string, context: CommandContext): 
     };
   }
   
-  // TODO: Integrate with Qwen Code's editor system to automatically open files
-  // For now, just provide the path
-  return {
-    type: 'message',
-    messageType: 'info',
-    content: `To edit specification "${specPath}":
-1. Open the following file in your editor:
-   ${fullPath}
-2. Make your changes
-3. Save the file`,
-  };
+  try {
+    // Get file stats
+    const stats = getFileStats(fullPath);
+    
+    // Read the spec file efficiently
+    const content = await readFileEfficiently(fullPath);
+    
+    // Display the content with file information
+    return {
+      type: 'message',
+      messageType: 'info',
+      content: `Specification "${specPath}" (${stats.sizeFormatted})
+Last modified: ${stats.modified.toLocaleString()}
+
+${content}
+
+To edit this specification:
+1. Use /openspec spec edit ${specPath} to open it in your editor
+2. Or manually edit the file at:
+   ${fullPath}`,
+    };
+  } catch (error) {
+    return {
+      type: 'message',
+      messageType: 'error',
+      content: `Failed to read specification "${specPath}": ${(error as Error).message}`,
+    };
+  }
 }
 
 function deleteSpec(specsDir: string, specPath: string, context: CommandContext): MessageActionReturn {

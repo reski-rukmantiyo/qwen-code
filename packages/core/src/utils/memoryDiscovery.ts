@@ -325,6 +325,178 @@ async function readGeminiMdFiles(
   return results;
 }
 
+/**
+ * Finds all markdown files in a directory recursively
+ */
+async function findAllMarkdownFiles(
+  directory: string,
+  maxDirs: number = 100,
+  debugMode: boolean = false,
+): Promise<string[]> {
+  const foundFiles: string[] = [];
+  const queue: string[] = [directory];
+  const visited = new Set<string>();
+  let scannedDirCount = 0;
+  let queueHead = 0;
+
+  while (queueHead < queue.length && scannedDirCount < maxDirs) {
+    const currentDir = queue[queueHead];
+    queueHead++;
+    
+    if (visited.has(currentDir)) {
+      continue;
+    }
+    visited.add(currentDir);
+    scannedDirCount++;
+
+    try {
+      const entries = await fs.readdir(currentDir, { withFileTypes: true });
+      
+      for (const entry of entries) {
+        const fullPath = path.join(currentDir, entry.name);
+        
+        if (entry.isDirectory()) {
+          // Skip common directories that we don't want to traverse
+          if (!['node_modules', '.git', 'dist', 'build'].includes(entry.name)) {
+            queue.push(fullPath);
+          }
+        } else if (entry.isFile() && entry.name.endsWith('.md')) {
+          foundFiles.push(fullPath);
+        }
+      }
+    } catch (error) {
+      if (debugMode) {
+        logger.warn(`Could not read directory: ${currentDir}`, error);
+      }
+    }
+  }
+  
+  return foundFiles;
+}
+
+/**
+ * Discovers OpenSpec files and reads their content
+ */
+async function discoverAndReadOpenSpecFiles(
+  currentWorkingDirectory: string,
+  debugMode: boolean,
+): Promise<GeminiFileContent[]> {
+  const openspecDir = path.join(currentWorkingDirectory, 'openspec');
+  
+  // Check if OpenSpec is initialized
+  if (!fsSync.existsSync(openspecDir)) {
+    if (debugMode) {
+      logger.debug(`OpenSpec directory not found at: ${openspecDir}`);
+    }
+    return [];
+  }
+  
+  // Check if required directories exist
+  const specsDir = path.join(openspecDir, 'specs');
+  const changesDir = path.join(openspecDir, 'changes');
+  
+  if (!fsSync.existsSync(specsDir) || !fsSync.existsSync(changesDir)) {
+    if (debugMode) {
+      logger.debug(`OpenSpec required directories not found. Specs dir: ${fsSync.existsSync(specsDir)}, Changes dir: ${fsSync.existsSync(changesDir)}`);
+    }
+    return [];
+  }
+  
+  if (debugMode) {
+    logger.debug(`Found OpenSpec directories. Specs: ${specsDir}, Changes: ${changesDir}`);
+  }
+  
+  const openSpecFiles: string[] = [];
+  
+  try {
+    // Add specification files
+    if (fsSync.existsSync(specsDir)) {
+      const specFiles = await findAllMarkdownFiles(specsDir, 100, debugMode);
+      openSpecFiles.push(...specFiles);
+      if (debugMode) {
+        logger.debug(`Found ${specFiles.length} spec files in ${specsDir}`);
+      }
+    }
+    
+    // Add change proposal files
+    if (fsSync.existsSync(changesDir)) {
+      const changeDirs = fsSync.readdirSync(changesDir, { withFileTypes: true })
+        .filter(dirent => dirent.isDirectory())
+        .map(dirent => path.join(changesDir, dirent.name));
+        
+      if (debugMode) {
+        logger.debug(`Found ${changeDirs.length} change directories`);
+      }
+        
+      for (const changeDir of changeDirs) {
+        const proposalFile = path.join(changeDir, 'proposal.md');
+        const tasksFile = path.join(changeDir, 'tasks.md');
+        const designFile = path.join(changeDir, 'design.md');
+        
+        if (fsSync.existsSync(proposalFile)) {
+          openSpecFiles.push(proposalFile);
+          if (debugMode) {
+            logger.debug(`Found proposal file: ${proposalFile}`);
+          }
+        }
+        if (fsSync.existsSync(tasksFile)) {
+          openSpecFiles.push(tasksFile);
+          if (debugMode) {
+            logger.debug(`Found tasks file: ${tasksFile}`);
+          }
+        }
+        if (fsSync.existsSync(designFile)) {
+          openSpecFiles.push(designFile);
+          if (debugMode) {
+            logger.debug(`Found design file: ${designFile}`);
+          }
+        }
+        
+        // Add spec delta files
+        const changeSpecsDir = path.join(changeDir, 'specs');
+        if (fsSync.existsSync(changeSpecsDir)) {
+          const specDeltaFiles = await findAllMarkdownFiles(changeSpecsDir, 50, debugMode);
+          openSpecFiles.push(...specDeltaFiles);
+          if (debugMode) {
+            logger.debug(`Found ${specDeltaFiles.length} spec delta files in ${changeSpecsDir}`);
+          }
+        }
+      }
+    }
+    
+    if (debugMode) {
+      logger.debug(`Total OpenSpec files found: ${openSpecFiles.length}`);
+    }
+    
+    // Read all OpenSpec files
+    const results: GeminiFileContent[] = [];
+    for (const filePath of openSpecFiles) {
+      try {
+        const content = await fs.readFile(filePath, 'utf-8');
+        results.push({ filePath, content });
+        if (debugMode) {
+          logger.debug(`Successfully read OpenSpec file: ${filePath}`);
+        }
+      } catch (error) {
+        if (debugMode) {
+          logger.warn(`Failed to read OpenSpec file: ${filePath}`, error);
+        }
+      }
+    }
+    
+    if (debugMode) {
+      logger.debug(`Successfully read ${results.length} OpenSpec files`);
+    }
+    
+    return results;
+  } catch (error) {
+    if (debugMode) {
+      logger.warn('Error discovering OpenSpec files:', error);
+    }
+    return [];
+  }
+}
+
 function concatenateInstructions(
   instructionContents: GeminiFileContent[],
   // CWD is needed to resolve relative paths for display markers
@@ -380,16 +552,25 @@ export async function loadServerHierarchicalMemory(
   );
   if (filePaths.length === 0) {
     if (debugMode) logger.debug('No QWEN.md files found in hierarchy.');
-    return { memoryContent: '', fileCount: 0 };
   }
   const contentsWithPaths = await readGeminiMdFiles(
     filePaths,
     debugMode,
     importFormat,
   );
+  
+  // Discover and read OpenSpec files
+  const openSpecContents = await discoverAndReadOpenSpecFiles(
+    currentWorkingDirectory,
+    debugMode,
+  );
+  
+  // Combine all content
+  const allContents = [...contentsWithPaths, ...openSpecContents];
+  
   // Pass CWD for relative path display in concatenated content
   const combinedInstructions = concatenateInstructions(
-    contentsWithPaths,
+    allContents,
     currentWorkingDirectory,
   );
   if (debugMode)
@@ -402,6 +583,6 @@ export async function loadServerHierarchicalMemory(
     );
   return {
     memoryContent: combinedInstructions,
-    fileCount: contentsWithPaths.length,
+    fileCount: contentsWithPaths.length + openSpecContents.length,
   };
 }

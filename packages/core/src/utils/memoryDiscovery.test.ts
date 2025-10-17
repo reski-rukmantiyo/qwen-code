@@ -439,4 +439,58 @@ describe('loadServerHierarchicalMemory', () => {
     expect(parentOccurrences).toBe(1);
     expect(childOccurrences).toBe(1);
   });
+
+  it('should include OpenSpec files when present', async () => {
+    // Create OpenSpec directory structure
+    const openspecDir = await createEmptyDir(path.join(projectRoot, 'openspec'));
+    const specsDir = await createEmptyDir(path.join(openspecDir, 'specs'));
+    const changesDir = await createEmptyDir(path.join(openspecDir, 'changes'));
+    
+    // Create a sample spec file
+    await createTestFile(
+      path.join(specsDir, 'api-spec.md'),
+      '# API Specification\n\nThis is a sample API specification.',
+    );
+    
+    // Create a sample change directory with files
+    const changeDir = await createEmptyDir(path.join(changesDir, 'feature-update'));
+    await createTestFile(
+      path.join(changeDir, 'proposal.md'),
+      '# Feature Update Proposal\n\nThis is a sample feature update proposal.',
+    );
+    await createTestFile(
+      path.join(changeDir, 'tasks.md'),
+      '# Implementation Tasks\n\n- [ ] Task 1\n- [ ] Task 2',
+    );
+    await createTestFile(
+      path.join(changeDir, 'design.md'),
+      '# Technical Design\n\nThis is the technical design document.',
+    );
+    
+    // Create a sample spec delta file
+    const changeSpecsDir = await createEmptyDir(path.join(changeDir, 'specs'));
+    await createTestFile(
+      path.join(changeSpecsDir, 'api-changes.md'),
+      '# API Changes\n\nThese are the proposed API changes.',
+    );
+
+    const result = await loadServerHierarchicalMemory(
+      projectRoot,
+      [],
+      true, // Enable debug mode
+      new FileDiscoveryService(projectRoot),
+    );
+
+    // Log the result for debugging
+    console.log('Result fileCount:', result.fileCount);
+    console.log('Result memoryContent:', result.memoryContent);
+
+    // Should have loaded OpenSpec files
+    expect(result.fileCount).toBeGreaterThanOrEqual(5);
+    expect(result.memoryContent).toContain('API Specification');
+    expect(result.memoryContent).toContain('Feature Update Proposal');
+    expect(result.memoryContent).toContain('Implementation Tasks');
+    expect(result.memoryContent).toContain('Technical Design');
+    expect(result.memoryContent).toContain('API Changes');
+  });
 });

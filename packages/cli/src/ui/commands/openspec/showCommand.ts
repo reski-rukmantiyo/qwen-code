@@ -9,6 +9,7 @@ import { CommandKind } from '../types.js';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import process from 'node:process';
+import { readFileEfficiently, getFileStats } from '../../../services/OpenSpecFileUtils.js';
 
 export const showCommand: SlashCommand = {
   name: 'show',
@@ -39,14 +40,15 @@ export const showCommand: SlashCommand = {
         };
       }
       
-      // Read change files
+      // Read change files efficiently
       let content = `# Change: ${changeName}\n\n`;
       
       // Read proposal.md
       const proposalPath = path.join(changeDir, 'proposal.md');
       if (fs.existsSync(proposalPath)) {
-        content += '## Proposal\n';
-        content += fs.readFileSync(proposalPath, 'utf-8');
+        const stats = getFileStats(proposalPath);
+        content += `## Proposal (${stats.sizeFormatted})\n`;
+        content += await readFileEfficiently(proposalPath);
         content += '\n\n';
       } else {
         content += '## Proposal\nNo proposal.md file found.\n\n';
@@ -55,8 +57,9 @@ export const showCommand: SlashCommand = {
       // Read tasks.md
       const tasksPath = path.join(changeDir, 'tasks.md');
       if (fs.existsSync(tasksPath)) {
-        content += '## Tasks\n';
-        content += fs.readFileSync(tasksPath, 'utf-8');
+        const stats = getFileStats(tasksPath);
+        content += `## Tasks (${stats.sizeFormatted})\n`;
+        content += await readFileEfficiently(tasksPath);
         content += '\n\n';
       } else {
         content += '## Tasks\nNo tasks.md file found.\n\n';
@@ -65,8 +68,9 @@ export const showCommand: SlashCommand = {
       // Read design.md (optional)
       const designPath = path.join(changeDir, 'design.md');
       if (fs.existsSync(designPath)) {
-        content += '## Design\n';
-        content += fs.readFileSync(designPath, 'utf-8');
+        const stats = getFileStats(designPath);
+        content += `## Design (${stats.sizeFormatted})\n`;
+        content += await readFileEfficiently(designPath);
         content += '\n\n';
       }
       
@@ -79,9 +83,11 @@ export const showCommand: SlashCommand = {
         
         if (specFiles.length > 0) {
           content += '## Specification Deltas\n';
-          specFiles.forEach(file => {
-            content += `- ${file}\n`;
-          });
+          for (const file of specFiles) {
+            const filePath = path.join(specsDir, file);
+            const stats = getFileStats(filePath);
+            content += `- ${file} (${stats.sizeFormatted})\n`;
+          }
           content += '\n';
         }
       }
