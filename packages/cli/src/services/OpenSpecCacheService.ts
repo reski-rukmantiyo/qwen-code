@@ -9,11 +9,18 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 export class OpenSpecCacheService {
-  private contentCache: LruCache<string, string>;
-  private metadataCache: LruCache<string, { mtime: number; size: number }>;
+  private contentCache!: LruCache<string, string>;
+  private metadataCache!: LruCache<string, { mtime: number; size: number }>;
   private readonly MAX_CACHE_SIZE = 100; // Cache up to 100 files
 
   constructor() {
+    this.initializeCaches();
+  }
+
+  /**
+   * Initializes or re-initializes the caches
+   */
+  private initializeCaches(): void {
     this.contentCache = new LruCache<string, string>(this.MAX_CACHE_SIZE);
     this.metadataCache = new LruCache<string, { mtime: number; size: number }>(this.MAX_CACHE_SIZE);
   }
@@ -59,11 +66,19 @@ export class OpenSpecCacheService {
   }
 
   /**
-   * Clears all cached data
+   * Clears all cached data and reinitializes caches
    */
   clearCache(): void {
     this.contentCache.clear();
     this.metadataCache.clear();
+  }
+
+  /**
+   * Resets the caches by reinitializing them
+   * This is used for the "/openspec clear" command
+   */
+  resetCaches(): void {
+    this.initializeCaches();
   }
 
   /**

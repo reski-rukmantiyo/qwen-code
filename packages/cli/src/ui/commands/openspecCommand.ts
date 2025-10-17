@@ -17,6 +17,7 @@ import { archiveCommand } from './openspec/archiveCommand.js';
 import { updateCommand } from './openspec/updateCommand.js';
 import { viewCommand } from './openspec/viewCommand.js';
 import { specCommand } from './openspec/specCommand.js';
+import { clearCommand } from './openspec/clearCommand.js';
 
 export const openspecCommand: SlashCommand = {
   name: 'openspec',
@@ -32,6 +33,7 @@ export const openspecCommand: SlashCommand = {
     updateCommand,
     viewCommand,
     specCommand,
+    clearCommand,
   ],
   action: async (context: any, args: string) => {
     // If no subcommand is provided, show help
@@ -53,6 +55,7 @@ Commands:
   update      Refresh agent instructions
   view        Display interactive dashboard
   spec        Manage specification files
+  clear       Clear the OpenSpec cache and reset it
 
 Use /openspec <command> --help for more information about a command.`,
       };
