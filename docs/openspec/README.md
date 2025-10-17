@@ -6,9 +6,10 @@ This document provides a comprehensive overview of the OpenSpec integration for 
 
 1. [Overview](#overview)
 2. [OpenSpec CLI Commands](#openspec-cli-commands)
-3. [Implementation Tasks](#implementation-tasks)
-4. [File Structures](#file-structures)
-5. [Dependencies](#dependencies)
+3. [Documentation](#documentation)
+4. [Implementation Tasks](#implementation-tasks)
+5. [File Structures](#file-structures)
+6. [Dependencies](#dependencies)
 
 ## Overview
 
@@ -21,6 +22,21 @@ The integration with Qwen Code provides structured human-AI collaboration where 
 ### 1. init
 
 **Purpose**: Initializes OpenSpec in a project by creating the required directory structure.
+
+## Documentation
+
+For detailed information on using OpenSpec with Qwen Code, please refer to the following documentation:
+
+### User Documentation
+- [Usage Guide](usage-guide.md) - Comprehensive guide for using OpenSpec features
+- [Workflow Tutorials](workflow-tutorial.md) - Step-by-step tutorials for common workflows
+- [Best Practices](best-practices.md) - Guidelines for effective specification-driven development
+- [Troubleshooting](troubleshooting.md) - Solutions to common issues and problems
+
+### Developer Documentation
+- [Developer Guide](developer-guide.md) - Technical documentation for developers working on OpenSpec integration
+- [Implementation Tasks](implementation-tasks.md) - Technical tasks for implementing OpenSpec features
+- [Command Reference](openspec-commands.md) - Detailed documentation for OpenSpec slash commands
 
 **Usage Syntax**:
 ```bash
