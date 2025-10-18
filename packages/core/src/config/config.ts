@@ -472,6 +472,11 @@ export class Config {
     this.promptRegistry = new PromptRegistry();
     this.subagentManager = new SubagentManager(this);
     this.toolRegistry = await this.createToolRegistry();
+    
+    // Initialize the Gemini client with the default auth type
+    const defaultAuthType = this.authType || AuthType.USE_GEMINI;
+    await this.refreshAuth(defaultAuthType);
+    
     logCliConfiguration(this, new StartSessionEvent(this, this.toolRegistry));
   }
 
