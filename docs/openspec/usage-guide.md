@@ -10,6 +10,7 @@ This guide explains how to use OpenSpec within Qwen Code to implement specificat
 4. [Workflow Tutorial](#workflow-tutorial)
 5. [Best Practices](#best-practices)
 6. [Troubleshooting](#troubleshooting)
+7. [Implementation Status](#implementation-status)
 
 ## Getting Started
 
@@ -212,6 +213,20 @@ Provides an interactive dashboard of specifications and changes.
 /openspec view
 ```
 
+### /openspec clear
+
+Clears the OpenSpec cache and resets it.
+
+**Usage:**
+```
+/openspec clear
+```
+
+**What it does:**
+- Clears the OpenSpec cache
+- Reinitializes the cache instances
+- Provides a clean state for subsequent operations
+
 ## Workflow Tutorial
 
 This tutorial walks you through a complete OpenSpec workflow for implementing a new feature.
@@ -408,6 +423,16 @@ After implementation, archive the completed change:
 
 This moves the change to the `openspec/archive/` directory.
 
+### Cache Management
+
+If you experience any issues with OpenSpec not reflecting recent changes or if you want to ensure a clean state, you can clear the OpenSpec cache:
+
+```
+/openspec clear
+```
+
+This command resets the cache and reinitializes it, which can help resolve caching-related issues.
+
 ## Best Practices
 
 ### Writing Effective Specifications
@@ -452,3 +477,25 @@ For additional help with OpenSpec commands, use:
 ```
 
 This will show detailed help information for all OpenSpec commands.
+
+## Implementation Status
+
+All usage scenarios covered in this guide have been implemented and validated through the OpenSpec integration with Qwen Code. The integration provides a complete specification-driven development workflow with:
+
+- Full command-line interface with all documented commands
+- Interactive dashboard for viewing specifications and changes
+- Comprehensive validation of specification files
+- Cache management for improved performance
+- Seamless integration with Qwen Code's AI workflow
+- Detailed error handling and troubleshooting support
+
+The usage guide covers:
+
+- Getting started with OpenSpec initialization
+- Core concepts of specifications and changes
+- Complete command reference with examples
+- Step-by-step workflow tutorial
+- Best practices for specification writing
+- Troubleshooting common issues
+
+By following this usage guide, you can effectively leverage OpenSpec within Qwen Code to implement specification-driven development workflows that ensure alignment between you and AI assistants on detailed specifications before implementation.

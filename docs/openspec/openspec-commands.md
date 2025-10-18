@@ -1,12 +1,21 @@
 # OpenSpec Commands Documentation
 
-This document provides comprehensive documentation for OpenSpec slash commands in Qwen Code and outlines the technical implementation tasks needed to integrate OpenSpec into Qwen Code.
+This document provides comprehensive documentation for OpenSpec slash commands in Qwen Code and outlines the technical implementation details of the OpenSpec integration.
 
 ## Overview
 
 OpenSpec is a specification-driven development tool that enables deterministic, spec-driven workflows by ensuring alignment between humans and AI on detailed specifications before implementation. It maintains "truth" specifications in `openspec/specs/` and proposed changes in `openspec/changes/`.
 
 In Qwen Code, OpenSpec commands are accessed through the `/openspec` slash command with subcommands, following the same pattern as other built-in commands like `/help`, `/agents`, and `/model`.
+
+## Implementation Architecture
+
+The OpenSpec integration in Qwen Code follows a modular architecture consisting of:
+
+1. **Command Layer**: Implements the `/openspec` slash command with subcommands in `/packages/cli/src/ui/commands/openspec/`
+2. **Service Layer**: Provides core functionality through services in `/packages/cli/src/services/`
+3. **Integration Layer**: Connects OpenSpec with Qwen Code's AI workflow, file watching, and caching systems
+4. **UI Components**: Provides interactive interfaces for OpenSpec features in `/packages/cli/src/ui/components/`
 
 ## OpenSpec Slash Commands
 
@@ -30,18 +39,29 @@ Sets up the OpenSpec directory structure in the current project. This command cr
 /openspec init
 ```
 
-**Integration with Qwen Code**:
-This command integrates with Qwen Code's existing project initialization workflow and follows the same pattern as other built-in commands. When executed, it will:
-- Create the OpenSpec directory structure in your project
-- Integrate with Qwen Code's file watching system
-- Make specifications available to AI models through the contextual memory system
+**Implementation Details**:
+- Located in `/packages/cli/src/ui/commands/openspec/initCommand.ts`
+- Validates Node.js version compatibility (requires >= 20.19.0)
+- Creates directory structure: `openspec/specs/`, `openspec/changes/`, `openspec/archive/`
+- Generates sample specification and change files for reference
+- Integrates with Qwen Code's file watching system through `OpenSpecWatcherService`
+- Makes specifications available to AI models through `OpenSpecMemoryIntegration`
+- Clears cache using `OpenSpecCacheService` when re-initializing
+- Provides user feedback on successful initialization
 
 **File Structure Created**:
 ```
 openspec/
-├── specs/      # Current source-of-truth specifications
-├── changes/    # Proposed updates (active changes)
-└── archive/    # Completed changes
+├── specs/                 # Current source-of-truth specifications
+│   └── sample-spec.md     # Sample specification
+├── changes/               # Proposed updates (active changes)
+│   └── sample-change/     # Sample change folder
+│       ├── proposal.md    # Change proposal
+│       ├── tasks.md       # Implementation tasks
+│       ├── design.md      # Technical design
+│       └── specs/         # Specification deltas
+│           └── sample-spec.md  # Sample spec delta
+└── archive/               # Completed changes
 ```
 
 ### 2. update
@@ -62,8 +82,13 @@ Updates agent instructions and regenerates AI guidance based on the current spec
 /openspec update
 ```
 
-**Integration with Qwen Code**:
-This command integrates with Qwen Code's agent system and will automatically refresh any subagents that are configured to use OpenSpec specifications. The updated guidance is immediately available to AI models in your current session.
+**Implementation Details**:
+- Located in `/packages/cli/src/ui/commands/openspec/updateCommand.ts`
+- Integrates with Qwen Code's agent system to refresh any subagents configured to use OpenSpec specifications
+- Regenerates AI guidance files by calling `OpenSpecMemoryIntegration.generateOpenSpecMemory()`
+- Provides progress feedback during update process using Qwen Code's progress indicators
+- Handles errors gracefully with appropriate error messages
+- Ensures updated guidance is immediately available to AI models in the current session
 
 ### 3. list
 
@@ -83,8 +108,14 @@ Displays a list of all active change folders in the `openspec/changes/` director
 /openspec list
 ```
 
-**Integration with Qwen Code**:
-This command integrates with Qwen Code's UI system and will display active changes in a format consistent with other list-based commands in Qwen Code. The output is optimized for terminal display within the Qwen Code interface.
+**Implementation Details**:
+- Located in `/packages/cli/src/ui/commands/openspec/listCommand.ts`
+- Reads from the `openspec/changes/` filesystem directly
+- Uses `OpenSpecCacheService` to preload directory content for better performance
+- Sorts changes alphabetically for consistent output
+- Handles empty states gracefully with appropriate messaging
+- Formats output for terminal display with proper numbering
+- Integrates with Qwen Code's UI system for consistent appearance
 
 ### 4. view
 
@@ -104,8 +135,14 @@ Launches an interactive dashboard that visualizes current specifications and pro
 /openspec view
 ```
 
-**Integration with Qwen Code**:
-This command leverages Qwen Code's built-in UI capabilities to provide an interactive experience. When terminal support is available, it will launch an enhanced dashboard that integrates with Qwen Code's theming and navigation systems.
+**Implementation Details**:
+- Located in `/packages/cli/src/ui/commands/openspec/viewCommand.ts`
+- Leverages Qwen Code's built-in UI capabilities for interactive experience
+- Launches enhanced dashboard that integrates with Qwen Code's theming and navigation systems
+- Provides static summary as fallback for terminals without interactive support
+- Handles keyboard navigation and selection using Qwen Code's standard UI patterns
+- Implements error handling for unsupported terminals
+- Uses efficient file reading through `OpenSpecFileUtils.readFileEfficiently()`
 
 ### 5. show
 
@@ -134,8 +171,16 @@ None
 /openspec show refactor-api-endpoints
 ```
 
-**Integration with Qwen Code**:
-This command integrates with Qwen Code's file viewing capabilities and will display change details with proper formatting and syntax highlighting. The output is optimized for readability within the Qwen Code terminal interface.
+**Implementation Details**:
+- Located in `/packages/cli/src/ui/commands/openspec/showCommand.ts`
+- Accepts change name as parameter and validates its existence
+- Reads and parses change files (proposal.md, tasks.md, design.md) efficiently
+- Uses `OpenSpecFileUtils.readFileEfficiently()` for memory-efficient file reading
+- Formats content for terminal display with proper markdown rendering
+- Handles missing files gracefully with informative messages
+- Implements auto-completion for change names using the `completion` function
+- Integrates with Qwen Code's UI system for consistent appearance and formatting
+- Provides file size information for each component using `getFileStats()`
 
 ### 6. change
 
@@ -174,8 +219,16 @@ None
     └── ...
 ```
 
-**Integration with Qwen Code**:
-This command integrates with Qwen Code's editor system and will automatically open the appropriate files for editing using your configured editor. It follows Qwen Code's conventions for file creation and integrates with the checkpointing system for easy rollback.
+**Implementation Details**:
+- Located in `/packages/cli/src/ui/commands/openspec/changeCommand.ts`
+- Accepts change name as parameter and validates filesystem compatibility
+- Creates directory structure under `openspec/changes/` with proper error handling
+- Generates template files (proposal.md, tasks.md, design.md) with helpful examples
+- Creates specs/ directory for specification deltas
+- Integrates with Qwen Code's editor system to automatically open files using configured editor
+- Follows Qwen Code's conventions for file creation and naming
+- Integrates with Qwen Code's checkpointing system for easy rollback
+- Provides user feedback with instructions on next steps using `/openspec show`
 
 ### 7. archive
 
@@ -204,8 +257,16 @@ Moves a completed change from the `openspec/changes/` directory to the `openspec
 /openspec archive implement-user-profile --yes
 ```
 
-**Integration with Qwen Code**:
-This command integrates with Qwen Code's confirmation system and will prompt for confirmation using Qwen Code's standard dialog interface. When used with the `--yes` flag, it bypasses confirmation dialogs for automated workflows.
+**Implementation Details**:
+- Located in `/packages/cli/src/ui/commands/openspec/archiveCommand.ts`
+- Accepts change name as parameter and validates its existence
+- Supports --yes/-y flag for non-interactive mode
+- Moves directory from `openspec/changes/` to `openspec/archive/` using filesystem operations
+- Handles conflicts in archive directory with proper error messages
+- Integrates with Qwen Code's confirmation system using standard dialog interface
+- Provides confirmation feedback with success messages
+- Uses `OpenSpecCacheService` to invalidate cached content for moved files
+- Handles errors gracefully with informative messages for missing changes
 
 ### 8. spec
 
@@ -236,8 +297,16 @@ Manages specification files in the `openspec/specs/` directory. This includes cr
 /openspec spec delete deprecated/legacy-feature
 ```
 
-**Integration with Qwen Code**:
-This command integrates with Qwen Code's file management system and editor integration. When creating or editing specifications, it will use your configured editor and follow Qwen Code's file creation conventions. Deletion operations will use Qwen Code's standard confirmation dialogs.
+**Implementation Details**:
+- Located in `/packages/cli/src/ui/commands/openspec/specCommand.ts`
+- Supports actions: create, edit, delete with proper parameter validation
+- Handles nested paths (e.g., auth/user-authentication) with automatic directory creation
+- Integrates with Qwen Code's editor system to automatically open files using configured editor
+- Implements proper file validation to prevent accidental operations
+- Handles deletion with confirmation using Qwen Code's standard confirmation dialogs
+- Follows Qwen Code's file management conventions for consistent user experience
+- Uses `OpenSpecCacheService` to invalidate cached content when files are modified
+- Provides helpful error messages for invalid paths or missing files
 
 ### 9. validate
 
@@ -263,8 +332,44 @@ Validates the formatting and structure of specifications and changes. This ensur
 /openspec validate --all
 ```
 
-**Integration with Qwen Code**:
-This command integrates with Qwen Code's error reporting system and will display validation results with appropriate syntax highlighting and error formatting. Issues are presented in a way that's consistent with Qwen Code's diagnostic display.
+**Implementation Details**:
+- Located in `/packages/cli/src/ui/commands/openspec/validateCommand.ts`
+- Accepts change name as parameter or --all flag for validating all changes
+- Executes validation logic directly without external CLI dependencies
+- Checks for required files (proposal.md, tasks.md) and validates they're not empty
+- Parses validation results and formats them for display with appropriate syntax highlighting
+- Highlights errors and warnings with appropriate coloring following Qwen Code's theming system
+- Provides suggestions for fixing common issues
+- Integrates with Qwen Code's error reporting system for consistent diagnostic display
+- Uses efficient file operations through `OpenSpecFileUtils` for better performance
+
+### 10. clear
+
+**Purpose**: Clears the OpenSpec cache and resets it.
+
+**Usage Syntax**:
+```bash
+/openspec clear
+```
+
+**Description**: 
+Clears the OpenSpec cache and reinitializes it. This is useful when you want to reset the cache and start fresh, particularly after making significant changes to your specifications or when experiencing caching issues.
+
+**Examples**:
+```bash
+# Clear the OpenSpec cache
+/openspec clear
+```
+
+**Implementation Details**:
+- Located in `/packages/cli/src/ui/commands/openspec/clearCommand.ts`
+- Accesses the OpenSpec cache service through the existing hook system
+- Calls the `resetCaches()` method to completely reinitialize cache instances
+- Provides user feedback on successful cache clearing
+- Handles errors gracefully with appropriate error messages
+- Follows Qwen Code's messaging patterns for user feedback
+- Useful for resolving caching-related issues or ensuring a clean state
+- Particularly helpful when specification files aren't reflecting recent changes
 
 ## Integration with Qwen Code Command System
 
@@ -281,6 +386,43 @@ Key integration points with the Qwen Code command system:
 4. **Configuration**: OpenSpec commands respect Qwen Code's configuration system, including project-level and user-level settings.
 
 5. **Theming**: The output of OpenSpec commands follows Qwen Code's theming system, ensuring consistent appearance with the rest of the interface.
+
+## Core Services Implementation
+
+### OpenSpecCacheService
+
+Located in `/packages/cli/src/services/OpenSpecCacheService.ts`, this service provides efficient caching of file content to improve performance:
+
+- Uses LRU caching with configurable size limits (default 100 files)
+- Automatically invalidates cache based on file modification times
+- Provides directory preloading for bulk operations
+- Supports complete cache reset functionality for the `/openspec clear` command
+
+### OpenSpecWatcherService
+
+Located in `/packages/cli/src/services/OpenSpecWatcherService.ts`, this service monitors file system changes for real-time updates:
+
+- Implements recursive directory watching for all OpenSpec directories
+- Integrates with cache invalidation to ensure fresh content
+- Provides callbacks for memory updates when files change
+- Automatically restarts watching when OpenSpec is initialized
+
+### OpenSpecMemoryIntegration
+
+Located in `/packages/cli/src/services/OpenSpecMemoryIntegration.ts`, this service integrates OpenSpec with Qwen Code's AI memory system:
+
+- Generates contextual memory content from specifications for AI models
+- Collects content from all markdown files in specs/ and changes/ directories
+- Provides code conformance validation to ensure AI outputs match specifications
+- Tracks active changes for agent configuration
+
+### OpenSpecFileUtils
+
+Located in `/packages/cli/src/services/OpenSpecFileUtils.ts`, this service provides utilities for efficient file operations:
+
+- Implements memory-efficient large file reading
+- Provides file statistics collection with formatted size information
+- Handles file reading errors gracefully
 
 ## File Structures Managed by OpenSpec
 
@@ -312,19 +454,45 @@ openspec/
 ## Dependencies and Prerequisites
 
 ### System Requirements
-- Node.js >= 20.19.0 (verify with `node --version`)
+- Node.js >= 20.19.0 (verified during `/openspec init` command execution)
+- Read/write access to project directories
+- Terminal with ANSI color support for optimal display
 
 ### Package Dependencies
 - TypeScript (primary language)
 - JavaScript (supporting utilities)
 - pnpm (package manager)
+- Built-in Node.js modules: fs, path, process
 
 ### AI Tool Integration
 Within Qwen Code, OpenSpec integrates directly with the AI workflow:
-- Specifications are automatically provided as context to AI models
-- Change proposals guide AI implementation tasks
-- Validation ensures AI outputs conform to specifications
-- Archive functionality tracks completed AI-assisted work
+- Specifications are automatically provided as context to AI models through `OpenSpecMemoryIntegration.generateOpenSpecMemory()`
+- Change proposals guide AI implementation tasks with structured task lists in tasks.md
+- Validation ensures AI outputs conform to specifications using `OpenSpecMemoryIntegration.validateCodeConformance()`
+- Archive functionality tracks completed AI-assisted work for historical reference
+- Active changes are tracked and made available to subagents through the agent configuration system
+
+## Implementation Status
+
+All OpenSpec commands have been fully implemented with comprehensive test coverage. The implementation follows Qwen Code's existing patterns and integrates seamlessly with its command system, file watching capabilities, and AI workflow.
+
+### Testing
+- Unit tests for all commands in `/packages/cli/src/ui/commands/openspec/*.test.ts`
+- Integration tests for end-to-end workflows in `/integration-tests/`
+- Service tests for core functionality in `/packages/cli/src/services/*.test.ts`
+- Mocking strategies for file system operations and external dependencies
+
+### Performance Optimization
+- File content caching with automatic invalidation
+- Efficient file reading for large specification files
+- Directory preloading for improved response times
+- Memory-efficient processing of specification content
+
+### Error Handling
+- Comprehensive error handling for file system operations
+- Graceful degradation for missing or malformed files
+- User-friendly error messages with actionable guidance
+- Proper error propagation through Qwen Code's error reporting system
 
 ## Usage Workflow
 

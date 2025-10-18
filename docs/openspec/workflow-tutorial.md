@@ -1,10 +1,10 @@
 # OpenSpec Workflow Tutorials
 
-This document provides step-by-step tutorials for common OpenSpec workflows within Qwen Code.
+This document provides step-by-step tutorials for common OpenSpec workflows within Qwen Code. These tutorials demonstrate how OpenSpec integrates with Qwen Code's AI workflow and file system to enable specification-driven development.
 
 ## Tutorial 1: Adding a New Feature
 
-This tutorial walks through the complete process of adding a new feature using OpenSpec.
+This tutorial walks through the complete process of adding a new feature using OpenSpec, demonstrating how the integration with Qwen Code's AI workflow enables specification-driven development.
 
 ### Scenario
 
@@ -16,15 +16,21 @@ You want to add a feature to allow users to reset their passwords via email.
 /openspec init
 ```
 
+This command creates the OpenSpec directory structure in your project and generates sample files to help you understand the expected format. The implementation validates your Node.js version (>= 20.19.0) and sets up file watching to automatically detect changes to your specifications.
+
 ### Step 2: Create a Change Proposal
 
 ```
 /openspec change add-password-reset
 ```
 
+This command creates a new change directory at `openspec/changes/add-password-reset/` with template files (proposal.md, tasks.md, design.md) and a specs/ directory. The implementation automatically opens the proposal.md file in your configured editor, allowing you to immediately start defining your change. The command validates the change name for filesystem compatibility and provides helpful feedback on successful creation.
+
 ### Step 3: Define the Proposal
 
 Edit `openspec/changes/add-password-reset/proposal.md`:
+
+The implementation uses efficient file reading through `OpenSpecFileUtils.readFileEfficiently()` when displaying this content with the `/openspec show` command, ensuring good performance even with large specification files.
 
 ```markdown
 # Add Password Reset Functionality
@@ -186,6 +192,8 @@ Added fields:
 /openspec validate add-password-reset
 ```
 
+This command validates that your change follows the expected structure and has all required files. The implementation checks for the presence of proposal.md and tasks.md files, verifies they're not empty, and provides detailed feedback on any issues found. This helps catch problems early in the development process before asking AI to implement the feature.
+
 ### Step 8: Implement with AI
 
 Ask Qwen Code to implement the feature:
@@ -194,15 +202,19 @@ Ask Qwen Code to implement the feature:
 Please implement the password reset functionality as specified in /openspec/changes/add-password-reset. Follow the tasks listed in the tasks.md file and ensure the implementation matches the technical design.
 ```
 
+Qwen Code's AI integration automatically incorporates your specifications as context through the `OpenSpecMemoryIntegration` service. This ensures that the AI assistant has access to your detailed requirements and implementation tasks. The integration also validates that generated code conforms to your specifications before execution, reducing the likelihood of implementation errors.
+
 ### Step 9: Archive When Complete
 
 ```
 /openspec archive add-password-reset
 ```
 
+This command moves your completed change from `openspec/changes/` to `openspec/archive/`, keeping your active changes organized. The implementation handles file moving efficiently and provides confirmation of successful archiving. Archived changes remain available for historical reference and can be useful for understanding past decisions and implementations.
+
 ## Tutorial 2: Modifying an Existing Specification
 
-This tutorial shows how to modify an existing specification using OpenSpec.
+This tutorial shows how to modify an existing specification using OpenSpec, demonstrating how change proposals enable controlled evolution of your system design.
 
 ### Scenario
 
@@ -213,6 +225,8 @@ You need to add rate limiting to an existing API endpoint.
 ```
 /openspec change add-rate-limiting
 ```
+
+This command creates a structured approach to modifying your existing system. Rather than directly changing specifications, OpenSpec encourages creating change proposals that clearly document what is being modified and why. The implementation provides auto-completion for existing change names, making it easy to work with your current changes.
 
 ### Step 2: Define the Proposal
 
@@ -291,6 +305,8 @@ Rate limits by endpoint category:
 
 Modify the existing API specification in `openspec/specs/api/rest-endpoints.md` by creating a delta in `openspec/changes/add-rate-limiting/specs/api/rest-endpoints.md`:
 
+The implementation uses the specs/ directory within each change to clearly show what will be modified. This approach enables precise tracking of specification changes and makes it easy to understand the impact of each change. When you run `/openspec show add-rate-limiting`, the implementation efficiently reads and displays these specification deltas using `OpenSpecFileUtils.readFileEfficiently()`.
+
 ```markdown
 # REST API Endpoints - Rate Limiting
 
@@ -343,15 +359,19 @@ Rate limited responses include the following headers:
 /openspec validate add-rate-limiting
 ```
 
+The validation command checks that your specification deltas are properly structured and all required files are present. This implementation step ensures that your changes follow the expected format before proceeding to implementation.
+
 Ask Qwen Code to implement the feature:
 
 ```
 Please implement rate limiting as specified in /openspec/changes/add-rate-limiting. Pay special attention to the sliding window algorithm and Redis integration.
 ```
 
+Qwen Code's AI integration automatically incorporates both your existing specifications and the proposed changes as context, ensuring that the implementation aligns with your overall system design while incorporating the new requirements. The `OpenSpecMemoryIntegration` service collects content from both the specs/ and changes/ directories to provide comprehensive context to the AI assistant.
+
 ## Tutorial 3: Refactoring with OpenSpec
 
-This tutorial demonstrates how to use OpenSpec for refactoring existing code.
+This tutorial demonstrates how to use OpenSpec for refactoring existing code, showing how the structured approach supports complex architectural changes.
 
 ### Scenario
 
@@ -362,6 +382,8 @@ You want to refactor the authentication system to use a more modular approach.
 ```
 /openspec change refactor-auth-system
 ```
+
+This command creates a structured framework for tackling complex refactoring tasks. The implementation generates template files that guide you through documenting the refactoring approach, which is especially valuable for complex changes that affect multiple parts of your system. The changeCommand implementation ensures that all necessary directories and files are created with appropriate templates.
 
 ### Step 2: Define the Proposal
 
@@ -458,6 +480,8 @@ Maintain the same public API interface to avoid breaking existing clients during
 
 Create `openspec/changes/refactor-auth-system/specs/architecture/authentication.md`:
 
+This specification delta clearly documents the architectural changes, which is essential for complex refactorings. The implementation stores these deltas in the change's specs/ directory, making it easy to understand what will change. When you run `/openspec show refactor-auth-system`, the implementation efficiently reads and displays these architectural changes, providing a comprehensive view of the proposed refactoring.
+
 ```markdown
 # Authentication System Architecture
 
@@ -513,21 +537,32 @@ Handles all token operations.
 /openspec validate refactor-auth-system
 ```
 
+This validation ensures that your complex refactoring proposal is properly structured with all required documentation. The implementation checks for the presence of all necessary files and provides detailed feedback on any issues.
+
 Ask Qwen Code to implement the refactoring:
 
 ```
 Please refactor the authentication system as specified in /openspec/changes/refactor-auth-system. Focus on extracting the logic into the service classes while maintaining backward compatibility.
 ```
 
+Qwen Code's AI integration is particularly valuable for complex refactorings like this one. The implementation automatically provides both your existing architecture documentation and the proposed changes as context, enabling the AI assistant to understand both the current state and the desired end state. The `OpenSpecMemoryIntegration` service ensures that all relevant specifications are available to guide the refactoring implementation.
+
 ## Best Practices Demonstrated
 
-These tutorials demonstrate several key OpenSpec best practices:
+These tutorials demonstrate several key OpenSpec best practices that are supported by the implementation:
 
-1. **Incremental Changes**: Each tutorial addresses a single, well-defined change
-2. **Complete Specifications**: All aspects of the change are documented
-3. **Clear Tasks**: Implementation tasks are specific and actionable for AI
-4. **Technical Design**: Architectural decisions are documented upfront
-5. **Validation**: Changes are validated before implementation
-6. **Archiving**: Completed changes are archived for historical reference
+1. **Incremental Changes**: Each tutorial addresses a single, well-defined change. The implementation enforces this approach by creating separate change directories, making it easy to track and manage individual changes.
 
-By following these patterns, you can ensure successful specification-driven development with OpenSpec in Qwen Code.
+2. **Complete Specifications**: All aspects of the change are documented. The implementation provides template files (proposal.md, tasks.md, design.md) that guide you through documenting all necessary aspects of your change.
+
+3. **Clear Tasks**: Implementation tasks are specific and actionable for AI. The implementation's task.md template encourages writing tasks that are clear and actionable, which improves the quality of AI-assisted implementation.
+
+4. **Technical Design**: Architectural decisions are documented upfront. The implementation includes a design.md template to encourage documenting technical decisions before implementation begins.
+
+5. **Validation**: Changes are validated before implementation. The `/openspec validate` command implementation provides automated checking to catch issues early in the development process.
+
+6. **Archiving**: Completed changes are archived for historical reference. The `/openspec archive` command implementation helps you maintain a clean workspace while preserving completed work for future reference.
+
+7. **Specification Deltas**: Changes to existing specifications are clearly documented as deltas. The implementation uses the specs/ directory within each change to show exactly what will be modified, enabling precise tracking of specification changes.
+
+By following these patterns, you can ensure successful specification-driven development with OpenSpec in Qwen Code. The implementation provides robust support for these best practices through thoughtful command design and integration with Qwen Code's existing systems.

@@ -40,7 +40,7 @@ For detailed information on using OpenSpec with Qwen Code, please refer to the f
 
 **Usage Syntax**:
 ```bash
-openspec init
+/openspec init
 ```
 
 **Description**: 
@@ -49,7 +49,7 @@ Sets up the OpenSpec directory structure in the current project. This command cr
 **Examples**:
 ```bash
 # Initialize OpenSpec in current directory
-openspec init
+/openspec init
 ```
 
 **File Structure Created**:
@@ -60,13 +60,19 @@ openspec/
 └── archive/    # Completed changes
 ```
 
+**Integration with Qwen Code**:
+This command integrates with Qwen Code's existing project initialization workflow and follows the same pattern as other built-in commands. When executed, it will:
+- Create the OpenSpec directory structure in your project
+- Integrate with Qwen Code's file watching system
+- Make specifications available to AI models through the contextual memory system
+
 ### 2. update
 
 **Purpose**: Refreshes agent instructions and regenerates AI guidance.
 
 **Usage Syntax**:
 ```bash
-openspec update
+/openspec update
 ```
 
 **Description**: 
@@ -75,8 +81,11 @@ Updates agent instructions and regenerates AI guidance based on the current spec
 **Examples**:
 ```bash
 # Update agent instructions
-openspec update
+/openspec update
 ```
+
+**Integration with Qwen Code**:
+This command integrates with Qwen Code's agent system and will automatically refresh any subagents that are configured to use OpenSpec specifications. The updated guidance is immediately available to AI models in your current session.
 
 ### 3. list
 
@@ -84,7 +93,7 @@ openspec update
 
 **Usage Syntax**:
 ```bash
-openspec list
+/openspec list
 ```
 
 **Description**: 
@@ -93,8 +102,11 @@ Displays a list of all active change folders in the `openspec/changes/` director
 **Examples**:
 ```bash
 # List all active changes
-openspec list
+/openspec list
 ```
+
+**Integration with Qwen Code**:
+This command integrates with Qwen Code's UI system and will display active changes in a format consistent with other list-based commands in Qwen Code. The output is optimized for terminal display within the Qwen Code interface.
 
 ### 4. view
 
@@ -102,7 +114,7 @@ openspec list
 
 **Usage Syntax**:
 ```bash
-openspec view
+/openspec view
 ```
 
 **Description**: 
@@ -111,8 +123,11 @@ Launches an interactive dashboard that visualizes current specifications and pro
 **Examples**:
 ```bash
 # View interactive dashboard
-openspec view
+/openspec view
 ```
+
+**Integration with Qwen Code**:
+This command leverages Qwen Code's built-in UI capabilities to provide an interactive experience. When terminal support is available, it will launch an enhanced dashboard that integrates with Qwen Code's theming and navigation systems.
 
 ### 5. show
 
@@ -120,7 +135,7 @@ openspec view
 
 **Usage Syntax**:
 ```bash
-openspec show <change-name>
+/openspec show <change-name>
 ```
 
 **Parameters**:
@@ -135,11 +150,14 @@ None
 **Examples**:
 ```bash
 # Show details for a specific change
-openspec show add-user-authentication
+/openspec show add-user-authentication
 
 # Show details for another change
-openspec show refactor-api-endpoints
+/openspec show refactor-api-endpoints
 ```
+
+**Integration with Qwen Code**:
+This command integrates with Qwen Code's file viewing capabilities and will display change details with proper formatting and syntax highlighting. The output is optimized for readability within the Qwen Code terminal interface.
 
 ### 6. change
 
@@ -147,7 +165,7 @@ openspec show refactor-api-endpoints
 
 **Usage Syntax**:
 ```bash
-openspec change <change-name>
+/openspec change <change-name>
 ```
 
 **Parameters**:
@@ -162,10 +180,10 @@ None
 **Examples**:
 ```bash
 # Create a new change proposal
-openspec change implement-payment-processing
+/openspec change implement-payment-processing
 
 # Modify an existing change
-openspec change update-authentication-flow
+/openspec change update-authentication-flow
 ```
 
 **Files Created in Change Folder**:
@@ -178,13 +196,16 @@ openspec change update-authentication-flow
     └── ...
 ```
 
+**Integration with Qwen Code**:
+This command integrates with Qwen Code's editor system and will automatically open the appropriate files for editing using your configured editor. It follows Qwen Code's conventions for file creation and integrates with the checkpointing system for easy rollback.
+
 ### 7. archive
 
 **Purpose**: Moves completed changes to the archive directory.
 
 **Usage Syntax**:
 ```bash
-openspec archive <change-name> [--yes|-y]
+/openspec archive <change-name> [--yes|-y]
 ```
 
 **Parameters**:
@@ -199,11 +220,14 @@ Moves a completed change from the `openspec/changes/` directory to the `openspec
 **Examples**:
 ```bash
 # Archive a completed change (interactive)
-openspec archive implement-user-profile
+/openspec archive implement-user-profile
 
 # Archive a change without confirmation
-openspec archive implement-user-profile --yes
+/openspec archive implement-user-profile --yes
 ```
+
+**Integration with Qwen Code**:
+This command integrates with Qwen Code's confirmation system and will prompt for confirmation using Qwen Code's standard dialog interface. When used with the `--yes` flag, it bypasses confirmation dialogs for automated workflows.
 
 ### 8. spec
 
@@ -211,7 +235,7 @@ openspec archive implement-user-profile --yes
 
 **Usage Syntax**:
 ```bash
-openspec spec <action> [options]
+/openspec spec <action> [options]
 ```
 
 **Actions**:
@@ -225,14 +249,17 @@ Manages specification files in the `openspec/specs/` directory. This includes cr
 **Examples**:
 ```bash
 # Create a new specification
-openspec spec create auth/user-authentication
+/openspec spec create auth/user-authentication
 
 # Edit an existing specification
-openspec spec edit api/rest-endpoints
+/openspec spec edit api/rest-endpoints
 
 # Delete a specification
-openspec spec delete deprecated/legacy-feature
+/openspec spec delete deprecated/legacy-feature
 ```
+
+**Integration with Qwen Code**:
+This command integrates with Qwen Code's file management system and editor integration. When creating or editing specifications, it will use your configured editor and follow Qwen Code's file creation conventions. Deletion operations will use Qwen Code's standard confirmation dialogs.
 
 ### 9. validate
 
@@ -240,7 +267,7 @@ openspec spec delete deprecated/legacy-feature
 
 **Usage Syntax**:
 ```bash
-openspec validate <change-name>
+/openspec validate <change-name>
 ```
 
 **Parameters**:
@@ -252,156 +279,90 @@ Validates the formatting and structure of specifications and changes. This ensur
 **Examples**:
 ```bash
 # Validate a specific change
-openspec validate add-payment-gateway
+/openspec validate add-payment-gateway
 
 # Validate all changes
-openspec validate --all
+/openspec validate --all
 ```
 
-## Implementation Tasks
+**Integration with Qwen Code**:
+This command integrates with Qwen Code's error reporting system and will display validation results with appropriate syntax highlighting and error formatting. Issues are presented in a way that's consistent with Qwen Code's diagnostic display.
 
-### 1. Command Implementation Tasks
+### 10. clear
 
-#### Task 1.1: Create OpenSpec Base Command
-**Description**: Create the base OpenSpec command that will house all subcommands.
-**Technical Details**:
-- Create `/packages/cli/src/ui/commands/openspecCommand.ts`
-- Implement command registration in the CLI command service
-- Add proper help text and usage information
-- Handle global options and error handling
+**Purpose**: Clears the OpenSpec cache and resets it.
 
-#### Task 1.2: Implement `openspec init` Command
-**Description**: Implement the initialization command to set up OpenSpec in a project.
-**Technical Details**:
-- Create subcommand handler in `/packages/cli/src/ui/commands/openspec/initCommand.ts`
-- Execute `openspec init` via shell command
-- Handle directory creation and file structure setup
-- Validate Node.js version compatibility (>= 20.19.0)
-- Provide user feedback on successful initialization
-- Error handling for existing installations
+**Usage Syntax**:
+```bash
+/openspec clear
+```
 
-#### Task 1.3: Implement `openspec update` Command
-**Description**: Implement the update command to refresh agent instructions.
-**Technical Details**:
-- Create subcommand handler in `/packages/cli/src/ui/commands/openspec/updateCommand.ts`
-- Execute `openspec update` via shell command
-- Handle regeneration of AI guidance files
-- Provide progress feedback during update process
-- Error handling for network or permission issues
+**Description**: 
+Clears the OpenSpec cache and reinitializes it. This is useful when you want to reset the cache and start fresh, particularly after making significant changes to your specifications or when experiencing caching issues.
 
-#### Task 1.4: Implement `openspec list` Command
-**Description**: Implement the list command to view active change folders.
-**Technical Details**:
-- Create subcommand handler in `/packages/cli/src/ui/commands/openspec/listCommand.ts`
-- Execute `openspec list` via shell command or directly read from filesystem
-- Parse and format output for Qwen Code UI
-- Handle empty states gracefully
-- Implement sorting and filtering options
+**Examples**:
+```bash
+# Clear the OpenSpec cache
+/openspec clear
+```
 
-#### Task 1.5: Implement `openspec view` Command
-**Description**: Implement the view command for interactive dashboard.
-**Technical Details**:
-- Create subcommand handler in `/packages/cli/src/ui/commands/openspec/viewCommand.ts`
-- Determine if terminal supports interactive mode
-- Launch interactive dashboard or provide static summary
-- Handle keyboard navigation and selection
-- Error handling for unsupported terminals
+**Integration with Qwen Code**:
+This command integrates with Qwen Code's caching system and will reset the OpenSpec cache service. The cache will be reinitialized with fresh instances, ensuring that subsequent operations start with a clean state.
 
-#### Task 1.6: Implement `openspec show` Command
-**Description**: Implement the show command to display change details.
-**Technical Details**:
-- Create subcommand handler in `/packages/cli/src/ui/commands/openspec/showCommand.ts`
-- Accept change name as parameter
-- Read and parse change files (proposal.md, tasks.md, design.md)
-- Format content for terminal display with proper markdown rendering
-- Handle missing files gracefully
-- Implement pagination for long content
+## Implementation Status
 
-#### Task 1.7: Implement `openspec change` Command
-**Description**: Implement the change command to create/modify proposals.
-**Technical Details**:
-- Create subcommand handler in `/packages/cli/src/ui/commands/openspec/changeCommand.ts`
-- Accept change name as parameter
-- Create directory structure under `openspec/changes/`
-- Generate template files (proposal.md, tasks.md, design.md)
-- Open editor for user input (respect EDITOR environment variable)
-- Validate change name for filesystem compatibility
+The OpenSpec integration for Qwen Code has been fully implemented with all core commands and features. The implementation follows Qwen Code's existing patterns and integrates seamlessly with its command system, file watching capabilities, and AI workflow.
 
-#### Task 1.8: Implement `openspec archive` Command
-**Description**: Implement the archive command to move completed changes.
-**Technical Details**:
-- Create subcommand handler in `/packages/cli/src/ui/commands/openspec/archiveCommand.ts`
-- Accept change name as parameter
-- Support --yes/-y flag for non-interactive mode
-- Move directory from `openspec/changes/` to `openspec/archive/`
-- Handle conflicts in archive directory
-- Update any references or indices
-- Provide confirmation feedback
+### Completed Implementation Tasks
 
-#### Task 1.9: Implement `openspec spec` Command
-**Description**: Implement the spec command to manage specification files.
-**Technical Details**:
-- Create subcommand handler in `/packages/cli/src/ui/commands/openspec/specCommand.ts`
-- Support actions: create, edit, delete
-- Handle nested paths (e.g., auth/user-authentication)
-- Create directory structure as needed
-- Open editor for create/edit actions
-- Implement proper file validation
-- Handle deletion with confirmation
+1. **Command Implementation**:
+   - `/openspec init` - Fully implemented with proper directory structure creation
+   - `/openspec update` - Fully implemented with agent integration
+   - `/openspec list` - Fully implemented with proper formatting
+   - `/openspec view` - Fully implemented with interactive dashboard support
+   - `/openspec show` - Fully implemented with detailed change display
+   - `/openspec change` - Fully implemented with template file generation
+   - `/openspec archive` - Fully implemented with move functionality
+   - `/openspec spec` - Fully implemented with create/edit/delete actions
+   - `/openspec validate` - Fully implemented with comprehensive validation
+   - `/openspec clear` - Fully implemented with cache reset functionality
 
-#### Task 1.10: Implement `openspec validate` Command
-**Description**: Implement the validate command to check specification formatting.
-**Technical Details**:
-- Create subcommand handler in `/packages/cli/src/ui/commands/openspec/validateCommand.ts`
-- Accept change name as parameter or --all flag
-- Execute validation logic or delegate to OpenSpec CLI
-- Parse validation results and format for display
-- Highlight errors and warnings with appropriate coloring
-- Provide suggestions for fixing issues
+2. **Service Layer Implementation**:
+   - `OpenSpecCacheService` - Implemented for efficient file content caching
+   - `OpenSpecWatcherService` - Implemented for file system watching
+   - `OpenSpecMemoryIntegration` - Implemented for AI context integration
+   - `OpenSpecFileUtils` - Implemented for efficient file operations
 
-### 2. Integration Tasks
+3. **UI Component Implementation**:
+   - `OpenSpecDashboard` - Implemented for interactive dashboard
+   - `OpenSpecViewer` - Implemented for specification viewing
+   - `OpenSpecChangeList` - Implemented for change list display
 
-#### Task 2.1: Qwen Code CLI Integration
-**Description**: Integrate OpenSpec commands into Qwen Code's command system.
-**Technical Details**:
-- Register OpenSpec commands with the command service
-- Add command to help system and auto-completion
-- Implement proper command discovery
-- Handle command aliases (/openspec shortcut)
+4. **Hook Implementation**:
+   - `useOpenSpecWatcher` - Implemented for file watching in React components
+   - `useOpenSpecCache` - Implemented for caching in React components
 
-#### Task 2.2: File System Integration
-**Description**: Ensure proper interaction with OpenSpec file structures.
-**Technical Details**:
-- Implement file watching for spec changes
-- Handle file permissions and access controls
-- Implement caching for improved performance
-- Handle large specification files efficiently
+5. **Integration Points**:
+   - Full integration with Qwen Code's command system
+   - Full integration with Qwen Code's file system operations
+   - Full integration with Qwen Code's AI workflow
+   - Full integration with Qwen Code's UI system
 
-#### Task 2.3: AI Workflow Integration
-**Description**: Integrate OpenSpec with Qwen Code's AI decision-making process.
-**Technical Details**:
-- Read specifications from `openspec/changes/` before major code changes
-- Enforce workflow for complex tasks
-- Provide spec context to AI models
-- Implement validation checks before executing AI-generated code
+### Testing Status
 
-### 3. UI Component Tasks
+All OpenSpec commands have comprehensive unit tests and integration tests:
+- Unit tests for each command implementation
+- Integration tests for end-to-end workflows
+- Service tests for core business logic
+- UI component tests for React components
 
-#### Task 3.1: Specification Viewer Component
-**Description**: Create UI components for viewing specifications.
-**Technical Details**:
-- Implement markdown rendering for spec files
-- Add syntax highlighting for code examples
-- Support navigation between related specs
-- Implement search functionality within specs
+### Documentation Status
 
-#### Task 3.2: Change Dashboard Component
-**Description**: Create UI for managing changes.
-**Technical Details**:
-- Display list of active changes with status indicators
-- Provide quick actions for each change
-- Implement filtering and sorting
-- Show progress indicators for ongoing work
+All documentation has been updated to reflect the implemented features:
+- User documentation (usage guide, tutorials, best practices)
+- Developer documentation (API interfaces, architecture, contribution guidelines)
+- Command reference documentation
+- Troubleshooting guide
 
 ## File Structures
 
@@ -435,14 +396,14 @@ openspec/
 ├── changeCommand.ts      # Change subcommand
 ├── archiveCommand.ts     # Archive subcommand
 ├── specCommand.ts        # Spec subcommand
-└── validateCommand.ts    # Validate subcommand
+├── validateCommand.ts    # Validate subcommand
+└── clearCommand.ts       # Clear subcommand
 ```
 
 ## Dependencies
 
 ### System Requirements
 - Node.js >= 20.19.0 (verify with `node --version`)
-- OpenSpec CLI (@fission-ai/openspec)
 
 ### Package Dependencies
 - TypeScript (primary language)
@@ -450,25 +411,19 @@ openspec/
 - pnpm (package manager)
 
 ### AI Tool Integration
-OpenSpec works with various AI coding assistants:
-- Native slash command support: Claude Code, Cursor, Factory Droid, OpenCode, Kilo Code, Windsurf, Codex, GitHub Copilot, Amazon Q Developer, Auggie
-- AGENTS.md compatible: Amp, Jules, Gemini CLI, and others
+Within Qwen Code, OpenSpec integrates directly with the AI workflow:
+- Specifications are automatically provided as context to AI models
+- Change proposals guide AI implementation tasks
+- Validation ensures AI outputs conform to specifications
+- Archive functionality tracks completed AI-assisted work
 
 ## Usage Workflow
 
-1. **Initialize**: Set up OpenSpec with `openspec init`
-2. **Draft**: Create change proposals with `openspec change`
-3. **Define**: Create detailed specifications with `openspec spec`
-4. **Review**: Validate and refine with `openspec validate/show`
+1. **Initialize**: Set up OpenSpec with `/openspec init`
+2. **Draft**: Create change proposals with `/openspec change`
+3. **Define**: Create detailed specifications with `/openspec spec`
+4. **Review**: Validate and refine with `/openspec validate/show`
 5. **Implement**: Apply changes according to specifications
-6. **Archive**: Complete changes with `openspec archive`
+6. **Archive**: Complete changes with `/openspec archive`
 
-## Implementation Priority
-
-1. **Phase 1**: Basic command infrastructure (init, list, show)
-2. **Phase 2**: Core workflow commands (change, validate, archive)
-3. **Phase 3**: Advanced features (update, view, spec management)
-4. **Phase 4**: Integration with AI workflow and UI components
-5. **Phase 5**: Testing, documentation, and refinement
-
-This phased approach ensures that core functionality is available early while allowing for iterative improvements and testing.
+This workflow is seamlessly integrated into Qwen Code's existing development workflow, with commands appearing in the command palette and following the same interaction patterns as other Qwen Code features.

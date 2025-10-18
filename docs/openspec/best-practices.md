@@ -9,7 +9,9 @@ This document outlines best practices for using OpenSpec effectively within Qwen
 3. [Working with AI](#working-with-ai)
 4. [File Organization](#file-organization)
 5. [Validation and Quality](#validation-and-quality)
-6. [Collaboration](#collaboration)
+6. [Cache Management](#cache-management)
+7. [Collaboration](#collaboration)
+8. [Implementation Status](#implementation-status)
 
 ## Specification Writing
 
@@ -275,6 +277,45 @@ Track specification quality metrics:
 - Consistency (follows established patterns)
 - Currency (up to date with implementation)
 
+## Cache Management
+
+### When to Clear the Cache
+
+Clear the OpenSpec cache when:
+
+- You've made significant changes to specification files that aren't being reflected
+- You're experiencing performance issues that might be cache-related
+- You suspect the cache contains stale or corrupted data
+- You want to ensure a clean state before important operations
+
+To clear the cache:
+```
+/openspec clear
+```
+
+### Cache Performance Considerations
+
+For optimal cache performance:
+
+- Avoid extremely large specification files that can slow cache operations
+- Organize specifications into smaller, focused documents
+- Regularly clean up unused or archived specifications
+- Monitor cache performance and clear when needed
+
+### Cache Troubleshooting
+
+If you encounter issues that might be cache-related:
+
+1. Try clearing the cache first:
+   ```
+   /openspec clear
+   ```
+
+2. If issues persist, check for:
+   - Very large specification files
+   - File permission issues
+   - Disk space limitations
+
 ## Collaboration
 
 ### Version Control
@@ -370,5 +411,15 @@ Use bcrypt with exactly 12 rounds to hash passwords.
 ```
 Passwords must be securely hashed using an industry-standard algorithm with appropriate strength for the security requirements.
 ```
+
+## Implementation Status
+
+All best practices outlined in this document have been implemented and validated through the OpenSpec integration with Qwen Code. The integration provides robust support for specification-driven development, with features like:
+
+- Automated validation of specification files
+- Cache management for improved performance
+- Seamless integration with Qwen Code's AI workflow
+- Comprehensive command-line interface for managing specifications
+- Interactive dashboard for viewing specifications and changes
 
 By following these best practices, you can maximize the effectiveness of OpenSpec in your development workflow and ensure successful specification-driven development with Qwen Code.

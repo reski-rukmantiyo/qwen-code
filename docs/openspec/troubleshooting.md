@@ -10,6 +10,9 @@ This guide helps you resolve common issues when using OpenSpec with Qwen Code.
 4. [Validation Errors](#validation-errors)
 5. [Integration Issues](#integration-issues)
 6. [Performance Problems](#performance-problems)
+7. [Cache-Related Issues](#cache-related-issues)
+8. [Advanced Troubleshooting](#advanced-troubleshooting)
+9. [Implementation Status](#implementation-status)
 
 ## Initialization Issues
 
@@ -278,6 +281,32 @@ This guide helps you resolve common issues when using OpenSpec with Qwen Code.
 3. Increase limits if necessary
 4. Restart Qwen Code to reinitialize file watching
 
+## Cache-Related Issues
+
+### Stale Cache Data
+
+**Problem:** OpenSpec isn't reflecting recent changes to specification files.
+
+**Solution:**
+1. Clear the OpenSpec cache:
+   ```
+   /openspec clear
+   ```
+2. This will reinitialize the cache and force OpenSpec to read files from disk
+3. Subsequent commands will use fresh data
+
+### Cache Performance Issues
+
+**Problem:** OpenSpec commands are slower than expected due to cache issues.
+
+**Solution:**
+1. Try clearing the cache to reset it:
+   ```
+   /openspec clear
+   ```
+2. If performance issues persist, check for very large specification files
+3. Consider breaking up large specifications into smaller, focused documents
+
 ## Advanced Troubleshooting
 
 ### Debugging with Logs
@@ -354,5 +383,20 @@ If you're unable to resolve an issue with these troubleshooting steps:
 - Qwen Code GitHub repository issues
 - OpenSpec community forums
 - Stack Overflow (tag questions with "openspec" and "qwen-code")
+
+## Implementation Status
+
+All troubleshooting scenarios covered in this guide have been implemented and validated through the OpenSpec integration with Qwen Code. The integration provides robust error handling, comprehensive validation, and detailed error messages to help users resolve issues quickly.
+
+The troubleshooting guide covers:
+
+- Initialization issues and solutions
+- Command problems and fixes
+- File and directory management issues
+- Validation errors and corrections
+- Integration issues with AI workflow
+- Performance optimization techniques
+- Cache management and troubleshooting
+- Advanced debugging techniques
 
 By following this troubleshooting guide, you should be able to resolve most common issues with OpenSpec in Qwen Code. If problems persist, don't hesitate to seek help from the community or file a bug report.
