@@ -150,37 +150,57 @@ export const changeCommand: SlashCommand = {
         let proposalContent, tasksContent, designContent;
         
         if (description) {
-          // Generate structured content from description
+          // Generate structured content from description using LLM
+          const [
+            overview,
+            motivation,
+            implementationPlan,
+            impactAssessment,
+            tasks,
+            approach,
+            architecture,
+            dependencies
+          ] = await Promise.all([
+            generateOverviewFromDescription(context, description),
+            generateMotivationFromDescription(context, description),
+            generateImplementationPlanFromDescription(context, description),
+            generateImpactAssessmentFromDescription(context, description),
+            generateTasksFromDescription(context, description),
+            generateApproachFromDescription(context, description),
+            generateArchitectureFromDescription(context, description),
+            generateDependenciesFromDescription(context, description)
+          ]);
+          
           proposalContent = `# ${changeName}
 
 ## Overview
-${generateOverviewFromDescription(description)}
+${overview}
 
 ## Motivation
-${generateMotivationFromDescription(description)}
+${motivation}
 
 ## Implementation Plan
-${generateImplementationPlanFromDescription(description)}
+${implementationPlan}
 
 ## Impact Assessment
-${generateImpactAssessmentFromDescription(description)}
+${impactAssessment}
 `;
           
           tasksContent = `# Implementation Tasks
 
-${generateTasksFromDescription(description)}
+${tasks}
 `;
           
           designContent = `# Technical Design for ${changeName}
 
 ## Approach
-${generateApproachFromDescription(description)}
+${approach}
 
 ## Architecture
-${generateArchitectureFromDescription(description)}
+${architecture}
 
 ## Dependencies
-${generateDependenciesFromDescription(description)}
+${dependencies}
 `;
         } else {
           // Use default templates when no description is provided
@@ -314,106 +334,226 @@ Use /openspec show ${changeName} to view your change.
   },
 };
 
-// Helper functions to generate content from descriptions
-function generateOverviewFromDescription(description: string): string {
-  // Simple heuristic: First sentence becomes overview
-  const sentences = description.split(/[.!?]+/).filter(s => s.trim().length > 0);
-  return sentences.length > 0 ? sentences[0].trim() + '.' : 'Briefly describe what this change proposes to implement.';
+// Helper function to generate content using LLM
+async function generateContentWithLLM(context: CommandContext, prompt: string): Promise<string> {
+  try {
+    // Get the LLM client from the config
+    const config = context.services.config;
+    if (!config) {
+      // Fallback to heuristic-based generation if config is not available
+      return generateContentWithHeuristics(prompt);
+    }
+    
+    const geminiClient = config.getGeminiClient();
+    if (!geminiClient) {
+      // Fallback to heuristic-based generation if LLM client is not available
+      return generateContentWithHeuristics(prompt);
+    }
+    
+    // Create a simple prompt for content generation
+    const fullPrompt = `${prompt}\n\nPlease provide a concise and well-structured response.`;
+    
+    // Use the LLM to generate content
+    // Note: We're using a simplified approach here since we just need text content
+    const response = await geminiClient.generateContent(
+      [{ role: 'user', parts: [{ text: fullPrompt }] }],
+      {},
+      new AbortController().signal
+    );
+    
+    // Extract the text from the response
+    if (response.candidates && response.candidates.length > 0) {
+      const candidate = response.candidates[0];
+      if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
+        const part = candidate.content.parts[0];
+        if (part.text) {
+          return part.text.trim();
+        }
+      }
+    }
+    
+    // Fallback if no content was generated
+    return generateContentWithHeuristics(prompt);
+  } catch (error) {
+    // Fallback if LLM generation fails
+    return generateContentWithHeuristics(prompt);
+  }
 }
 
-function generateMotivationFromDescription(description: string): string {
-  // Look for words indicating motivation like "to", "for", "because"
-  if (description.toLowerCase().includes(' to ')) {
-    const parts = description.split(/ to /i);
-    if (parts.length > 1) {
-      return `This change is needed ${parts.slice(1).join(' to ').trim()}${description.endsWith('.') ? '' : '.'}`;
-    }
-  }
-  if (description.toLowerCase().includes(' because ')) {
-    const parts = description.split(/ because /i);
-    if (parts.length > 1) {
-      return `This change addresses the issue that ${parts.slice(1).join(' because ').trim()}${description.endsWith('.') ? '' : '.'}`;
-    }
-  }
-  return 'Explain why this change is needed and what problem it solves.';
-}
-
-function generateImplementationPlanFromDescription(description: string): string {
-  // Look for implementation keywords
-  if (description.toLowerCase().includes(' by ')) {
-    const parts = description.split(/ by /i);
-    if (parts.length > 1) {
-      return `Implement this change ${parts.slice(1).join(' by ').trim()}${description.endsWith('.') ? '' : '.'}`;
-    }
-  }
-  return 'Detail the steps required to implement this change.';
-}
-
-function generateImpactAssessmentFromDescription(description: string): string {
-  // Look for impact keywords
-  if (description.toLowerCase().includes(' will ')) {
-    const parts = description.split(/ will /i);
-    if (parts.length > 1) {
-      return `This change will ${parts.slice(1).join(' will ').trim()}${description.endsWith('.') ? '' : '.'}`;
-    }
-  }
-  return 'Describe the potential impact of this change on the system.';
-}
-
-function generateTasksFromDescription(description: string): string {
-  // Extract potential tasks from description
-  const tasks: string[] = [];
+// Helper function to generate content using heuristics (fallback)
+function generateContentWithHeuristics(prompt: string): string {
+  // Extract the description from the prompt
+  const descriptionMatch = prompt.match(/: "(.+)"\s*\n/);
+  const description = descriptionMatch ? descriptionMatch[1] : prompt;
   
-  // Simple heuristics for identifying tasks
-  if (description.toLowerCase().includes('add')) {
-    tasks.push('- [ ] Add new features as described');
-  }
-  if (description.toLowerCase().includes('modify') || description.toLowerCase().includes('update')) {
-    tasks.push('- [ ] Modify existing components as needed');
-  }
-  if (description.toLowerCase().includes('remove') || description.toLowerCase().includes('delete')) {
-    tasks.push('- [ ] Remove deprecated functionality');
-  }
-  if (description.toLowerCase().includes('test')) {
-    tasks.push('- [ ] Implement tests for new functionality');
-  }
-  if (description.toLowerCase().includes('document')) {
-    tasks.push('- [ ] Update documentation');
+  // Simple heuristic-based generation based on the prompt content
+  if (prompt.includes('brief overview')) {
+    // Simple heuristic: First sentence becomes overview
+    const sentences = description.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    return sentences.length > 0 ? sentences[0].trim() + '.' : 'Briefly describe what this change proposes to implement.';
   }
   
-  // Add generic tasks if none were identified
-  if (tasks.length === 0) {
-    tasks.push('- [ ] Task 1: Describe the first implementation task');
-    tasks.push('- [ ] Task 2: Describe the second implementation task');
-    tasks.push('- [ ] Task 3: Describe the third implementation task');
+  if (prompt.includes('motivation')) {
+    // Look for words indicating motivation like "to", "for", "because"
+    if (description.toLowerCase().includes(' to ')) {
+      const parts = description.split(/ to /i);
+      if (parts.length > 1) {
+        return `This change is needed ${parts.slice(1).join(' to ').trim()}${description.endsWith('.') ? '' : '.'}`;
+      }
+    }
+    if (description.toLowerCase().includes(' because ')) {
+      const parts = description.split(/ because /i);
+      if (parts.length > 1) {
+        return `This change addresses the issue that ${parts.slice(1).join(' because ').trim()}${description.endsWith('.') ? '' : '.'}`;
+      }
+    }
+    return 'Explain why this change is needed and what problem it solves.';
   }
   
-  return tasks.join('\n');
-}
-
-function generateApproachFromDescription(description: string): string {
-  // Look for technical approach indicators
-  if (description.toLowerCase().includes('using')) {
-    const parts = description.split(/ using /i);
-    if (parts.length > 1) {
-      return `Implement using ${parts.slice(1).join(' using ').trim()}${description.endsWith('.') ? '' : '.'}`;
+  if (prompt.includes('implementation plan')) {
+    // Look for implementation keywords
+    if (description.toLowerCase().includes(' by ')) {
+      const parts = description.split(/ by /i);
+      if (parts.length > 1) {
+        return `Implement this change ${parts.slice(1).join(' by ').trim()}${description.endsWith('.') ? '' : '.'}`;
+      }
     }
+    return 'Detail the steps required to implement this change.';
   }
-  return 'Describe the technical approach for implementing this change.';
+  
+  if (prompt.includes('impact assessment')) {
+    // Look for impact keywords
+    if (description.toLowerCase().includes(' will ')) {
+      const parts = description.split(/ will /i);
+      if (parts.length > 1) {
+        return `This change will ${parts.slice(1).join(' will ').trim()}${description.endsWith('.') ? '' : '.'}`;
+      }
+    }
+    return 'Describe the potential impact of this change on the system.';
+  }
+  
+  if (prompt.includes('implementation tasks')) {
+    // Extract potential tasks from description
+    const tasks: string[] = [];
+    
+    // Simple heuristics for identifying tasks
+    if (description.toLowerCase().includes('add')) {
+      tasks.push('- [ ] Add new features as described');
+    }
+    if (description.toLowerCase().includes('modify') || description.toLowerCase().includes('update')) {
+      tasks.push('- [ ] Modify existing components as needed');
+    }
+    if (description.toLowerCase().includes('remove') || description.toLowerCase().includes('delete')) {
+      tasks.push('- [ ] Remove deprecated functionality');
+    }
+    if (description.toLowerCase().includes('test')) {
+      tasks.push('- [ ] Implement tests for new functionality');
+    }
+    if (description.toLowerCase().includes('document')) {
+      tasks.push('- [ ] Update documentation');
+    }
+    
+    // Add generic tasks if none were identified
+    if (tasks.length === 0) {
+      tasks.push('- [ ] Task 1: Describe the first implementation task');
+      tasks.push('- [ ] Task 2: Describe the second implementation task');
+      tasks.push('- [ ] Task 3: Describe the third implementation task');
+    }
+    
+    return tasks.join('\n');
+  }
+  
+  if (prompt.includes('technical approach')) {
+    // Look for technical approach indicators
+    if (description.toLowerCase().includes('using')) {
+      const parts = description.split(/ using /i);
+      if (parts.length > 1) {
+        return `Implement using ${parts.slice(1).join(' using ').trim()}${description.endsWith('.') ? '' : '.'}`;
+      }
+    }
+    return 'Describe the technical approach for implementing this change.';
+  }
+  
+  if (prompt.includes('architecture')) {
+    // Look for architecture indicators
+    if (description.toLowerCase().includes('architecture') || description.toLowerCase().includes('structure')) {
+      return `Based on the description, the architecture will need to accommodate: ${description}`;
+    }
+    return 'Outline any architectural considerations or changes.';
+  }
+  
+  if (prompt.includes('dependencies')) {
+    // Look for dependency indicators
+    if (description.toLowerCase().includes('depend') || description.toLowerCase().includes('require')) {
+      return `Based on the description, this change may require: ${description}`;
+    }
+    return 'List any dependencies or prerequisites for this change.';
+  }
+  
+  // Generic fallback
+  return 'Generated content based on description: ' + description;
 }
 
-function generateArchitectureFromDescription(description: string): string {
-  // Look for architecture indicators
-  if (description.toLowerCase().includes('architecture') || description.toLowerCase().includes('structure')) {
-    return `Based on the description, the architecture will need to accommodate: ${description}`;
-  }
-  return 'Outline any architectural considerations or changes.';
+// Helper functions to generate content from descriptions using LLM
+async function generateOverviewFromDescription(context: CommandContext, description: string): Promise<string> {
+  const prompt = `Generate a brief overview for a change proposal with the following description: "${description}". 
+  The overview should be a single sentence that captures the essence of the change.`;
+  
+  return await generateContentWithLLM(context, prompt);
 }
 
-function generateDependenciesFromDescription(description: string): string {
-  // Look for dependency indicators
-  if (description.toLowerCase().includes('depend') || description.toLowerCase().includes('require')) {
-    return `Based on the description, this change may require: ${description}`;
+async function generateMotivationFromDescription(context: CommandContext, description: string): Promise<string> {
+  const prompt = `Generate a motivation section for a change proposal with the following description: "${description}". 
+  Explain why this change is needed and what problem it solves.`;
+  
+  return await generateContentWithLLM(context, prompt);
+}
+
+async function generateImplementationPlanFromDescription(context: CommandContext, description: string): Promise<string> {
+  const prompt = `Generate an implementation plan for a change proposal with the following description: "${description}". 
+  Detail the steps required to implement this change.`;
+  
+  return await generateContentWithLLM(context, prompt);
+}
+
+async function generateImpactAssessmentFromDescription(context: CommandContext, description: string): Promise<string> {
+  const prompt = `Generate an impact assessment for a change proposal with the following description: "${description}". 
+  Describe the potential impact of this change on the system.`;
+  
+  return await generateContentWithLLM(context, prompt);
+}
+
+async function generateTasksFromDescription(context: CommandContext, description: string): Promise<string> {
+  const prompt = `Generate a list of implementation tasks for a change proposal with the following description: "${description}". 
+  Provide 3-5 specific tasks in a markdown checklist format.`;
+  
+  const tasks = await generateContentWithLLM(context, prompt);
+  
+  // Ensure the tasks are in checklist format
+  if (!tasks.includes('- [ ]')) {
+    return `- [ ] ${tasks.replace(/\n/g, '\n- [ ] ')}`;
   }
-  return 'List any dependencies or prerequisites for this change.';
+  
+  return tasks;
+}
+
+async function generateApproachFromDescription(context: CommandContext, description: string): Promise<string> {
+  const prompt = `Generate a technical approach section for a change proposal with the following description: "${description}". 
+  Describe the technical approach for implementing this change.`;
+  
+  return await generateContentWithLLM(context, prompt);
+}
+
+async function generateArchitectureFromDescription(context: CommandContext, description: string): Promise<string> {
+  const prompt = `Generate an architecture section for a change proposal with the following description: "${description}". 
+  Outline any architectural considerations or changes.`;
+  
+  return await generateContentWithLLM(context, prompt);
+}
+
+async function generateDependenciesFromDescription(context: CommandContext, description: string): Promise<string> {
+  const prompt = `Generate a dependencies section for a change proposal with the following description: "${description}". 
+  List any dependencies or prerequisites for this change.`;
+  
+  return await generateContentWithLLM(context, prompt);
 }
