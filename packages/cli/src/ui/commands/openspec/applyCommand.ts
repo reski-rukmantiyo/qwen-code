@@ -39,7 +39,25 @@ export const applyCommand: SlashCommand = {
           content: `Change "${changeName}" not found. Run /openspec list to see available changes.`,
         };
       }
-      
+
+      const proposalPath = path.join(changeDir, 'proposal.md');
+      if (!fs.existsSync(proposalPath)) {
+        return {
+          type: 'message',
+          messageType: 'error',
+          content: `Proposal path "${proposalPath}" in your OpenSpec directory. Please create tasks before applying.`,
+        };
+      }
+
+      const designPath = path.join(changeDir, 'design.md');
+      if (!fs.existsSync(designPath)) {
+        return {
+          type: 'message',
+          messageType: 'error',
+          content: `Design path "${designPath}" in your OpenSpec directory. Please create tasks before applying.`,
+        };
+      }
+
       // Read tasks.md file
       const tasksPath = path.join(changeDir, 'tasks.md');
       if (!fs.existsSync(tasksPath)) {
@@ -51,6 +69,8 @@ export const applyCommand: SlashCommand = {
       }
       
       // Read the tasks content
+      const proposalContent = await readFileEfficiently(proposalPath);
+      const designContent = await readFileEfficiently(designPath);
       const tasksContent = await readFileEfficiently(tasksPath);
       
       // Check if tasks file is empty
@@ -65,12 +85,16 @@ export const applyCommand: SlashCommand = {
       // Prepare the prompt for AI implementation
       let content = `# Applying OpenSpec Change: ${changeName}\n\n`;
       content += 'Please implement the following tasks as specified in the OpenSpec change proposal.\n\n';
+      content += '## Design Overview\n';
+      content += designContent + '\n\n';
+      content += '## Change Proposal\n';
+      content += proposalContent + '\n\n';
       content += '## Tasks to Implement\n';
       content += tasksContent;
       content += '\n\n## Implementation Guidelines\n';
       content += '1. Follow the tasks in order as listed above\n';
       content += '2. Reference the specifications in the specs/ directory\n';
-      content += '3. Mark tasks as complete by checking the boxes as you implement them\n';
+      content += `3. Mark tasks as complete by checking the boxes as you implement them in "${tasksPath}"\n`;
       content += '4. Ensure your implementation matches the technical design if provided\n';
       content += '5. Validate your implementation against the change proposal\n\n';
       content += '## Next Steps\n';
