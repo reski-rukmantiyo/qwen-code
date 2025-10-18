@@ -343,7 +343,41 @@ Validates the formatting and structure of specifications and changes. This ensur
 - Integrates with Qwen Code's error reporting system for consistent diagnostic display
 - Uses efficient file operations through `OpenSpecFileUtils` for better performance
 
-### 10. clear
+### 10. apply
+
+**Purpose**: Apply a change by submitting tasks to AI for implementation.
+
+**Usage Syntax**:
+```bash
+/openspec apply <change-name>
+```
+
+**Parameters**:
+- `<change-name>`: Name of the change to apply
+
+**Description**: 
+Submits the tasks defined in a change's `tasks.md` file to the AI for implementation. This command triggers the implementation phase of the OpenSpec workflow where AI coding assistants execute the agreed-upon tasks while referencing the change's specifications.
+
+**Examples**:
+```bash
+# Apply a specific change
+/openspec apply add-user-authentication
+
+# Apply another change
+/openspec apply refactor-api-endpoints
+```
+
+**Implementation Details**:
+- Located in `/packages/cli/src/ui/commands/openspec/applyCommand.ts`
+- Reads tasks from `openspec/changes/<change-name>/tasks.md`
+- Validates that the change exists and has tasks defined
+- Returns a `submit_prompt` action to have Qwen Code process the tasks with AI
+- Provides auto-completion for change names
+- Follows Qwen Code's AI interaction patterns
+- Integrates with the existing OpenSpec directory structure
+- Handles errors gracefully with appropriate error messages
+
+### 11. clear
 
 **Purpose**: Completely reset OpenSpec (removes all files and directories).
 

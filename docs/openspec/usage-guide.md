@@ -213,6 +213,32 @@ Provides an interactive dashboard of specifications and changes.
 /openspec view
 ```
 
+### /openspec apply
+
+Apply a change by submitting tasks to AI for implementation.
+
+**Usage:**
+```
+/openspec apply <change-name>
+```
+
+**Parameters:**
+- `<change-name>`: Name of the change to apply
+
+**What it does:**
+- Submits the tasks defined in a change's `tasks.md` file to the AI for implementation
+- Triggers the implementation phase of the OpenSpec workflow
+- References the change's specifications during implementation
+
+**Examples:**
+```bash
+# Apply a specific change
+/openspec apply add-user-authentication
+
+# Apply another change
+/openspec apply refactor-api-endpoints
+```
+
 ### /openspec clear
 
 Completely reset OpenSpec (removes all files and directories).
