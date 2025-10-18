@@ -247,6 +247,31 @@ Outline testing approaches and acceptance criteria.
             content: `Failed to generate a meaningful filename for the specification: ${(error as Error).message}. Please try again with a different description.`,
           };
         }
+      } else if (description) {
+        // If we have a description but didn't use LLM (fell back to heuristics), 
+        // create a filename from the description
+        try {
+          specFileName = description
+            .toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+            .replace(/\s+/g, '-') // Replace spaces with hyphens
+            .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+            .substring(0, 30) // Limit to 30 characters
+            .replace(/^-+|-+$/g, '') // Remove leading/trailing hyphens
+            + '.md';
+            
+          // Validate the filename
+          if (specFileName === '.md' || specFileName.startsWith('-')) {
+            throw new Error('Failed to generate a valid filename from description');
+          }
+        } catch (error) {
+          // Inform user about the failure and stop the process
+          return {
+            type: 'message',
+            messageType: 'error',
+            content: `Failed to generate a filename for the specification: ${(error as Error).message}. Please try again with a different description.`,
+          };
+        }
       }
       
       const sampleSpecPath = path.join(specsDir, specFileName);
