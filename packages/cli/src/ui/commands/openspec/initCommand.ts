@@ -235,38 +235,17 @@ Outline testing approaches and acceptance criteria.
             .replace(/^-+|-+$/g, '') // Remove leading/trailing hyphens
             + '.md';
             
-          // Ensure we have a valid filename
+          // Validate the filename
           if (specFileName === '.md' || specFileName.startsWith('-') || specFileName.length < 5) {
-            // Fallback to description-based filename if LLM-generated one is invalid
-            specFileName = description
-              .toLowerCase()
-              .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
-              .replace(/\s+/g, '-') // Replace spaces with hyphens
-              .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
-              .substring(0, 30) // Limit to 30 characters
-              .replace(/^-+|-+$/g, '') // Remove leading/trailing hyphens
-              + '.md';
-              
-            // Final fallback check
-            if (specFileName === '.md' || specFileName.startsWith('-')) {
-              specFileName = 'sample-spec.md';
-            }
+            throw new Error('LLM generated an invalid filename');
           }
         } catch (error) {
-          // Fallback to description-based filename if LLM fails
-          specFileName = description
-            .toLowerCase()
-            .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
-            .replace(/\s+/g, '-') // Replace spaces with hyphens
-            .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
-            .substring(0, 30) // Limit to 30 characters
-            .replace(/^-+|-+$/g, '') // Remove leading/trailing hyphens
-            + '.md';
-            
-          // Final fallback check
-          if (specFileName === '.md' || specFileName.startsWith('-')) {
-            specFileName = 'sample-spec.md';
-          }
+          // Inform user about the failure and stop the process
+          return {
+            type: 'message',
+            messageType: 'error',
+            content: `Failed to generate a meaningful filename for the specification: ${(error as Error).message}. Please try again with a different description.`,
+          };
         }
       }
       
