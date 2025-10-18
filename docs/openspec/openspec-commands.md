@@ -345,31 +345,40 @@ Validates the formatting and structure of specifications and changes. This ensur
 
 ### 10. clear
 
-**Purpose**: Clears the OpenSpec cache and resets it.
+**Purpose**: Completely reset OpenSpec (removes all files and directories).
 
 **Usage Syntax**:
 ```bash
-/openspec clear
+/openspec clear [--cache-only|-c]
 ```
 
+**Options**:
+- `--cache-only`, `-c`: Only clear the cache, don't remove files
+
 **Description**: 
-Clears the OpenSpec cache and reinitializes it. This is useful when you want to reset the cache and start fresh, particularly after making significant changes to your specifications or when experiencing caching issues.
+Completely removes the OpenSpec directory structure by default. With the `--cache-only` flag, it only clears the OpenSpec cache and reinitializes it. This is useful when you want to start fresh with OpenSpec, particularly after making significant changes to your specifications or when experiencing issues.
 
 **Examples**:
 ```bash
-# Clear the OpenSpec cache
+# Completely reset OpenSpec (removes all files) - DEFAULT BEHAVIOR
 /openspec clear
+
+# Clear the OpenSpec cache only (preserve files)
+/openspec clear --cache-only
 ```
 
 **Implementation Details**:
 - Located in `/packages/cli/src/ui/commands/openspec/clearCommand.ts`
-- Accesses the OpenSpec cache service through the existing hook system
-- Calls the `resetCaches()` method to completely reinitialize cache instances
-- Provides user feedback on successful cache clearing
+- By default, uses `fs.rmSync()` to recursively remove the openspec/ directory
+- With `--cache-only` flag, accesses the OpenSpec cache service through the existing hook system
+- With `--cache-only` flag, calls the `resetCaches()` method to completely reinitialize cache instances
+- Provides user feedback on successful cache clearing or complete reset
 - Handles errors gracefully with appropriate error messages
 - Follows Qwen Code's messaging patterns for user feedback
-- Useful for resolving caching-related issues or ensuring a clean state
+- Useful for resolving issues or ensuring a clean state
 - Particularly helpful when specification files aren't reflecting recent changes
+- Allows users to start with a completely fresh OpenSpec environment (default behavior)
+- Also allows lightweight cache clearing when files should be preserved
 
 ## Integration with Qwen Code Command System
 

@@ -295,6 +295,42 @@ This guide helps you resolve common issues when using OpenSpec with Qwen Code.
 2. This will reinitialize the cache and force OpenSpec to read files from disk
 3. Subsequent commands will use fresh data
 
+### Complete Reset
+
+OpenSpec can be completely reset in several ways:
+
+1. **Using the clear command (default behavior)**:
+   ```
+   /openspec clear
+   ```
+   This will remove all OpenSpec files and directories by default.
+
+2. **Reinitialize**:
+   ```
+   /openspec init
+   ```
+
+Alternatively, you can manually reset OpenSpec:
+1. Backup any important specifications:
+   ```bash
+   cp -r openspec/ openspec-backup/
+   ```
+
+2. Remove the openspec directory:
+   ```bash
+   rm -rf openspec/
+   ```
+
+3. Reinitialize:
+   ```
+   /openspec init
+   ```
+
+If you want to only clear the cache but preserve files:
+```
+/openspec clear --cache-only
+```
+
 ### Cache Performance Issues
 
 **Problem:** OpenSpec commands are slower than expected due to cache issues.

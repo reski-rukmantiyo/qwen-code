@@ -565,4 +565,6 @@ These tutorials demonstrate several key OpenSpec best practices that are support
 
 7. **Specification Deltas**: Changes to existing specifications are clearly documented as deltas. The implementation uses the specs/ directory within each change to show exactly what will be modified, enabling precise tracking of specification changes.
 
+8. **Environment Management**: When needed, completely reset your OpenSpec environment with `/openspec clear` to start fresh while preserving the benefits of specification-driven development. Use `/openspec clear --cache-only` for lightweight cache clearing while preserving files.
+
 By following these patterns, you can ensure successful specification-driven development with OpenSpec in Qwen Code. The implementation provides robust support for these best practices through thoughtful command design and integration with Qwen Code's existing systems.

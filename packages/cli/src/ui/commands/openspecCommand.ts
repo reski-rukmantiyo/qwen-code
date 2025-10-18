@@ -55,7 +55,7 @@ Commands:
   update      Refresh agent instructions
   view        Display interactive dashboard
   spec        Manage specification files
-  clear       Clear the OpenSpec cache and reset it
+  clear       Completely reset OpenSpec (use --cache-only to clear cache only)
 
 Use /openspec <command> --help for more information about a command.`,
       };

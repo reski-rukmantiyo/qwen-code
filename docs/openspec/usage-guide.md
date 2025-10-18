@@ -215,17 +215,28 @@ Provides an interactive dashboard of specifications and changes.
 
 ### /openspec clear
 
-Clears the OpenSpec cache and resets it.
+Completely reset OpenSpec (removes all files and directories).
 
 **Usage:**
 ```
-/openspec clear
+/openspec clear [--cache-only|-c]
 ```
 
+**Options:**
+- `--cache-only`, `-c`: Only clear the cache, don't remove files
+
 **What it does:**
-- Clears the OpenSpec cache
-- Reinitializes the cache instances
-- Provides a clean state for subsequent operations
+- Without flags: Completely removes the "openspec/" directory and all its contents (default behavior)
+- With `--cache-only` flag: Clears the OpenSpec cache and reinitializes cache instances
+
+**Examples:**
+```bash
+# Completely reset OpenSpec (removes all files) - DEFAULT BEHAVIOR
+/openspec clear
+
+# Clear the cache only (preserve files)
+/openspec clear --cache-only
+```
 
 ## Workflow Tutorial
 

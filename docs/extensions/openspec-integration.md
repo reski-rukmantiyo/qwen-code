@@ -52,6 +52,8 @@ OpenSpec is a specification-driven development tool that prevents unpredictable 
 - New UI components for spec visualization including interactive dashboard with `/openspec view`
 - File watching system integration with `OpenSpecWatcherService` for real-time updates
 - Caching system with `OpenSpecCacheService` for improved performance
+- Complete reset capability as default behavior of `/openspec clear` command
+- Lightweight cache clearing with `/openspec clear --cache-only` command
 - Build process automatically initializes OpenSpec context when present
 - Testing framework includes unit tests for all commands and services
 - Code conformance validation ensures AI outputs match specifications

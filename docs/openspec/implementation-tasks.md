@@ -121,11 +121,15 @@ The OpenSpec integration has been fully implemented in Qwen Code, providing slas
 **Status**: ✅ Completed
 **Details**:
 - Created subcommand handler in `/packages/cli/src/ui/commands/openspec/clearCommand.ts`
-- Accessed the OpenSpec cache service through the existing hook system
-- Called the resetCaches() method to reinitialize the cache instances
-- Provided user feedback on successful cache clearing
+- Made complete reset the default behavior (removes all files)
+- Added --cache-only/-c flag to only clear the cache while preserving files
+- Uses `fs.rmSync()` to recursively remove the openspec/ directory by default
+- With --cache-only flag, accesses the OpenSpec cache service through the existing hook system
+- With --cache-only flag, calls the resetCaches() method to reinitialize the cache instances
+- Provided user feedback on successful cache clearing or complete reset
 - Handled errors gracefully with appropriate error messages
 - Followed Qwen Code's messaging patterns for user feedback
+- Includes comprehensive test coverage for both cache clearing and complete reset functionality
 
 ### 2. Integration Tasks
 

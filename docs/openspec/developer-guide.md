@@ -263,7 +263,7 @@ Key features:
 - Directory preloading for bulk operations
 - Cache reset functionality for clearing and reinitializing
 
-The `resetCaches()` method is used by the `/openspec clear` command to completely reset the cache instances, which can be useful when experiencing caching issues or when wanting to ensure a clean state.
+The `/openspec clear` command completely removes all OpenSpec files by default, which is useful when wanting to ensure a clean state. The `resetCaches()` method is used by the `/openspec clear --cache-only` command to reset only the cache instances, which can be useful when experiencing caching issues while preserving existing files. The default `/openspec clear` command uses filesystem operations to completely remove all OpenSpec files.
 
 ### OpenSpecWatcherService
 
