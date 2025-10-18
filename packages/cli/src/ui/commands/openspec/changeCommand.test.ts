@@ -74,13 +74,19 @@ describe('changeCommand', () => {
     expect(result).toEqual({
       type: 'message',
       messageType: 'error',
-      content: 'Please specify a change name. Usage: /openspec change <change-name>',
+      content: 'Please specify a change name. Usage: /openspec change <change-name> [description]',
     });
   });
 
   it('should return error for invalid change name', async () => {
+    // Arrange: Simulate that OpenSpec directory exists
+    vi.mocked(fs.existsSync).mockImplementation((p: any) => {
+      if (p === openspecDir) return true;  // OpenSpec is initialized
+      return false;
+    });
+    
     // Act: Run the command's action with invalid name
-    const result = await changeCommand.action!(mockContext, 'invalid name with spaces');
+    const result = await changeCommand.action!(mockContext, 'invalid@name');
 
     // Assert: Check for the correct error message
     expect(result).toEqual({
@@ -152,6 +158,74 @@ describe('changeCommand', () => {
     expect(content).toContain('tasks.md - List implementation tasks for AI assistants');
     expect(content).toContain('design.md - Document technical design decisions');
     expect(content).toContain(`Use /openspec show ${changeName} to view your change`);
+  });
+
+  it('should create new change proposal with generated content when description is provided', async () => {
+    // Arrange: Simulate that OpenSpec is initialized but change does not exist
+    const changeName = 'new-feature';
+    const description = 'Add user authentication to improve security by implementing JWT tokens';
+    const fullArgs = `${changeName} ${description}`;
+    const changeDir = path.join(changesDir, changeName);
+    const proposalPath = path.join(changeDir, 'proposal.md');
+    const tasksPath = path.join(changeDir, 'tasks.md');
+    const designPath = path.join(changeDir, 'design.md');
+    const specsDir = path.join(changeDir, 'specs');
+    
+    vi.mocked(fs.existsSync).mockImplementation((p: any) => {
+      if (p === openspecDir) return true;  // OpenSpec is initialized
+      if (p === changeDir) return false;   // Change does not exist yet
+      return false;
+    });
+
+    // Act: Run the command's action with description
+    const result = await changeCommand.action!(mockContext, fullArgs);
+
+    // Assert: Check that directories and files were created with generated content
+    expect(fs.mkdirSync).toHaveBeenCalledWith(changeDir, { recursive: true });
+    expect(fs.mkdirSync).toHaveBeenCalledWith(specsDir, { recursive: true });
+    expect(fs.writeFileSync).toHaveBeenCalledWith(
+      proposalPath,
+      expect.stringContaining('Add user authentication to improve security')
+    );
+    expect(fs.writeFileSync).toHaveBeenCalledWith(
+      tasksPath,
+      expect.stringMatching(/- \[ \] .*add.*feature/i)
+    );
+    expect(fs.writeFileSync).toHaveBeenCalledWith(
+      designPath,
+      expect.stringContaining('technical approach')
+    );
+
+    // Assert: Check for the correct success message
+    expect(result).toEqual({
+      type: 'message',
+      messageType: 'info',
+      content: expect.stringContaining(`✅ Created new change proposal: ${changeName} with generated content from description`),
+    });
+  });
+
+  it('should correctly parse quoted descriptions', async () => {
+    // Arrange: Simulate that OpenSpec is initialized but change does not exist
+    const changeName = 'new-feature';
+    const description = 'Add user authentication to improve security by implementing JWT tokens';
+    const fullArgs = `${changeName} "${description}"`;
+    const changeDir = path.join(changesDir, changeName);
+    
+    vi.mocked(fs.existsSync).mockImplementation((p: any) => {
+      if (p === openspecDir) return true;  // OpenSpec is initialized
+      if (p === changeDir) return false;   // Change does not exist yet
+      return false;
+    });
+
+    // Act: Run the command's action with quoted description
+    const result = await changeCommand.action!(mockContext, fullArgs);
+
+    // Assert: Check for the correct success message
+    expect(result).toEqual({
+      type: 'message',
+      messageType: 'info',
+      content: expect.stringContaining(`✅ Created new change proposal: ${changeName} with generated content from description`),
+    });
   });
 
   it('should handle existing change proposal gracefully', async () => {

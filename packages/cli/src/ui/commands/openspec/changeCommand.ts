@@ -15,14 +15,32 @@ export const changeCommand: SlashCommand = {
   description: 'Create or modify change proposals',
   kind: CommandKind.BUILT_IN,
   action: async (context: CommandContext, args: string) => {
-    // Parse change name from args
-    const changeName = args.trim();
+    // Parse change name and description from args
+    const trimmedArgs = args.trim();
+    let changeName = '';
+    let description = '';
+    
+    // Check if we have a quoted description
+    const quotedMatch = trimmedArgs.match(/^(\S+)\s+(["'])(.*)\2$/);
+    if (quotedMatch) {
+      changeName = quotedMatch[1];
+      description = quotedMatch[3];
+    } else {
+      // Split by first space to separate name from description
+      const firstSpaceIndex = trimmedArgs.indexOf(' ');
+      if (firstSpaceIndex > 0) {
+        changeName = trimmedArgs.substring(0, firstSpaceIndex);
+        description = trimmedArgs.substring(firstSpaceIndex + 1);
+      } else {
+        changeName = trimmedArgs;
+      }
+    }
     
     if (!changeName) {
       return {
         type: 'message',
         messageType: 'error',
-        content: 'Please specify a change name. Usage: /openspec change <change-name>',
+        content: 'Please specify a change name. Usage: /openspec change <change-name> [description]',
       };
     }
     
@@ -56,8 +74,45 @@ export const changeCommand: SlashCommand = {
         // Create directory structure
         fs.mkdirSync(changeDir, { recursive: true });
         
-        // Generate template files
-        const proposalContent = `# ${changeName}
+        // Generate content based on whether a description was provided
+        let proposalContent, tasksContent, designContent;
+        
+        if (description) {
+          // Generate structured content from description
+          proposalContent = `# ${changeName}
+
+## Overview
+${generateOverviewFromDescription(description)}
+
+## Motivation
+${generateMotivationFromDescription(description)}
+
+## Implementation Plan
+${generateImplementationPlanFromDescription(description)}
+
+## Impact Assessment
+${generateImpactAssessmentFromDescription(description)}
+`;
+          
+          tasksContent = `# Implementation Tasks
+
+${generateTasksFromDescription(description)}
+`;
+          
+          designContent = `# Technical Design for ${changeName}
+
+## Approach
+${generateApproachFromDescription(description)}
+
+## Architecture
+${generateArchitectureFromDescription(description)}
+
+## Dependencies
+${generateDependenciesFromDescription(description)}
+`;
+        } else {
+          // Use default templates when no description is provided
+          proposalContent = `# ${changeName}
 
 ## Overview
 Briefly describe what this change proposes to implement.
@@ -71,15 +126,15 @@ Detail the steps required to implement this change.
 ## Impact Assessment
 Describe the potential impact of this change on the system.
 `;
-        
-        const tasksContent = `# Implementation Tasks
+          
+          tasksContent = `# Implementation Tasks
 
 - [ ] Task 1: Describe the first implementation task
 - [ ] Task 2: Describe the second implementation task
 - [ ] Task 3: Describe the third implementation task
 `;
-        
-        const designContent = `# Technical Design for ${changeName}
+          
+          designContent = `# Technical Design for ${changeName}
 
 ## Approach
 Describe the technical approach for implementing this change.
@@ -90,6 +145,7 @@ Outline any architectural considerations or changes.
 ## Dependencies
 List any dependencies or prerequisites for this change.
 `;
+        }
         
         fs.writeFileSync(path.join(changeDir, 'proposal.md'), proposalContent);
         fs.writeFileSync(path.join(changeDir, 'tasks.md'), tasksContent);
@@ -144,7 +200,7 @@ Description of the new name/context
         return {
           type: 'message',
           messageType: 'info',
-          content: `✅ Created new change proposal: ${changeName}
+          content: `✅ Created new change proposal: ${changeName}${description ? ' with generated content from description' : ''}
 
 Files created:
 - proposal.md - Describe what and why you're changing
@@ -185,3 +241,107 @@ Use /openspec show ${changeName} to view your change.
     }
   },
 };
+
+// Helper functions to generate content from descriptions
+function generateOverviewFromDescription(description: string): string {
+  // Simple heuristic: First sentence becomes overview
+  const sentences = description.split(/[.!?]+/).filter(s => s.trim().length > 0);
+  return sentences.length > 0 ? sentences[0].trim() + '.' : 'Briefly describe what this change proposes to implement.';
+}
+
+function generateMotivationFromDescription(description: string): string {
+  // Look for words indicating motivation like "to", "for", "because"
+  if (description.toLowerCase().includes(' to ')) {
+    const parts = description.split(/ to /i);
+    if (parts.length > 1) {
+      return `This change is needed ${parts.slice(1).join(' to ').trim()}${description.endsWith('.') ? '' : '.'}`;
+    }
+  }
+  if (description.toLowerCase().includes(' because ')) {
+    const parts = description.split(/ because /i);
+    if (parts.length > 1) {
+      return `This change addresses the issue that ${parts.slice(1).join(' because ').trim()}${description.endsWith('.') ? '' : '.'}`;
+    }
+  }
+  return 'Explain why this change is needed and what problem it solves.';
+}
+
+function generateImplementationPlanFromDescription(description: string): string {
+  // Look for implementation keywords
+  if (description.toLowerCase().includes(' by ')) {
+    const parts = description.split(/ by /i);
+    if (parts.length > 1) {
+      return `Implement this change ${parts.slice(1).join(' by ').trim()}${description.endsWith('.') ? '' : '.'}`;
+    }
+  }
+  return 'Detail the steps required to implement this change.';
+}
+
+function generateImpactAssessmentFromDescription(description: string): string {
+  // Look for impact keywords
+  if (description.toLowerCase().includes(' will ')) {
+    const parts = description.split(/ will /i);
+    if (parts.length > 1) {
+      return `This change will ${parts.slice(1).join(' will ').trim()}${description.endsWith('.') ? '' : '.'}`;
+    }
+  }
+  return 'Describe the potential impact of this change on the system.';
+}
+
+function generateTasksFromDescription(description: string): string {
+  // Extract potential tasks from description
+  const tasks: string[] = [];
+  
+  // Simple heuristics for identifying tasks
+  if (description.toLowerCase().includes('add')) {
+    tasks.push('- [ ] Add new features as described');
+  }
+  if (description.toLowerCase().includes('modify') || description.toLowerCase().includes('update')) {
+    tasks.push('- [ ] Modify existing components as needed');
+  }
+  if (description.toLowerCase().includes('remove') || description.toLowerCase().includes('delete')) {
+    tasks.push('- [ ] Remove deprecated functionality');
+  }
+  if (description.toLowerCase().includes('test')) {
+    tasks.push('- [ ] Implement tests for new functionality');
+  }
+  if (description.toLowerCase().includes('document')) {
+    tasks.push('- [ ] Update documentation');
+  }
+  
+  // Add generic tasks if none were identified
+  if (tasks.length === 0) {
+    tasks.push('- [ ] Task 1: Describe the first implementation task');
+    tasks.push('- [ ] Task 2: Describe the second implementation task');
+    tasks.push('- [ ] Task 3: Describe the third implementation task');
+  }
+  
+  return tasks.join('\n');
+}
+
+function generateApproachFromDescription(description: string): string {
+  // Look for technical approach indicators
+  if (description.toLowerCase().includes('using')) {
+    const parts = description.split(/ using /i);
+    if (parts.length > 1) {
+      return `Implement using ${parts.slice(1).join(' using ').trim()}${description.endsWith('.') ? '' : '.'}`;
+    }
+  }
+  return 'Describe the technical approach for implementing this change.';
+}
+
+function generateArchitectureFromDescription(description: string): string {
+  // Look for architecture indicators
+  if (description.toLowerCase().includes('architecture') || description.toLowerCase().includes('structure')) {
+    return `Based on the description, the architecture will need to accommodate: ${description}`;
+  }
+  return 'Outline any architectural considerations or changes.';
+}
+
+function generateDependenciesFromDescription(description: string): string {
+  // Look for dependency indicators
+  if (description.toLowerCase().includes('depend') || description.toLowerCase().includes('require')) {
+    return `Based on the description, this change may require: ${description}`;
+  }
+  return 'List any dependencies or prerequisites for this change.';
+}
