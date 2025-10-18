@@ -20,18 +20,90 @@ export const changeCommand: SlashCommand = {
     let changeName = '';
     let description = '';
     
-    // Check if we have a quoted description
-    const quotedMatch = trimmedArgs.match(/^(\S+)\s+(["'])(.*)\2$/);
-    if (quotedMatch) {
-      changeName = quotedMatch[1];
-      description = quotedMatch[3];
+    // More robust argument parsing that handles quoted strings properly
+    // This handles cases where the command processor naively splits on whitespace
+    if (!trimmedArgs) {
+      return {
+        type: 'message',
+        messageType: 'error',
+        content: 'Please specify a change name. Usage: /openspec change <change-name> [description]',
+      };
+    }
+    
+    // Handle case where args might have been split incorrectly by command processor
+    // We need to reconstruct the original command line
+    const parts = trimmedArgs.split(' ');
+    
+    if (parts.length === 1) {
+      // Only a change name provided
+      changeName = parts[0];
     } else {
-      // Split by first space to separate name from description
-      const firstSpaceIndex = trimmedArgs.indexOf(' ');
-      if (firstSpaceIndex > 0) {
-        changeName = trimmedArgs.substring(0, firstSpaceIndex);
-        description = trimmedArgs.substring(firstSpaceIndex + 1);
+      // Multiple parts - need to determine where change name ends and description begins
+      // Look for quotes in the parts to identify where description starts
+      let quoteStartIndex = -1;
+      let quoteChar = '';
+      
+      for (let i = 0; i < parts.length; i++) {
+        const part = parts[i];
+        if ((part.startsWith('"') && part.length > 1 && part.endsWith('"')) || 
+            (part.startsWith("'") && part.length > 1 && part.endsWith("'"))) {
+          // This part is a complete quoted string
+          changeName = parts.slice(0, i).join(' ') || parts[0];
+          description = part.substring(1, part.length - 1);
+          break;
+        } else if (part.startsWith('"') || part.startsWith("'")) {
+          // This part starts a quoted string
+          quoteStartIndex = i;
+          quoteChar = part[0];
+          break;
+        }
+      }
+      
+      if (quoteStartIndex >= 0) {
+        // Found start of quoted description
+        if (quoteStartIndex === 0) {
+          // First part starts with quote but is the only part - error
+          return {
+            type: 'message',
+            messageType: 'error',
+            content: 'Please specify a change name. Usage: /openspec change <change-name> [description]',
+          };
+        }
+        
+        // Change name is everything before the quoted part
+        changeName = parts.slice(0, quoteStartIndex).join(' ');
+        
+        // Description is the quoted part plus any following parts until we find the closing quote
+        let descriptionParts = [];
+        
+        for (let i = quoteStartIndex; i < parts.length; i++) {
+          const part = parts[i];
+          descriptionParts.push(part);
+          
+          // Check if this part ends with the same quote character
+          if (i > quoteStartIndex || part.length > 1) {
+            const endQuoteIndex = part.indexOf(quoteChar, i === quoteStartIndex ? 1 : 0);
+            if (endQuoteIndex >= 0) {
+              break;
+            }
+          }
+        }
+        
+        if (descriptionParts.length > 0) {
+          let descString = descriptionParts.join(' ');
+          // Remove surrounding quotes if they match
+          if (descString.startsWith(quoteChar) && descString.endsWith(quoteChar) && descString.length > 1) {
+            description = descString.substring(1, descString.length - 1);
+          } else {
+            description = descString;
+          }
+        }
+      } else if (parts.length > 1) {
+        // No quotes found, treat first part as change name and rest as description
+        changeName = parts[0];
+        description = parts.slice(1).join(' ');
       } else {
+        // Fallback
         changeName = trimmedArgs;
       }
     }
