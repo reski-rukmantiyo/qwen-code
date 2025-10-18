@@ -288,7 +288,34 @@ Validates the formatting and structure of specifications and changes. This ensur
 **Integration with Qwen Code**:
 This command integrates with Qwen Code's error reporting system and will display validation results with appropriate syntax highlighting and error formatting. Issues are presented in a way that's consistent with Qwen Code's diagnostic display.
 
-### 10. clear
+### 10. apply
+
+**Purpose**: Apply a change by submitting tasks to AI for implementation.
+
+**Usage Syntax**:
+```bash
+/openspec apply <change-name>
+```
+
+**Parameters**:
+- `<change-name>`: Name of the change to apply
+
+**Description**: 
+Submits the tasks defined in a change's `tasks.md` file to the AI for implementation. This command triggers the implementation phase of the OpenSpec workflow where AI coding assistants execute the agreed-upon tasks while referencing the change's specifications.
+
+**Examples**:
+```bash
+# Apply a specific change
+/openspec apply add-user-authentication
+
+# Apply another change
+/openspec apply refactor-api-endpoints
+```
+
+**Integration with Qwen Code**:
+This command integrates with Qwen Code's AI workflow and will submit the tasks to the AI for implementation. It follows Qwen Code's AI interaction patterns and integrates with the existing OpenSpec directory structure.
+
+### 11. clear
 
 **Purpose**: Clears the OpenSpec cache and resets it.
 
@@ -325,6 +352,7 @@ The OpenSpec integration for Qwen Code has been fully implemented with all core 
    - `/openspec archive` - Fully implemented with move functionality
    - `/openspec spec` - Fully implemented with create/edit/delete actions
    - `/openspec validate` - Fully implemented with comprehensive validation
+   - `/openspec apply` - Fully implemented with AI task submission
    - `/openspec clear` - Fully implemented with cache reset functionality
 
 2. **Service Layer Implementation**:
@@ -397,6 +425,7 @@ openspec/
 ├── archiveCommand.ts     # Archive subcommand
 ├── specCommand.ts        # Spec subcommand
 ├── validateCommand.ts    # Validate subcommand
+├── applyCommand.ts       # Apply subcommand
 └── clearCommand.ts       # Clear subcommand
 ```
 
@@ -423,7 +452,7 @@ Within Qwen Code, OpenSpec integrates directly with the AI workflow:
 2. **Draft**: Create change proposals with `/openspec change`
 3. **Define**: Create detailed specifications with `/openspec spec`
 4. **Review**: Validate and refine with `/openspec validate/show`
-5. **Implement**: Apply changes according to specifications
+5. **Implement**: Apply changes according to specifications with `/openspec apply`
 6. **Archive**: Complete changes with `/openspec archive`
 
 This workflow is seamlessly integrated into Qwen Code's existing development workflow, with commands appearing in the command palette and following the same interaction patterns as other Qwen Code features.

@@ -196,13 +196,13 @@ This command validates that your change follows the expected structure and has a
 
 ### Step 8: Implement with AI
 
-Ask Qwen Code to implement the feature:
+Use the apply command to submit your tasks to Qwen Code for implementation:
 
 ```
-Please implement the password reset functionality as specified in /openspec/changes/add-password-reset. Follow the tasks listed in the tasks.md file and ensure the implementation matches the technical design.
+/openspec apply add-password-reset
 ```
 
-Qwen Code's AI integration automatically incorporates your specifications as context through the `OpenSpecMemoryIntegration` service. This ensures that the AI assistant has access to your detailed requirements and implementation tasks. The integration also validates that generated code conforms to your specifications before execution, reducing the likelihood of implementation errors.
+This command reads your tasks from `openspec/changes/add-password-reset/tasks.md` and automatically formats them as a prompt for Qwen Code's AI assistant. The AI integration automatically incorporates your specifications as context through the `OpenSpecMemoryIntegration` service. This ensures that the AI assistant has access to your detailed requirements and implementation tasks. The integration also validates that generated code conforms to your specifications before execution, reducing the likelihood of implementation errors.
 
 ### Step 9: Archive When Complete
 
@@ -361,13 +361,13 @@ Rate limited responses include the following headers:
 
 The validation command checks that your specification deltas are properly structured and all required files are present. This implementation step ensures that your changes follow the expected format before proceeding to implementation.
 
-Ask Qwen Code to implement the feature:
+Use the apply command to submit your tasks to Qwen Code for implementation:
 
 ```
-Please implement rate limiting as specified in /openspec/changes/add-rate-limiting. Pay special attention to the sliding window algorithm and Redis integration.
+/openspec apply add-rate-limiting
 ```
 
-Qwen Code's AI integration automatically incorporates both your existing specifications and the proposed changes as context, ensuring that the implementation aligns with your overall system design while incorporating the new requirements. The `OpenSpecMemoryIntegration` service collects content from both the specs/ and changes/ directories to provide comprehensive context to the AI assistant.
+This command reads your tasks from `openspec/changes/add-rate-limiting/tasks.md` and automatically formats them as a prompt for Qwen Code's AI assistant. Qwen Code's AI integration automatically incorporates both your existing specifications and the proposed changes as context, ensuring that the implementation aligns with your overall system design while incorporating the new requirements. The `OpenSpecMemoryIntegration` service collects content from both the specs/ and changes/ directories to provide comprehensive context to the AI assistant.
 
 ## Tutorial 3: Refactoring with OpenSpec
 
@@ -539,13 +539,13 @@ Handles all token operations.
 
 This validation ensures that your complex refactoring proposal is properly structured with all required documentation. The implementation checks for the presence of all necessary files and provides detailed feedback on any issues.
 
-Ask Qwen Code to implement the refactoring:
+Use the apply command to submit your tasks to Qwen Code for implementation:
 
 ```
-Please refactor the authentication system as specified in /openspec/changes/refactor-auth-system. Focus on extracting the logic into the service classes while maintaining backward compatibility.
+/openspec apply refactor-auth-system
 ```
 
-Qwen Code's AI integration is particularly valuable for complex refactorings like this one. The implementation automatically provides both your existing architecture documentation and the proposed changes as context, enabling the AI assistant to understand both the current state and the desired end state. The `OpenSpecMemoryIntegration` service ensures that all relevant specifications are available to guide the refactoring implementation.
+This command reads your tasks from `openspec/changes/refactor-auth-system/tasks.md` and automatically formats them as a prompt for Qwen Code's AI assistant. Qwen Code's AI integration is particularly valuable for complex refactorings like this one. The implementation automatically provides both your existing architecture documentation and the proposed changes as context, enabling the AI assistant to understand both the current state and the desired end state. The `OpenSpecMemoryIntegration` service ensures that all relevant specifications are available to guide the refactoring implementation.
 
 ## Best Practices Demonstrated
 
@@ -565,6 +565,6 @@ These tutorials demonstrate several key OpenSpec best practices that are support
 
 7. **Specification Deltas**: Changes to existing specifications are clearly documented as deltas. The implementation uses the specs/ directory within each change to show exactly what will be modified, enabling precise tracking of specification changes.
 
-8. **Environment Management**: When needed, completely reset your OpenSpec environment with `/openspec clear` to start fresh while preserving the benefits of specification-driven development. Use `/openspec clear --cache-only` for lightweight cache clearing while preserving files.
+8. **Environment Management**: When needed, completely reset your OpenSpec environment with `/openspec clear` to start fresh while preserving the benefits of specification-driven development. Use `/openspec clear --cache-only` (or `-c`) for lightweight cache clearing while preserving files and specifications.
 
 By following these patterns, you can ensure successful specification-driven development with OpenSpec in Qwen Code. The implementation provides robust support for these best practices through thoughtful command design and integration with Qwen Code's existing systems.

@@ -153,6 +153,16 @@ Always validate your changes before asking AI to implement them:
 
 This catches issues early and ensures all required files are present.
 
+### Apply Changes with the Apply Command
+
+Once you've defined your tasks in the tasks.md file, use the apply command to submit them to AI for implementation:
+
+```
+/openspec apply <change-name>
+```
+
+This command will submit the tasks defined in your change's tasks.md file to the AI for implementation, ensuring that the implementation follows your specifications exactly.
+
 ## Working with AI
 
 ### Reference Specifications Explicitly
@@ -288,7 +298,12 @@ Clear the OpenSpec cache when:
 - You suspect the cache contains stale or corrupted data
 - You want to ensure a clean state before important operations
 
-To clear the cache:
+To clear only the cache (preserving your files):
+```
+/openspec clear --cache-only
+```
+
+To completely reset OpenSpec (removing all files):
 ```
 /openspec clear
 ```
@@ -308,10 +323,15 @@ If you encounter issues that might be cache-related:
 
 1. Try clearing the cache first:
    ```
+   /openspec clear --cache-only
+   ```
+
+2. If issues persist, you can completely reset OpenSpec:
+   ```
    /openspec clear
    ```
 
-2. If issues persist, check for:
+3. If issues persist after a full reset, check for:
    - Very large specification files
    - File permission issues
    - Disk space limitations
@@ -414,12 +434,12 @@ Passwords must be securely hashed using an industry-standard algorithm with appr
 
 ## Implementation Status
 
-All best practices outlined in this document have been implemented and validated through the OpenSpec integration with Qwen Code. The integration provides robust support for specification-driven development, with features like:
+All best practices outlined in this document are supported by the current OpenSpec implementation in Qwen Code. The integration provides robust support for specification-driven development, with features like:
 
-- Automated validation of specification files
-- Cache management for improved performance
-- Seamless integration with Qwen Code's AI workflow
-- Comprehensive command-line interface for managing specifications
-- Interactive dashboard for viewing specifications and changes
+- Automated validation of specification files (`/openspec validate`)
+- Cache management for improved performance (`/openspec clear`)
+- Seamless integration with Qwen Code's AI workflow (`/openspec apply`)
+- Comprehensive command-line interface for managing specifications (`/openspec` with subcommands)
+- Interactive dashboard for viewing specifications and changes (`/openspec view`)
 
 By following these best practices, you can maximize the effectiveness of OpenSpec in your development workflow and ensure successful specification-driven development with Qwen Code.

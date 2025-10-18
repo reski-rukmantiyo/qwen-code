@@ -74,6 +74,45 @@ export const archiveCommand: SlashCommand = {
         fs.mkdirSync(archiveDir, { recursive: true });
       }
       
+      // Apply delta operations before archiving
+      const specsDir = path.join(changeDir, 'specs');
+      if (fs.existsSync(specsDir)) {
+        const specFiles = fs.readdirSync(specsDir, { withFileTypes: true })
+          .filter(dirent => dirent.isFile() && dirent.name.endsWith('.md'))
+          .map(dirent => dirent.name);
+        
+        // Import DeltaApplier
+        const { DeltaApplier } = await import('../../../services/OpenSpecDeltaApplier.js');
+        
+        // Apply each spec delta to the baseline specifications
+        const baselineSpecsDir = path.join(projectRoot, 'openspec', 'specs');
+        for (const file of specFiles) {
+          const deltaSpecPath = path.join(specsDir, file);
+          const baselineSpecPath = path.join(baselineSpecsDir, file);
+          const outputSpecPath = baselineSpecPath; // Update baseline in place
+          
+          // Validate delta application first
+          const validationResult = await DeltaApplier.validateDeltaApplication(baselineSpecPath, deltaSpecPath);
+          if (!validationResult.canApply) {
+            return {
+              type: 'message',
+              messageType: 'error',
+              content: `Cannot apply delta for "${file}": ${validationResult.issues.join(', ')}`
+            };
+          }
+          
+          // Apply the delta
+          const applyResult = await DeltaApplier.applyDelta(baselineSpecPath, deltaSpecPath, outputSpecPath);
+          if (!applyResult.success) {
+            return {
+              type: 'message',
+              messageType: 'error',
+              content: `Failed to apply delta for "${file}": ${applyResult.message}`
+            };
+          }
+        }
+      }
+      
       // Move change directory to archive
       fs.renameSync(changeDir, archivedChangeDir);
       

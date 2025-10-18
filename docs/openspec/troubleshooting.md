@@ -117,6 +117,25 @@ This guide helps you resolve common issues when using OpenSpec with Qwen Code.
 3. Ensure you have read/write permissions for the openspec directory
 4. Try running the command with verbose output (if available)
 
+### Apply Command Issues
+
+**Problem:** The apply command doesn't work as expected or produces errors.
+
+**Solution:**
+1. Verify the change exists:
+   ```
+   /openspec list
+   ```
+2. Check that the change has a tasks.md file:
+   ```
+   ls -la openspec/changes/<change-name>/tasks.md
+   ```
+3. Ensure the tasks.md file is not empty
+4. Confirm you're using the correct syntax:
+   ```
+   /openspec apply <change-name>
+   ```
+
 ## File and Directory Issues
 
 ### Permission Denied Errors
@@ -288,9 +307,9 @@ This guide helps you resolve common issues when using OpenSpec with Qwen Code.
 **Problem:** OpenSpec isn't reflecting recent changes to specification files.
 
 **Solution:**
-1. Clear the OpenSpec cache:
+1. Clear only the OpenSpec cache (preserving files):
    ```
-   /openspec clear
+   /openspec clear --cache-only
    ```
 2. This will reinitialize the cache and force OpenSpec to read files from disk
 3. Subsequent commands will use fresh data
@@ -338,7 +357,7 @@ If you want to only clear the cache but preserve files:
 **Solution:**
 1. Try clearing the cache to reset it:
    ```
-   /openspec clear
+   /openspec clear --cache-only
    ```
 2. If performance issues persist, check for very large specification files
 3. Consider breaking up large specifications into smaller, focused documents
@@ -424,15 +443,28 @@ If you're unable to resolve an issue with these troubleshooting steps:
 
 All troubleshooting scenarios covered in this guide have been implemented and validated through the OpenSpec integration with Qwen Code. The integration provides robust error handling, comprehensive validation, and detailed error messages to help users resolve issues quickly.
 
+OpenSpec is fully implemented with the following core commands:
+- `init` - Initialize OpenSpec in your project
+- `list` - List active changes
+- `show` - Show details of a specific change
+- `change` - Create or modify change proposals
+- `validate` - Validate specification formatting
+- `archive` - Move completed changes to archive
+- `update` - Refresh agent instructions
+- `view` - Display interactive dashboard
+- `spec` - Manage specification files
+- `clear` - Completely reset OpenSpec or clear cache only
+- `apply` - Apply a change by submitting tasks to AI for implementation
+
 The troubleshooting guide covers:
 
 - Initialization issues and solutions
-- Command problems and fixes
+- Command problems and fixes, including the apply command
 - File and directory management issues
 - Validation errors and corrections
 - Integration issues with AI workflow
 - Performance optimization techniques
-- Cache management and troubleshooting
+- Cache management and troubleshooting, including proper usage of the clear command
 - Advanced debugging techniques
 
 By following this troubleshooting guide, you should be able to resolve most common issues with OpenSpec in Qwen Code. If problems persist, don't hesitate to seek help from the community or file a bug report.

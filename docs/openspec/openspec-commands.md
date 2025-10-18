@@ -142,7 +142,7 @@ Launches an interactive dashboard that visualizes current specifications and pro
 - Provides static summary as fallback for terminals without interactive support
 - Handles keyboard navigation and selection using Qwen Code's standard UI patterns
 - Implements error handling for unsupported terminals
-- Uses efficient file reading through `OpenSpecFileUtils.readFileEfficiently()`
+- Uses efficient file reading through `OpenSpecCacheService` and `readFileEfficiently()`
 
 ### 5. show
 
@@ -175,7 +175,7 @@ None
 - Located in `/packages/cli/src/ui/commands/openspec/showCommand.ts`
 - Accepts change name as parameter and validates its existence
 - Reads and parses change files (proposal.md, tasks.md, design.md) efficiently
-- Uses `OpenSpecFileUtils.readFileEfficiently()` for memory-efficient file reading
+- Uses `readFileEfficiently()` from `OpenSpecFileUtils` for memory-efficient file reading
 - Formats content for terminal display with proper markdown rendering
 - Handles missing files gracefully with informative messages
 - Implements auto-completion for change names using the `completion` function
@@ -454,7 +454,7 @@ Located in `/packages/cli/src/services/OpenSpecWatcherService.ts`, this service 
 
 Located in `/packages/cli/src/services/OpenSpecMemoryIntegration.ts`, this service integrates OpenSpec with Qwen Code's AI memory system:
 
-- Generates contextual memory content from specifications for AI models
+- Generates contextual memory content from specifications for AI models through `generateOpenSpecMemory()` method
 - Collects content from all markdown files in specs/ and changes/ directories
 - Provides code conformance validation to ensure AI outputs match specifications
 - Tracks active changes for agent configuration
@@ -463,8 +463,8 @@ Located in `/packages/cli/src/services/OpenSpecMemoryIntegration.ts`, this servi
 
 Located in `/packages/cli/src/services/OpenSpecFileUtils.ts`, this service provides utilities for efficient file operations:
 
-- Implements memory-efficient large file reading
-- Provides file statistics collection with formatted size information
+- Implements memory-efficient large file reading through `readFileEfficiently()`
+- Provides file statistics collection with formatted size information through `getFileStats()`
 - Handles file reading errors gracefully
 
 ## File Structures Managed by OpenSpec
@@ -543,7 +543,7 @@ All OpenSpec commands have been fully implemented with comprehensive test covera
 2. **Draft**: Create change proposals with `/openspec change`
 3. **Define**: Create detailed specifications with `/openspec spec`
 4. **Review**: Validate and refine with `/openspec validate/show`
-5. **Implement**: Apply changes according to specifications
+5. **Implement**: Apply changes according to specifications with `/openspec apply`
 6. **Archive**: Complete changes with `/openspec archive`
 
 This workflow is seamlessly integrated into Qwen Code's existing development workflow, with commands appearing in the command palette and following the same interaction patterns as other Qwen Code features.

@@ -99,6 +99,47 @@ List any dependencies or prerequisites for this change.
         const specsDir = path.join(changeDir, 'specs');
         fs.mkdirSync(specsDir, { recursive: true });
         
+        // Create structured delta template
+        const specDeltaContent = `# Delta Operations for Change: ${changeName}
+
+## [ADDED] New Feature or Section
+
+Description of what is being added.
+
+### Details
+- Specific details about the addition
+- Implementation considerations
+
+## [MODIFIED] Existing Feature
+
+Description of what is being modified.
+
+### Before
+Previous implementation details
+
+### After
+New implementation details
+
+## [REMOVED] Deprecated Feature
+
+Description of what is being removed.
+
+### Reason
+Justification for removal
+
+## [RENAMED] Old Name -> New Name
+
+Description of what is being renamed.
+
+### Previous
+Description of the previous name/context
+
+### Updated
+Description of the new name/context
+`;
+
+        fs.writeFileSync(path.join(specsDir, 'delta-template.md'), specDeltaContent);
+        
         // Provide feedback
         return {
           type: 'message',
@@ -110,10 +151,12 @@ Files created:
 - tasks.md - List implementation tasks for AI assistants
 - design.md - Document technical design decisions
 - specs/ - Directory for specification deltas
+  - delta-template.md - Template for structured delta operations
 
 Next steps:
 1. Edit the files to define your change
-2. Use /openspec show ${changeName} to view your change
+2. Replace delta-template.md with your actual specification deltas using the structured format
+3. Use /openspec show ${changeName} to view your change
 `,
         };
       } else {

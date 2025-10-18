@@ -103,14 +103,29 @@ function createSpec(specsDir: string, specPath: string, context: CommandContext)
     // Create directory structure if needed
     fs.mkdirSync(dirName, { recursive: true });
     
-    // Create template content
+    // Create template content with structured requirements
     const templateContent = `# ${path.basename(specPath)}
 
 ## Overview
 Briefly describe what this specification covers.
 
-## Requirements
-List the functional and non-functional requirements.
+### Requirement: Primary Functionality
+Describe the main functionality this specification addresses.
+
+#### Scenario: Normal Operation
+Describe the expected behavior under normal conditions.
+
+#### Scenario: Error Conditions
+Describe how the system should handle error conditions.
+
+### Requirement: Security Considerations
+Describe any security requirements or considerations.
+
+#### Scenario: Authentication
+Describe authentication requirements.
+
+#### Scenario: Authorization
+Describe authorization requirements.
 
 ## Implementation Details
 Provide implementation guidelines and constraints.

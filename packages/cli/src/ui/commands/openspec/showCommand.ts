@@ -20,10 +20,43 @@ export const showCommand: SlashCommand = {
     const changeName = args.trim();
     
     if (!changeName) {
+      // Get list of available changes for interactive selection
+      const projectRoot = process.cwd();
+      const changesDir = path.join(projectRoot, 'openspec', 'changes');
+      
+      if (!fs.existsSync(changesDir)) {
+        return {
+          type: 'message',
+          messageType: 'error',
+          content: 'OpenSpec is not initialized in this project. Run /openspec init first.',
+        };
+      }
+      
+      const changes = fs.readdirSync(changesDir, { withFileTypes: true })
+        .filter(dirent => dirent.isDirectory())
+        .map(dirent => dirent.name)
+        .sort();
+      
+      if (changes.length === 0) {
+        return {
+          type: 'message',
+          messageType: 'info',
+          content: 'No active changes found. Use /openspec change <change-name> to create a new change.',
+        };
+      }
+      
+      // For now, return a message with available changes
+      // In a full implementation, this would show an interactive selection dialog
+      let content = 'Please specify a change name. Available changes:\\n\\n';
+      changes.forEach((change, index) => {
+        content += `${index + 1}. ${change}\\n`;
+      });
+      content += '\\nUsage: /openspec show <change-name>';
+      
       return {
         type: 'message',
-        messageType: 'error',
-        content: 'Please specify a change name. Usage: /openspec show <change-name>',
+        messageType: 'info',
+        content,
       };
     }
     

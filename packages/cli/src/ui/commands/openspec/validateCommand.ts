@@ -20,10 +20,43 @@ export const validateCommand: SlashCommand = {
     const changeName = allFlag ? null : args.trim();
     
     if (!changeName && !allFlag) {
+      // Get list of available changes for interactive selection
+      const projectRoot = process.cwd();
+      const changesDir = path.join(projectRoot, 'openspec', 'changes');
+      
+      if (!fs.existsSync(changesDir)) {
+        return {
+          type: 'message',
+          messageType: 'error',
+          content: 'OpenSpec is not initialized in this project. Run /openspec init first.',
+        };
+      }
+      
+      const changes = fs.readdirSync(changesDir, { withFileTypes: true })
+        .filter(dirent => dirent.isDirectory())
+        .map(dirent => dirent.name)
+        .sort();
+      
+      if (changes.length === 0) {
+        return {
+          type: 'message',
+          messageType: 'info',
+          content: 'No active changes found. Use /openspec change <change-name> to create a new change.',
+        };
+      }
+      
+      // For now, return a message with available changes
+      // In a full implementation, this would show an interactive selection dialog
+      let content = 'Please specify a change name or use --all flag. Available changes:\\n\\n';
+      changes.forEach((change, index) => {
+        content += `${index + 1}. ${change}\\n`;
+      });
+      content += '\\nUsage: /openspec validate <change-name> or /openspec validate --all';
+      
       return {
         type: 'message',
-        messageType: 'error',
-        content: 'Please specify a change name or use --all flag. Usage: /openspec validate <change-name> or /openspec validate --all',
+        messageType: 'info',
+        content,
       };
     }
     
@@ -62,15 +95,33 @@ export const validateCommand: SlashCommand = {
         if (changes.length === 0) {
           content += 'No changes found to validate.\n';
         } else {
-          for (const change of changes) {
-            const result = validateChange(projectRoot, change);
+          // Process changes with bounded concurrency (max 5 concurrent validations)
+          const MAX_CONCURRENT = 5;
+          const results: { change: string; result: { content: string; hasErrors: boolean }; }[] = [];
+          
+          // Process in batches to limit concurrency
+          for (let i = 0; i < changes.length; i += MAX_CONCURRENT) {
+            const batch = changes.slice(i, i + MAX_CONCURRENT);
+            const batchPromises = batch.map(async (change) => {
+              const result = await validateChange(projectRoot, change);
+              return { change, result };
+            });
+            
+            const batchResults = await Promise.all(batchPromises);
+            results.push(...batchResults);
+          }
+          
+          // Sort results by change name to maintain consistent order
+          results.sort((a, b) => a.change.localeCompare(b.change));
+          
+          for (const { change, result } of results) {
             content += `## ${change}\n${result.content}\n`;
             if (result.hasErrors) hasErrors = true;
           }
         }
       } else {
         // Validate specific change
-        const result = validateChange(projectRoot, changeName!);
+        const result = await validateChange(projectRoot, changeName!);
         content += `# Validating change: ${changeName}\n\n${result.content}`;
         hasErrors = result.hasErrors;
       }
@@ -113,7 +164,7 @@ export const validateCommand: SlashCommand = {
   },
 };
 
-function validateChange(projectRoot: string, changeName: string): { content: string; hasErrors: boolean } {
+async function validateChange(projectRoot: string, changeName: string): Promise<{ content: string; hasErrors: boolean }> {
   const changeDir = path.join(projectRoot, 'openspec', 'changes', changeName);
   
   // Check if change exists
@@ -139,6 +190,20 @@ function validateChange(projectRoot: string, changeName: string): { content: str
       const fileContent = fs.readFileSync(filePath, 'utf-8').trim();
       if (fileContent.length === 0) {
         content += `⚠️ Warning: File "${file}" is empty.\n`;
+      } else {
+        // For specification files, validate structured format
+        if (file === 'proposal.md' || file.endsWith('.md') && filePath.includes('specs')) {
+          // Import specification validator
+          const { SpecificationValidator } = await import('../../../services/OpenSpecSpecificationValidator.js');
+          const validationResult = SpecificationValidator.validateSpecificationFormat(fileContent);
+          
+          if (!validationResult.isValid) {
+            content += `⚠️ Warning: File "${file}" has specification format issues:\n`;
+            validationResult.issues.forEach(issue => {
+              content += `  - ${issue}\n`;
+            });
+          }
+        }
       }
     }
   }
@@ -161,6 +226,25 @@ function validateChange(projectRoot: string, changeName: string): { content: str
     
     if (specFiles.length === 0) {
       content += `⚠️ Warning: Specs directory is empty.\n`;
+    } else {
+      // Validate delta operations in spec files
+      for (const file of specFiles) {
+        const filePath = path.join(specsDir, file);
+        const fileContent = fs.readFileSync(filePath, 'utf-8').trim();
+        
+        if (fileContent.length > 0) {
+          // Import delta operations parser
+          const { DeltaOperationsParser } = await import('../../../services/OpenSpecDeltaOperationsParser.js');
+          const validationResult = DeltaOperationsParser.validateDeltaFormat(fileContent);
+          
+          if (!validationResult.isValid) {
+            content += `⚠️ Warning: Spec file "${file}" has delta format issues:\n`;
+            validationResult.issues.forEach(issue => {
+              content += `  - ${issue}\n`;
+            });
+          }
+        }
+      }
     }
   }
   

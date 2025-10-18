@@ -444,11 +444,13 @@ View the details of your change:
 
 ### Step 9: Implement with AI Assistance
 
-Now you can ask Qwen Code to implement the feature, referencing your specification:
+Now you can apply your change to have Qwen Code implement the feature based on your specification:
 
 ```
-Please implement the user authentication feature as specified in /openspec/changes/add-user-authentication
+/openspec apply add-user-authentication
 ```
+
+This will submit the tasks defined in your change's `tasks.md` file to the AI for implementation, referencing your specifications during the implementation process.
 
 ### Step 10: Archive When Complete
 
@@ -465,10 +467,16 @@ This moves the change to the `openspec/archive/` directory.
 If you experience any issues with OpenSpec not reflecting recent changes or if you want to ensure a clean state, you can clear the OpenSpec cache:
 
 ```
+/openspec clear --cache-only
+```
+
+This command clears only the cache while preserving your files. If you want to completely reset OpenSpec and remove all specifications and changes, you can run:
+
+```
 /openspec clear
 ```
 
-This command resets the cache and reinitializes it, which can help resolve caching-related issues.
+This completely removes the `openspec/` directory and all its contents.
 
 ## Best Practices
 
