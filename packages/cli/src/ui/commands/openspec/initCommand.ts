@@ -252,59 +252,6 @@ Outline testing approaches and acceptance criteria.
       const sampleSpecPath = path.join(specsDir, specFileName);
       fs.writeFileSync(sampleSpecPath, sampleSpecContent);
       
-      // Create a sample change proposal
-      const sampleChangeDir = path.join(changesDir, 'sample-change');
-      fs.mkdirSync(sampleChangeDir, { recursive: true });
-      
-      const sampleProposalContent = `# Sample Change Proposal
-
-## Overview
-This is a sample change proposal to demonstrate the structure.
-
-## Motivation
-Explain why this change is needed.
-
-## Implementation Plan
-Detail the steps required to implement this change.
-
-## Impact Assessment
-Describe the potential impact of this change.
-`;
-      
-      const sampleTasksContent = `# Implementation Tasks
-
-- [ ] Task 1: Describe the first implementation task
-- [ ] Task 2: Describe the second implementation task
-- [ ] Task 3: Describe the third implementation task
-`;
-      
-      const sampleDesignContent = `# Technical Design
-
-## Approach
-Describe the technical approach for implementing this change.
-
-## Architecture
-Outline any architectural considerations.
-
-## Dependencies
-List any dependencies or prerequisites.
-`;
-      
-      fs.writeFileSync(path.join(sampleChangeDir, 'proposal.md'), sampleProposalContent);
-      fs.writeFileSync(path.join(sampleChangeDir, 'tasks.md'), sampleTasksContent);
-      fs.writeFileSync(path.join(sampleChangeDir, 'design.md'), sampleDesignContent);
-      
-      // Create specs directory for the change
-      const changeSpecsDir = path.join(sampleChangeDir, 'specs');
-      fs.mkdirSync(changeSpecsDir, { recursive: true });
-      
-      const sampleChangeSpecContent = `# Sample Change Specification
-
-This is a sample specification delta showing what will change.
-`;
-      
-      fs.writeFileSync(path.join(changeSpecsDir, 'sample-spec.md'), sampleChangeSpecContent);
-      
       // Clear cache since we've created new files
       const cacheService = getOpenSpecCacheService();
       if (cacheService) {
@@ -330,16 +277,10 @@ openspec/
 ├── specs/                 # Current source-of-truth specifications
 │   └── ${specFileName}     # ${hasDescription && usedLLM ? 'Specification based on your description' : 'Sample specification'}
 ├── changes/               # Proposed updates (active changes)
-│   └── sample-change/     # Sample change folder
-│       ├── proposal.md    # Change proposal
-│       ├── tasks.md       # Implementation tasks
-│       ├── design.md      # Technical design
-│       └── specs/         # Specification deltas
-│           └── sample-spec.md  # Sample spec delta
 └── archive/               # Completed changes
 
 Next steps:
-1. Review and customize the sample files
+1. Review and customize the specification file
 2. Create your own specifications in specs/
 3. Propose changes using /openspec change <change-name>
 `,
