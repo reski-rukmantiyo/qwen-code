@@ -2,38 +2,42 @@
 
 **Feature: OpenSpec Integration for Spec-Driven Development**
 
-**Status:** IMPLEMENTING
+**Status:** IMPLEMENTED
 
 **Goal:** Integrate OpenSpec (https://github.com/Fission-AI/OpenSpec) to enable deterministic, spec-driven development workflows in Qwen Code. This provides structured human-AI collaboration where specifications are defined before implementation, reducing ambiguity and improving code quality.
 
 **Overview:**
-OpenSpec is a specification-driven development tool that prevents unpredictable AI outputs by ensuring humans and AI align on detailed specifications before any code changes. It maintains "truth" specifications in `openspec/specs/` and proposed changes in `openspec/changes/`. Qwen Code is naturally compatible with OpenSpec through AGENTS.md support for natural language integration.
+OpenSpec is a specification-driven development tool that prevents unpredictable AI outputs by ensuring humans and AI align on detailed specifications before any code changes. It maintains "truth" specifications in `openspec/specs/` and proposed changes in `openspec/changes/`. Qwen Code has a native OpenSpec integration that provides seamless specification-driven development workflows through the `/openspec` command.
 
 **Workflow Integration:**
 
 1. **Initialization:**
-   - Install OpenSpec globally: `npm install -g @fission-ai/openspec@latest`
-   - Initialize in project: `openspec init`
+   - Initialize in project: `/openspec init`
    - This creates the `openspec/` directory structure in the project root
+   - No separate global installation required as OpenSpec is integrated into Qwen Code
 
 2. **Spec Phase:**
-   - Create detailed specifications using `openspec draft` or `openspec show`
-   - Review and validate changes with `openspec validate`
+   - Create detailed specifications using `/openspec spec create` or modify existing ones with `/openspec spec edit`
+   - Create change proposals with `/openspec change <change-name>`
+   - Review and validate changes with `/openspec validate <change-name>`
+   - View changes with `/openspec show <change-name>`
    - Specifications define exactly what needs to be implemented
 
 3. **Implementation Phase:**
-   - Qwen Code reads specifications from `openspec/changes/` 
-   - AI implements tasks according to spec constraints
-   - Reduces scope creep through explicit requirements
+   - Qwen Code automatically reads specifications from `openspec/changes/` and `openspec/specs/`
+   - AI implements tasks according to spec constraints using the structured tasks in `tasks.md`
+   - Reduces scope creep through explicit requirements and implementation tasks
 
 4. **Review Phase:**
-   - Archive completed changes: `openspec archive`
+   - Archive completed changes: `/openspec archive <change-name>`
    - Compare against original specifications for quality assurance
+   - List active changes with `/openspec list`
 
 5. **Integration with Qwen Code CLI:**
-   - New command: `/openspec` to interact with OpenSpec features
-   - Automatic spec reading before major code changes
-   - Workflow enforcement for complex tasks
+   - New command: `/openspec` with subcommands to interact with OpenSpec features
+   - Automatic spec reading before major code changes through `OpenSpecMemoryIntegration`
+   - Workflow enforcement for complex tasks with structured change proposals
+   - Real-time file watching with `OpenSpecWatcherService` to detect specification changes
 
 **Benefits:**
 - Deterministic AI behavior through explicit specifications
@@ -43,11 +47,14 @@ OpenSpec is a specification-driven development tool that prevents unpredictable 
 - Prevention of implementation drift from original intent
 
 **Implementation Details:**
-- OpenSpec CLI commands wrapped in Qwen Code interface
-- Integration into core AI decision-making loop
-- New UI components for spec visualization
-- Build process updated to initialize OpenSpec if present
-- Testing framework extended to validate against specs
+- OpenSpec functionality implemented as native Qwen Code commands (no external CLI dependency)
+- Deep integration into core AI decision-making loop through `OpenSpecMemoryIntegration` service
+- New UI components for spec visualization including interactive dashboard with `/openspec view`
+- File watching system integration with `OpenSpecWatcherService` for real-time updates
+- Caching system with `OpenSpecCacheService` for improved performance
+- Build process automatically initializes OpenSpec context when present
+- Testing framework includes unit tests for all commands and services
+- Code conformance validation ensures AI outputs match specifications
 
 **Documentation:**
 For detailed information about OpenSpec commands and implementation tasks, see:
