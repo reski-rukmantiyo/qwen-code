@@ -11,11 +11,100 @@ import * as path from 'node:path';
 import process from 'node:process';
 import { getOpenSpecCacheService } from '../../hooks/useOpenSpecWatcher.js';
 
+// Helper function to generate content using LLM with fallback
+async function generateContentWithLLM(context: CommandContext, prompt: string): Promise<string> {
+  try {
+    // Get the LLM client from the config
+    const config = context.services.config;
+    if (!config) {
+      // Fallback to heuristic-based generation if config is not available
+      return generateContentWithHeuristics(prompt);
+    }
+    
+    const geminiClient = config.getGeminiClient();
+    if (!geminiClient) {
+      // Fallback to heuristic-based generation if LLM client is not available
+      return generateContentWithHeuristics(prompt);
+    }
+    
+    // Create a simple prompt for content generation
+    const fullPrompt = `${prompt}\n\nPlease provide a concise and well-structured response.`;
+    
+    // Use the LLM to generate content
+    // Note: We're using a simplified approach here since we just need text content
+    const response = await geminiClient.generateContent(
+      [{ role: 'user', parts: [{ text: fullPrompt }] }],
+      {},
+      new AbortController().signal
+    );
+    
+    // Extract the text from the response
+    if (response.candidates && response.candidates.length > 0) {
+      const candidate = response.candidates[0];
+      if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
+        const part = candidate.content.parts[0];
+        if (part.text) {
+          return part.text.trim();
+        }
+      }
+    }
+    
+    // Fallback if no content was generated
+    return generateContentWithHeuristics(prompt);
+  } catch (error) {
+    // Fallback if LLM generation fails
+    return generateContentWithHeuristics(prompt);
+  }
+}
+
+// Helper function to generate content using heuristics (fallback)
+function generateContentWithHeuristics(prompt: string): string {
+  // Extract the description from the prompt
+  const descriptionMatch = prompt.match(/: "(.+)"\s*\n/);
+  const description = descriptionMatch ? descriptionMatch[1] : prompt;
+  
+  // Simple heuristic-based generation based on the prompt content
+  if (prompt.includes('specification')) {
+    return `# System Specification
+
+## Overview
+${description}
+
+## Requirements
+- Functional requirements based on the description
+- Non-functional requirements for performance and security
+
+## Implementation Details
+- Technology stack and architecture
+- Implementation guidelines and constraints
+
+## Testing
+- Unit testing approach
+- Integration testing strategy
+- Acceptance criteria`;
+  }
+  
+  // Generic fallback
+  return `# Generated Specification
+
+## Overview
+This specification was generated based on: ${description}
+
+## Requirements
+List the functional and non-functional requirements.
+
+## Implementation Details
+Provide implementation guidelines and constraints.
+
+## Testing
+Outline testing approaches and acceptance criteria.`;
+}
+
 export const initCommand: SlashCommand = {
   name: 'init',
   description: 'Initialize OpenSpec in your project',
   kind: CommandKind.BUILT_IN,
-  action: async (context: CommandContext, _args: string) => {
+  action: async (context: CommandContext, args: string) => {
     try {
       const projectRoot = process.cwd();
       
@@ -70,14 +159,40 @@ export const initCommand: SlashCommand = {
         }
       }
       
+      // Parse description from args if provided
+      const trimmedArgs = args.trim();
+      let description = '';
+      
+      // Check if we have a quoted description
+      if (trimmedArgs.startsWith('"') && trimmedArgs.endsWith('"') && trimmedArgs.length > 1) {
+        description = trimmedArgs.substring(1, trimmedArgs.length - 1);
+      } else if (trimmedArgs.startsWith("'") && trimmedArgs.endsWith("'") && trimmedArgs.length > 1) {
+        description = trimmedArgs.substring(1, trimmedArgs.length - 1);
+      } else if (trimmedArgs) {
+        description = trimmedArgs;
+      }
+      
       // Create directory structure
       fs.mkdirSync(openspecDir, { recursive: true });
       fs.mkdirSync(specsDir, { recursive: true });
       fs.mkdirSync(changesDir, { recursive: true });
       fs.mkdirSync(archiveDir, { recursive: true });
       
-      // Create a sample spec file
-      const sampleSpecContent = `# Sample Specification
+      // Create a sample spec file based on description or use default
+      let sampleSpecContent: string;
+      if (description) {
+        const specPrompt = `Generate a software specification document based on the following description: "${description}". 
+        Create a complete specification with these sections:
+        1. Overview - High-level description of the system
+        2. Requirements - List of functional and non-functional requirements
+        3. Implementation Details - Technical approach and constraints
+        4. Testing - Testing strategy and acceptance criteria
+        
+        Use proper markdown formatting with appropriate headers and bullet points.`;
+        
+        sampleSpecContent = await generateContentWithLLM(context, specPrompt);
+      } else {
+        sampleSpecContent = `# Sample Specification
 
 This is a sample specification file. Replace this with your actual specifications.
 
@@ -93,6 +208,7 @@ Provide implementation guidelines and constraints.
 ## Testing
 Outline testing approaches and acceptance criteria.
 `;
+      }
       
       const sampleSpecPath = path.join(specsDir, 'sample-spec.md');
       fs.writeFileSync(sampleSpecPath, sampleSpecContent);

@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import type { MockedFunction } from 'vitest';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -226,6 +227,71 @@ describe('initCommand', () => {
       type: 'message',
       messageType: 'error',
       content: expect.stringContaining('Failed to initialize OpenSpec: Permission denied'),
+    });
+  });
+
+  it('should initialize OpenSpec with generated specification when description is provided', async () => {
+    // Arrange: Mock process.version to return a compatible version
+    vi.spyOn(process, 'version', 'get').mockReturnValue('v20.19.0');
+    
+    // Simulate that OpenSpec directory does not exist
+    vi.mocked(fs.existsSync).mockReturnValue(false);
+
+    // Act: Run the command's action with a description
+    const description = 'create webserver based on golang where this website connect to postgre';
+    const result = await initCommand.action!(mockContext, `"${description}"`);
+
+    // Assert: Check that directories were created
+    const openspecDir = path.join(tempDir, 'openspec');
+    const specsDir = path.join(openspecDir, 'specs');
+    const changesDir = path.join(openspecDir, 'changes');
+    const archiveDir = path.join(openspecDir, 'archive');
+    
+    // Check that all directories were created (order may vary)
+    const mkdirCalls = (fs.mkdirSync as MockedFunction<typeof fs.mkdirSync>).mock.calls;
+    console.log('mkdir calls:', mkdirCalls); // Debug log
+    const calledPaths = mkdirCalls.map(call => call[0]);
+    expect(calledPaths).toContain(openspecDir);
+    expect(calledPaths).toContain(specsDir);
+    expect(calledPaths).toContain(changesDir);
+    expect(calledPaths).toContain(archiveDir);
+
+    // Assert: Check that sample files were created
+    const writeFileSyncCalls = (fs.writeFileSync as MockedFunction<typeof fs.writeFileSync>).mock.calls;
+    console.log('writeFileSync calls:', writeFileSyncCalls); // Debug log
+    
+    expect(fs.writeFileSync).toHaveBeenCalledWith(
+      path.join(specsDir, 'sample-spec.md'),
+      expect.any(String)
+    );
+    
+    const sampleChangeDir = path.join(changesDir, 'sample-change');
+    expect(fs.writeFileSync).toHaveBeenCalledWith(
+      path.join(sampleChangeDir, 'proposal.md'),
+      expect.any(String)
+    );
+    
+    expect(fs.writeFileSync).toHaveBeenCalledWith(
+      path.join(sampleChangeDir, 'tasks.md'),
+      expect.any(String)
+    );
+    
+    expect(fs.writeFileSync).toHaveBeenCalledWith(
+      path.join(sampleChangeDir, 'design.md'),
+      expect.any(String)
+    );
+    
+    const changeSpecsDir = path.join(sampleChangeDir, 'specs');
+    expect(fs.writeFileSync).toHaveBeenCalledWith(
+      path.join(changeSpecsDir, 'sample-spec.md'),
+      expect.any(String)
+    );
+
+    // Assert: Check for the correct success message
+    expect(result).toEqual({
+      type: 'message',
+      messageType: 'info',
+      content: expect.stringContaining('✅ OpenSpec successfully initialized!'),
     });
   });
 });
