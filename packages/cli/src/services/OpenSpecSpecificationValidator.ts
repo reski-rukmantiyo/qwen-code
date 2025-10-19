@@ -43,41 +43,69 @@ export class SpecificationValidator {
       
       // Check for requirement headers (### Requirement:)
       const requirementMatch = line.match(/^###\s+(Requirement:.+)$/);
+      // Also check for malformed requirement headers
+      const malformedRequirementMatch = line.match(/^###\s+(Requirement.*)$/);
+      
       if (requirementMatch) {
         const header = requirementMatch[1];
         requirementHeaders.push(header);
         
         // Validate requirement header format
         if (!header.startsWith('Requirement:')) {
-          issues.push(`Line ${i + 1}: Requirement header should start with "Requirement:" - Example: "### Requirement: User Authentication"`);
+          issues.push(`Line ${i + 1}: Requirement header should start with "Requirement:"`);
         } else if (header.length <= 12) { // "Requirement:".length = 12
-          issues.push(`Line ${i + 1}: Requirement header cannot be empty - Example: "### Requirement: User Authentication"`);
+          issues.push(`Line ${i + 1}: Requirement header cannot be empty`);
         }
         
-        // Check for normative language (SHALL/MUST)
-        let hasNormativeLanguage = false;
-        for (let j = i + 1; j < lines.length && !lines[j].match(/^#{2,4}\s+/); j++) {
-          if (lines[j].includes(' SHALL ') || lines[j].includes(' MUST ')) {
-            hasNormativeLanguage = true;
-            break;
+        // Check for normative language (SHALL/MUST) - only in strict mode
+        if (strictMode) {
+          let hasNormativeLanguage = false;
+          for (let j = i + 1; j < lines.length && !lines[j].match(/^#{2,4}\s+/); j++) {
+            if (lines[j].includes(' SHALL ') || lines[j].includes(' MUST ')) {
+              hasNormativeLanguage = true;
+              break;
+            }
+          }
+          if (!hasNormativeLanguage) {
+            issues.push(`Line ${i + 1}: Requirement should use SHALL/MUST for mandatory requirements. Example: "The system SHALL validate user credentials."`);
           }
         }
-        if (!hasNormativeLanguage) {
-          issues.push(`Line ${i + 1}: Requirement should use SHALL/MUST for mandatory requirements. Example: "The system SHALL validate user credentials."`);
+      } else if (malformedRequirementMatch) {
+        // Handle malformed requirement headers like "### Requirement" without colon
+        const header = malformedRequirementMatch[1];
+        if (header === 'Requirement' || header === 'Requirement ') {
+          issues.push(`Line ${i + 1}: Requirement header should start with "Requirement:"`);
+        }
+        // Handle "### Requirement:" with nothing after
+        if (header === 'Requirement:') {
+          issues.push(`Line ${i + 1}: Requirement header cannot be empty`);
         }
       }
       
       // Check for scenario headers (#### Scenario:)
       const scenarioMatch = line.match(/^####\s+(Scenario:.+)$/);
+      // Also check for malformed scenario headers
+      const malformedScenarioMatch = line.match(/^####\s+(Scenario.*)$/);
+      
       if (scenarioMatch) {
         const header = scenarioMatch[1];
         scenarioHeaders.push(header);
         
         // Validate scenario header format
         if (!header.startsWith('Scenario:')) {
-          issues.push(`Line ${i + 1}: Scenario header should start with "Scenario:" - Example: "#### Scenario: Valid User Login"`);
+          issues.push(`Line ${i + 1}: Scenario header should start with "Scenario:"`);
         } else if (header.length <= 9) { // "Scenario:".length = 9
-          issues.push(`Line ${i + 1}: Scenario header cannot be empty - Example: "#### Scenario: Valid User Login"`);
+          issues.push(`Line ${i + 1}: Scenario header cannot be empty`);
+        }
+      } else if (malformedScenarioMatch) {
+        // Handle malformed scenario headers like "#### Scenario" without colon
+        const header = malformedScenarioMatch[1];
+        if (header === 'Scenario' || header === 'Scenario ') {
+          issues.push(`Line ${i + 1}: Scenario header should start with "Scenario:"`);
+        }
+        // Handle "#### Scenario:" with nothing after
+        if (header === 'Scenario:') {
+          issues.push(`Line ${i + 1}: Scenario header cannot be empty`);
         }
       }
       
@@ -90,19 +118,19 @@ export class SpecificationValidator {
     
     // Check if any requirements were found
     if (requirementHeaders.length === 0) {
-      issues.push('No requirement headers found. Specifications should include at least one "### Requirement:" header. Example: "### Requirement: User Authentication"');
+      issues.push('No requirement headers found. Specifications should include at least one "### Requirement:" header.');
     }
     
     // Check for duplicate requirement headers
     const duplicateRequirements = requirementHeaders.filter((item, index) => requirementHeaders.indexOf(item) !== index);
     if (duplicateRequirements.length > 0) {
-      issues.push(`Duplicate requirement headers found: ${[...new Set(duplicateRequirements)].join(', ')}. Each requirement should have a unique header.`);
+      issues.push(`Duplicate requirement headers found: ${[...new Set(duplicateRequirements)].join(', ')}`);
     }
     
     // Check for duplicate scenario headers
     const duplicateScenarios = scenarioHeaders.filter((item, index) => scenarioHeaders.indexOf(item) !== index);
     if (duplicateScenarios.length > 0) {
-      issues.push(`Duplicate scenario headers found: ${[...new Set(duplicateScenarios)].join(', ')}. Each scenario should have a unique header.`);
+      issues.push(`Duplicate scenario headers found: ${[...new Set(duplicateScenarios)].join(', ')}`);
     }
     
     // Check that each requirement has at least one scenario
@@ -296,19 +324,21 @@ export class SpecificationValidator {
     let content = '';
     
     for (const requirement of requirements) {
-      content += `### Requirement: ${requirement.header}\n`;
+      content += `### Requirement: ${requirement.header}\n\n`;
       
-      // Add requirement description (would need to extract from scenarios)
-      // For now, we'll just add the scenarios
       for (const scenario of requirement.scenarios) {
-        content += `#### Scenario: ${scenario.header}\n`;
+        content += `#### Scenario: ${scenario.header}\n\n`;
         content += `${scenario.description}\n`;
       }
       
-      content += '\n';
+      // Only add a newline if this isn't the last requirement
+      if (requirements.indexOf(requirement) < requirements.length - 1) {
+        content += '\n';
+      }
     }
     
-    return content;
+    // Remove trailing newlines
+    return content.trimEnd();
   }
   
   /**
