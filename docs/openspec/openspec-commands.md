@@ -44,6 +44,9 @@ Sets up the OpenSpec directory structure in the current project. This command cr
 - Validates Node.js version compatibility (requires >= 20.19.0)
 - Creates directory structure: `openspec/specs/`, `openspec/changes/`, `openspec/archive/`
 - Generates sample specification and change files for reference
+- Creates two AGENTS.md files for AI assistant integration:
+  - Root-level AGENTS.md (universal stub) at `{project-root}/AGENTS.md`
+  - OpenSpec Instructions AGENTS.md at `{project-root}/openspec/AGENTS.md`
 - Integrates with Qwen Code's file watching system through `OpenSpecWatcherService`
 - Makes specifications available to AI models through `OpenSpecMemoryIntegration`
 - Clears cache using `OpenSpecCacheService` when re-initializing
@@ -62,6 +65,10 @@ openspec/
 │       └── specs/         # Specification deltas
 │           └── sample-spec.md  # Sample spec delta
 └── archive/               # Completed changes
+
+AGENTS.md files:
+├── {project-root}/AGENTS.md           # Root-level universal stub
+└── {project-root}/openspec/AGENTS.md  # OpenSpec instructions
 ```
 
 ### 2. update
@@ -86,6 +93,9 @@ Updates agent instructions and regenerates AI guidance based on the current spec
 - Located in `/packages/cli/src/ui/commands/openspec/updateCommand.ts`
 - Integrates with Qwen Code's agent system to refresh any subagents configured to use OpenSpec specifications
 - Regenerates AI guidance files by calling `OpenSpecMemoryIntegration.generateOpenSpecMemory()`
+- Updates both AGENTS.md files:
+  - Performs full replacement of `{project-root}/openspec/AGENTS.md`
+  - Updates root AGENTS.md via `AgentsStandardConfigurator` with marker-based updates
 - Provides progress feedback during update process using Qwen Code's progress indicators
 - Handles errors gracefully with appropriate error messages
 - Ensures updated guidance is immediately available to AI models in the current session
@@ -467,6 +477,15 @@ Located in `/packages/cli/src/services/OpenSpecFileUtils.ts`, this service provi
 - Provides file statistics collection with formatted size information through `getFileStats()`
 - Handles file reading errors gracefully
 
+### AgentsStandardConfigurator
+
+Located in `/packages/cli/src/services/AgentsStandardConfigurator.ts`, this service handles the creation and updating of AGENTS.md files:
+
+- Creates both root-level AGENTS.md (universal stub) and OpenSpec Instructions AGENTS.md during initialization
+- Performs full replacement of OpenSpec Instructions AGENTS.md during updates
+- Updates root AGENTS.md via marker-based updates to preserve user content outside managed blocks
+- Ensures proper file permissions and error handling for AGENTS.md operations
+
 ## File Structures Managed by OpenSpec
 
 ### Project Structure After Initialization
@@ -494,6 +513,20 @@ openspec/
 3. **design.md** (optional): Technical design decisions
 4. **specs/**: Directory containing spec deltas showing exactly what will change
 
+### AGENTS.md Files
+
+OpenSpec automatically creates and manages two AGENTS.md files to provide specialized instructions to AI assistants:
+
+1. **Root-level AGENTS.md (Universal Stub)** - Located at `{project-root}/AGENTS.md`
+   - Acts as a redirect to the comprehensive OpenSpec instructions
+   - Provides compatibility with AGENTS.md-aware tools that aren't natively supported by Qwen Code
+   - Uses marker-based updates to preserve user content outside managed blocks
+
+2. **OpenSpec Instructions AGENTS.md** - Located at `{project-root}/openspec/AGENTS.md`
+   - Contains comprehensive instructions for AI assistants working with OpenSpec
+   - Provides detailed guidance on workflows, commands, best practices, and integration with Qwen Code
+   - Completely replaced during updates to ensure latest instructions
+
 ## Dependencies and Prerequisites
 
 ### System Requirements
@@ -514,6 +547,7 @@ Within Qwen Code, OpenSpec integrates directly with the AI workflow:
 - Validation ensures AI outputs conform to specifications using `OpenSpecMemoryIntegration.validateCodeConformance()`
 - Archive functionality tracks completed AI-assisted work for historical reference
 - Active changes are tracked and made available to subagents through the agent configuration system
+- Specialized AGENTS.md files provide detailed instructions to AI assistants about OpenSpec workflows and best practices
 
 ## Implementation Status
 

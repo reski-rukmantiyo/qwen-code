@@ -31,12 +31,16 @@ For detailed information on using OpenSpec with Qwen Code, please refer to the f
 - [Usage Guide](usage-guide.md) - Comprehensive guide for using OpenSpec features
 - [Workflow Tutorials](workflow-tutorial.md) - Step-by-step tutorials for common workflows
 - [Best Practices](best-practices.md) - Guidelines for effective specification-driven development
+- [AGENTS.md Documentation](../agents.md) - Specialized instruction files for AI assistants
+- [AGENTS.md Examples](agents-md-examples.md) - Examples of generated AGENTS.md files
 - [Troubleshooting](troubleshooting.md) - Solutions to common issues and problems
 
 ### Developer Documentation
 - [Developer Guide](developer-guide.md) - Technical documentation for developers working on OpenSpec integration
 - [Implementation Tasks](implementation-tasks.md) - Technical tasks for implementing OpenSpec features
 - [Command Reference](openspec-commands.md) - Detailed documentation for OpenSpec slash commands
+- [AGENTS.md Documentation](../agents.md) - Specialized instruction files for AI assistants
+- [AGENTS.md Examples](agents-md-examples.md) - Examples of generated AGENTS.md files
 
 **Usage Syntax**:
 ```bash

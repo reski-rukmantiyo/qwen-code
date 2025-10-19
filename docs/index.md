@@ -33,6 +33,7 @@ This documentation is organized into the following sections:
   - **[Memory Tool](./tools/memory.md):** Documentation for the `save_memory` tool.
 - **[Subagents](./subagents.md):** Specialized AI assistants for focused tasks with comprehensive management, configuration, and usage guidance.
 - **[OpenSpec Integration](./openspec/README.md):** Specification-driven development tool for deterministic, spec-driven workflows.
+- **[AGENTS.md Files](./agents.md):** Specialized instruction files for AI assistants working in Qwen Code projects.
 - **[Contributing & Development Guide](../CONTRIBUTING.md):** Information for contributors and developers, including setup, building, testing, and coding conventions.
 - **[NPM](./npm.md):** Details on how the project's packages are structured
 - **[Troubleshooting Guide](./troubleshooting.md):** Find solutions to common problems and FAQs.
