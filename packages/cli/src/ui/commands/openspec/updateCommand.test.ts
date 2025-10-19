@@ -9,6 +9,24 @@ import { updateCommand } from './updateCommand.js';
 import { createMockCommandContext } from '../../../test-utils/mockCommandContext.js';
 import { type CommandContext } from '../types.js';
 
+// Mock the file system
+vi.mock('node:fs', async () => {
+  const actualFs = await vi.importActual('node:fs');
+  return {
+    ...actualFs,
+    existsSync: vi.fn().mockReturnValue(true),
+    writeFileSync: vi.fn(),
+    readFileSync: vi.fn().mockReturnValue(''),
+  };
+});
+
+// Mock process.cwd()
+vi.mock('node:process', () => ({
+  default: {
+    cwd: vi.fn().mockReturnValue('/mock/project/path')
+  }
+}));
+
 // Mock the OpenSpec services
 vi.mock('../../../services/OpenSpecMemoryIntegration.js', () => {
   return {
@@ -25,6 +43,21 @@ vi.mock('../../../services/OpenSpecCacheService.js', () => {
     OpenSpecCacheService: vi.fn().mockImplementation(() => {
       return {
         getFileContent: vi.fn().mockImplementation((path) => `Content of ${path}`)
+      };
+    })
+  };
+});
+
+// Mock the AgentsStandardConfigurator
+vi.mock('../../../services/AgentsStandardConfigurator.js', () => {
+  return {
+    AgentsStandardConfigurator: vi.fn().mockImplementation(() => {
+      return {
+        updateRootAgentsFile: vi.fn().mockReturnValue({
+          success: true,
+          filePath: '/mock/project/path/AGENTS.md',
+          contentUpdated: true
+        })
       };
     })
   };
@@ -70,6 +103,8 @@ describe('updateCommand', () => {
     expect(content).toContain('Regenerated AI guidance files based on current specifications');
     expect(content).toContain('Updated agent instructions with the latest changes');
     expect(content).toContain('Made updated guidance immediately available to AI models');
+    expect(content).toContain('Updated OpenSpec AGENTS.md with latest template');
+    expect(content).toContain('Updated root AGENTS.md with marker-based updates');
   });
 
   it('should ignore any arguments passed to the command', async () => {
