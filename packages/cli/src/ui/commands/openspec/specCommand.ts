@@ -29,11 +29,13 @@ Actions:
   create <spec-path>    Create a new specification file
   edit <spec-path>      Edit an existing specification
   delete <spec-path>    Remove a specification file
+  list                  List all specifications
   
 Examples:
   /openspec spec create auth/user-authentication
   /openspec spec edit api/rest-endpoints
-  /openspec spec delete deprecated/legacy-feature`,
+  /openspec spec delete deprecated/legacy-feature
+  /openspec spec list`,
       };
     }
     
@@ -59,11 +61,13 @@ Examples:
         return editSpec(specsDir, specPath, context);
       case 'delete':
         return deleteSpec(specsDir, specPath, context);
+      case 'list':
+        return listSpecs(specsDir, context);
       default:
         return {
           type: 'message',
           messageType: 'error',
-          content: `Unknown action: ${action}. Supported actions: create, edit, delete`,
+          content: `Unknown action: ${action}. Supported actions: create, edit, delete, list`,
         };
     }
   },
@@ -110,28 +114,41 @@ function createSpec(specsDir: string, specPath: string, context: CommandContext)
 Briefly describe what this specification covers.
 
 ### Requirement: Primary Functionality
-Describe the main functionality this specification addresses.
+Describe the main functionality this specification addresses. Use SHALL/MUST for mandatory requirements.
 
 #### Scenario: Normal Operation
-Describe the expected behavior under normal conditions.
+- **WHEN** [specific condition or action]
+- **THEN** [expected outcome]
 
 #### Scenario: Error Conditions
-Describe how the system should handle error conditions.
+- **WHEN** [specific condition or action]
+- **THEN** [expected outcome]
 
 ### Requirement: Security Considerations
-Describe any security requirements or considerations.
+Describe any security requirements or considerations. Use SHALL/MUST for mandatory requirements.
 
 #### Scenario: Authentication
-Describe authentication requirements.
+- **WHEN** [specific condition or action]
+- **THEN** [expected outcome]
 
 #### Scenario: Authorization
-Describe authorization requirements.
+- **WHEN** [specific condition or action]
+- **THEN** [expected outcome]
 
 ## Implementation Details
 Provide implementation guidelines and constraints.
 
 ## Testing
 Outline testing approaches and acceptance criteria.
+
+---
+Specification Format Guidelines:
+- Use SHALL/MUST for mandatory requirements
+- Use SHOULD/RECOMMENDED for recommended practices
+- Use MAY/OPTIONAL for optional features
+- Each requirement MUST have at least one scenario
+- Scenarios MUST use the format: #### Scenario: [Name] (4 hashtags)
+- WHEN/THEN format MUST be used in scenarios
 `;
     
     // Write the file
@@ -238,4 +255,59 @@ function deleteSpec(specsDir: string, specPath: string, context: CommandContext)
    
 Note: This command would normally prompt for confirmation before deletion.`,
   };
+}
+
+function listSpecs(specsDir: string, context: CommandContext): MessageActionReturn {
+  try {
+    // Read all .md files in specs directory recursively
+    const specFiles: string[] = [];
+    
+    function walkDir(dir: string) {
+      const items = fs.readdirSync(dir, { withFileTypes: true });
+      
+      for (const item of items) {
+        const fullPath = path.join(dir, item.name);
+        
+        if (item.isDirectory()) {
+          walkDir(fullPath);
+        } else if (item.isFile() && item.name.endsWith('.md')) {
+          // Get relative path from specsDir
+          const relativePath = path.relative(specsDir, fullPath);
+          // Remove .md extension for display
+          const displayName = relativePath.replace(/\.md$/, '');
+          specFiles.push(displayName);
+        }
+      }
+    }
+    
+    walkDir(specsDir);
+    
+    if (specFiles.length === 0) {
+      return {
+        type: 'message',
+        messageType: 'info',
+        content: 'No specifications found.',
+      };
+    }
+    
+    // Sort alphabetically
+    specFiles.sort();
+    
+    let content = `Specifications (${specFiles.length}):\n\n`;
+    for (const file of specFiles) {
+      content += `- ${file}\n`;
+    }
+    
+    return {
+      type: 'message',
+      messageType: 'info',
+      content,
+    };
+  } catch (error: any) {
+    return {
+      type: 'message',
+      messageType: 'error',
+      content: `Failed to list specifications: ${error.message}`,
+    };
+  }
 }

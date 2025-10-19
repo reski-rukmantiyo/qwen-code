@@ -16,9 +16,23 @@ export const showCommand: SlashCommand = {
   description: 'Show details of a specific change',
   kind: CommandKind.BUILT_IN,
   action: async (context: CommandContext, args: string) => {
-    // Parse change name from args
-    const changeName = args.trim();
+    // Parse arguments for flags
+    const argsArray = args.trim().split(/\s+/);
+    let changeName = '';
+    let jsonFlag = false;
+    let deltasOnlyFlag = false;
     
+    for (const arg of argsArray) {
+      if (arg === '--json') {
+        jsonFlag = true;
+      } else if (arg === '--deltas-only') {
+        deltasOnlyFlag = true;
+      } else if (!changeName && !arg.startsWith('-')) {
+        changeName = arg;
+      }
+    }
+    
+    // If no change name, show available changes
     if (!changeName) {
       // Get list of available changes for interactive selection
       const projectRoot = process.cwd();
@@ -70,6 +84,84 @@ export const showCommand: SlashCommand = {
           type: 'message',
           messageType: 'error',
           content: `Change "${changeName}" not found. Run /openspec list to see available changes.`,
+        };
+      }
+      
+      // Handle JSON output
+      if (jsonFlag) {
+        const result: any = {
+          change: changeName,
+        };
+        
+        // Read proposal.md
+        const proposalPath = path.join(changeDir, 'proposal.md');
+        if (fs.existsSync(proposalPath)) {
+          result.proposal = await readFileEfficiently(proposalPath);
+        }
+        
+        // Read tasks.md
+        const tasksPath = path.join(changeDir, 'tasks.md');
+        if (fs.existsSync(tasksPath)) {
+          result.tasks = await readFileEfficiently(tasksPath);
+        }
+        
+        // Read design.md (optional)
+        const designPath = path.join(changeDir, 'design.md');
+        if (fs.existsSync(designPath)) {
+          result.design = await readFileEfficiently(designPath);
+        }
+        
+        // Read spec deltas if requested
+        if (deltasOnlyFlag || !deltasOnlyFlag) { // Always include deltas in JSON
+          const specsDir = path.join(changeDir, 'specs');
+          if (fs.existsSync(specsDir)) {
+            const specFiles = fs.readdirSync(specsDir, { withFileTypes: true })
+              .filter(dirent => dirent.isFile() && dirent.name.endsWith('.md'))
+              .map(dirent => dirent.name);
+            
+            result.deltas = {};
+            for (const file of specFiles) {
+              const filePath = path.join(specsDir, file);
+              result.deltas[file] = await readFileEfficiently(filePath);
+            }
+          }
+        }
+        
+        return {
+          type: 'message',
+          messageType: 'info',
+          content: JSON.stringify(result, null, 2),
+        };
+      }
+      
+      // Handle deltas-only output
+      if (deltasOnlyFlag) {
+        let content = `# Specification Deltas for Change: ${changeName}\n\n`;
+        
+        const specsDir = path.join(changeDir, 'specs');
+        if (fs.existsSync(specsDir)) {
+          const specFiles = fs.readdirSync(specsDir, { withFileTypes: true })
+            .filter(dirent => dirent.isFile() && dirent.name.endsWith('.md'))
+            .map(dirent => dirent.name);
+          
+          if (specFiles.length > 0) {
+            for (const file of specFiles) {
+              const filePath = path.join(specsDir, file);
+              content += `## ${file}\n\n`;
+              content += await readFileEfficiently(filePath);
+              content += '\n\n';
+            }
+          } else {
+            content += 'No specification deltas found.\n';
+          }
+        } else {
+          content += 'No specification deltas directory found.\n';
+        }
+        
+        return {
+          type: 'message',
+          messageType: 'info',
+          content,
         };
       }
       

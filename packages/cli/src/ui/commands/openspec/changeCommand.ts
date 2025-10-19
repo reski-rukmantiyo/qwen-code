@@ -247,43 +247,49 @@ List any dependencies or prerequisites for this change.
         const specsDir = path.join(changeDir, 'specs');
         fs.mkdirSync(specsDir, { recursive: true });
         
-        // Create structured delta template
-        const specDeltaContent = `# Delta Operations for Change: ${changeName}
+        // Create structured delta template with proper specification formatting
+        const specDeltaContent = `# Specification Deltas for Change: ${changeName}
 
-## [ADDED] New Feature or Section
+## ADDED Requirements
 
-Description of what is being added.
+### Requirement: [Descriptive Name]
+[Requirement description using SHALL/MUST for mandatory requirements]
 
-### Details
-- Specific details about the addition
-- Implementation considerations
+#### Scenario: [Descriptive Name]
+- **WHEN** [specific condition or action]
+- **THEN** [expected outcome]
 
-## [MODIFIED] Existing Feature
+#### Scenario: [Alternative or Edge Case]
+- **WHEN** [specific condition or action]
+- **THEN** [expected outcome]
 
-Description of what is being modified.
+## MODIFIED Requirements
 
-### Before
-Previous implementation details
+### Requirement: [Existing Requirement Name]
+[Complete updated requirement description]
 
-### After
-New implementation details
+#### Scenario: [Descriptive Name]
+- **WHEN** [specific condition or action]
+- **THEN** [expected outcome]
 
-## [REMOVED] Deprecated Feature
+## REMOVED Requirements
 
-Description of what is being removed.
+### Requirement: [Deprecated Requirement Name]
+**Reason**: [Justification for removal]
+**Migration**: [How to handle existing usage]
 
-### Reason
-Justification for removal
+## RENAMED Requirements
+- FROM: \`[Old Requirement Name]\`
+- TO: \`[New Requirement Name]\`
 
-## [RENAMED] Old Name -> New Name
-
-Description of what is being renamed.
-
-### Previous
-Description of the previous name/context
-
-### Updated
-Description of the new name/context
+---
+Specification Format Guidelines:
+- Use SHALL/MUST for mandatory requirements
+- Use SHOULD/RECOMMENDED for recommended practices  
+- Use MAY/OPTIONAL for optional features
+- Each requirement MUST have at least one scenario
+- Scenarios MUST use the format: #### Scenario: [Name] (4 hashtags)
+- WHEN/THEN format MUST be used in scenarios
 `;
 
         fs.writeFileSync(path.join(specsDir, 'delta-template.md'), specDeltaContent);
