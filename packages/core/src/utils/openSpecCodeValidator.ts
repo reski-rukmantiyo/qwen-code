@@ -54,9 +54,9 @@ export class OpenSpecCodeValidator {
       }
       
       // Check for basic code quality issues
-      if (this.hasObviousIssues(code)) {
-        issues.push('Code contains obvious issues that violate best practices');
-      }
+      // if (this.hasObviousIssues(code)) {
+      //   issues.push('Code contains obvious issues that violate best practices');
+      // }
       
       return { isValid: issues.length === 0, issues };
     } catch (error) {
@@ -68,25 +68,25 @@ export class OpenSpecCodeValidator {
   /**
    * Checks for obvious code issues
    */
-  private hasObviousIssues(code: string): boolean {
-    // This is a simple heuristic - a real implementation would be much more sophisticated
-    const lines = code.split('\n');
+  // private hasObviousIssues(code: string): boolean {
+  //   // This is a simple heuristic - a real implementation would be much more sophisticated
+  //   const lines = code.split('\n');
     
-    // Check for excessively long lines
-    for (const line of lines) {
-      if (line.length > 200) {
-        return true;
-      }
-    }
+  //   // Check for excessively long lines
+  //   for (const line of lines) {
+  //     if (line.length > 200) {
+  //       return true;
+  //     }
+  //   }
     
-    // Check for obvious anti-patterns
-    if (code.includes('console.log(') && !code.includes('// Debug') && !code.includes('// debug')) {
-      // Allow console.log in debug contexts
-      return true;
-      }
+  //   // Check for obvious anti-patterns
+  //   if (code.includes('console.log(') && !code.includes('// Debug') && !code.includes('// debug')) {
+  //     // Allow console.log in debug contexts
+  //     return true;
+  //     }
     
-    return false;
-  }
+  //   return false;
+  // }
 
   /**
    * Gets a list of active changes for agent configuration

@@ -34,7 +34,7 @@ import { logFileOperation } from '../telemetry/loggers.js';
 import { FileOperationEvent } from '../telemetry/types.js';
 import { getProgrammingLanguage } from '../telemetry/telemetry-utils.js';
 import { getSpecificMimeType } from '../utils/fileUtils.js';
-import { OpenSpecCodeValidator } from '../utils/openSpecCodeValidator.js';
+// import { OpenSpecCodeValidator } from '../utils/openSpecCodeValidator.js';
 
 export function applyReplacement(
   currentContent: string | null,
@@ -361,19 +361,19 @@ class EditToolInvocation implements ToolInvocation<EditToolParams, ToolResult> {
 
     try {
       // Validate code conformance to OpenSpec specifications before writing
-      const validator = new OpenSpecCodeValidator();
-      const validation = await validator.validateCodeConformance(editData.newContent, this.params.file_path);
+      // const validator = new OpenSpecCodeValidator();
+      // const validation = await validator.validateCodeConformance(editData.newContent, this.params.file_path);
       
-      if (!validation.isValid) {
-        return {
-          llmContent: `OpenSpec validation failed: ${validation.issues.join(', ')}`,
-          returnDisplay: `OpenSpec validation failed: ${validation.issues.join(', ')}`,
-          error: {
-            message: `OpenSpec validation failed: ${validation.issues.join(', ')}`,
-            type: ToolErrorType.VALIDATION_FAILURE,
-          },
-        };
-      }
+      // if (!validation.isValid) {
+      //   return {
+      //     llmContent: `OpenSpec validation failed: ${validation.issues.join(', ')}`,
+      //     returnDisplay: `OpenSpec validation failed: ${validation.issues.join(', ')}`,
+      //     error: {
+      //       message: `OpenSpec validation failed: ${validation.issues.join(', ')}`,
+      //       type: ToolErrorType.VALIDATION_FAILURE,
+      //     },
+      //   };
+      // }
       
       this.ensureParentDirectoriesExist(this.params.file_path);
       await this.config

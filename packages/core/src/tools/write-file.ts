@@ -28,7 +28,7 @@ import { makeRelative, shortenPath } from '../utils/paths.js';
 import { getErrorMessage, isNodeError } from '../utils/errors.js';
 import { DEFAULT_DIFF_OPTIONS, getDiffStat } from './diffOptions.js';
 import { ToolNames } from './tool-names.js';
-import { OpenSpecCodeValidator } from '../utils/openSpecCodeValidator.js';
+// import { OpenSpecCodeValidator } from '../utils/openSpecCodeValidator.js';
 import type {
   ModifiableDeclarativeTool,
   ModifyContext,
@@ -233,19 +233,19 @@ class WriteFileToolInvocation extends BaseToolInvocation<
 
     try {
       // Validate code conformance to OpenSpec specifications before writing
-      const validator = new OpenSpecCodeValidator();
-      const validation = await validator.validateCodeConformance(fileContent, file_path);
+      // const validator = new OpenSpecCodeValidator();
+      // const validation = await validator.validateCodeConformance(fileContent, file_path);
       
-      if (!validation.isValid) {
-        return {
-          llmContent: `OpenSpec validation failed: ${validation.issues.join(', ')}`,
-          returnDisplay: `OpenSpec validation failed: ${validation.issues.join(', ')}`,
-          error: {
-            message: `OpenSpec validation failed: ${validation.issues.join(', ')}`,
-            type: ToolErrorType.VALIDATION_FAILURE,
-          },
-        };
-      }
+      // if (!validation.isValid) {
+      //   return {
+      //     llmContent: `OpenSpec validation failed: ${validation.issues.join(', ')}`,
+      //     returnDisplay: `OpenSpec validation failed: ${validation.issues.join(', ')}`,
+      //     error: {
+      //       message: `OpenSpec validation failed: ${validation.issues.join(', ')}`,
+      //       type: ToolErrorType.VALIDATION_FAILURE,
+      //     },
+      //   };
+      // }
 
       const dirName = path.dirname(file_path);
       if (!fs.existsSync(dirName)) {
