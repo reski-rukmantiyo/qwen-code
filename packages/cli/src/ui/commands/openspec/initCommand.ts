@@ -12,7 +12,14 @@ import process from 'node:process';
 import { getOpenSpecCacheService } from '../../hooks/useOpenSpecWatcher.js';
 
 // Import AGENTS.md templates
-import { ROOT_AGENTS_MD_TEMPLATE, OPENSPEC_AGENTS_MD_TEMPLATE } from '../../../templates/agentsMdTemplates.js';
+import { 
+  ROOT_AGENTS_MD_TEMPLATE, 
+  OPENSPEC_AGENTS_MD_TEMPLATE,
+  QWEN_CODE_AGENTS_TEMPLATE,
+  CLAUDE_AGENTS_TEMPLATE,
+  CHATGPT_AGENTS_TEMPLATE,
+  GITHUB_COPILOT_AGENTS_TEMPLATE
+} from '../../../templates/agentsMdTemplates.js';
 
 // Helper function to generate content using LLM with fallback
 async function generateContentWithLLM(context: CommandContext, prompt: string): Promise<string> {
@@ -101,6 +108,74 @@ Provide implementation guidelines and constraints.
 Outline testing approaches and acceptance criteria.`;
 }
 
+// Helper function to create tool-specific AGENTS.md files
+function createToolSpecificAgentsFiles(openspecDir: string, tools: string[] = []): void {
+  const toolsDir = path.join(openspecDir, 'tools');
+  fs.mkdirSync(toolsDir, { recursive: true });
+  
+  // If no tools specified, create a default set
+  if (tools.length === 0) {
+    tools = ['qwen-code', 'claude', 'chatgpt', 'github-copilot'];
+  }
+  
+  // Create tool-specific AGENTS.md files
+  for (const tool of tools) {
+    let templateContent = '';
+    
+    switch (tool.toLowerCase()) {
+      case 'qwen-code':
+        templateContent = QWEN_CODE_AGENTS_TEMPLATE;
+        break;
+      case 'claude':
+        templateContent = CLAUDE_AGENTS_TEMPLATE;
+        break;
+      case 'chatgpt':
+        templateContent = CHATGPT_AGENTS_TEMPLATE;
+        break;
+      case 'github-copilot':
+        templateContent = GITHUB_COPILOT_AGENTS_TEMPLATE;
+        break;
+      default:
+        // Create a generic template for unknown tools
+        templateContent = `# ${tool.charAt(0).toUpperCase() + tool.slice(1)} Integration Instructions
+
+These instructions are for ${tool} when working with OpenSpec projects.
+
+## Core Principles
+
+1. **Specification-Driven Development**: Always reference specifications in \`openspec/specs/\` before implementing changes
+2. **Change Management**: Follow the three-stage workflow (Create, Implement, Archive) for all modifications
+3. **Validation First**: Ensure compliance with specifications before implementation
+4. **Context Awareness**: Understand that specifications are the source of truth for requirements
+
+## Working with Specifications
+
+### Reading Specifications
+- Specifications are located in \`openspec/specs/\` directory
+- Each specification follows a structured format with Overview, Requirements, Implementation Details, and Testing sections
+
+## Working with Changes
+
+### Implementing Changes
+When implementing changes:
+- Follow tasks in \`tasks.md\` in sequential order
+- Reference specifications in \`openspec/specs/\` for implementation guidelines
+- Validate implementation against change proposals
+
+## Best Practices for ${tool}
+
+1. **Be Explicit**: Clearly state which specifications and requirements you're addressing
+2. **Ask Questions**: If anything is unclear, ask for clarification before proceeding
+3. **Validate Assumptions**: Double-check your understanding of requirements before implementation
+4. **Follow Structure**: Maintain the structured format of specifications and changes
+`;
+    }
+    
+    const toolAgentsPath = path.join(toolsDir, `${tool}-agents.md`);
+    fs.writeFileSync(toolAgentsPath, templateContent);
+  }
+}
+
 export const initCommand: SlashCommand = {
   name: 'init',
   description: 'Initialize OpenSpec in your project',
@@ -137,20 +212,30 @@ export const initCommand: SlashCommand = {
       if (fs.existsSync(openspecDir)) {
         // Check if it's already an OpenSpec directory
         const requiredDirs = [specsDir, changesDir, archiveDir];
-        const allExist = requiredDirs.every(dir => fs.existsSync(dir));
+        const requiredFiles = [path.join(openspecDir, 'project.md')];
+        const allDirsExist = requiredDirs.every(dir => fs.existsSync(dir));
+        const allFilesExist = requiredFiles.every(file => fs.existsSync(file));
         
-        if (allExist) {
-          // Clear cache since we're re-initializing
-          const cacheService = getOpenSpecCacheService();
-          if (cacheService) {
-            cacheService.clearCache();
-          }
+        if (allDirsExist && allFilesExist) {
+          // Check for sample files to determine if it's properly initialized
+          const sampleSpecExists = fs.existsSync(path.join(specsDir, 'sample-spec.md')) || 
+                                  fs.readdirSync(specsDir).some(file => file.endsWith('.md'));
+          const sampleChangeExists = fs.existsSync(path.join(changesDir, 'sample-change'));
+          const toolsDirExists = fs.existsSync(path.join(openspecDir, 'tools'));
           
-          return {
-            type: 'message',
-            messageType: 'info',
-            content: '✅ OpenSpec is already initialized in this project.',
-          };
+          if (sampleSpecExists || sampleChangeExists || toolsDirExists) {
+            // Clear cache since we're re-initializing
+            const cacheService = getOpenSpecCacheService();
+            if (cacheService) {
+              cacheService.clearCache();
+            }
+            
+            return {
+              type: 'message',
+              messageType: 'info',
+              content: '✅ OpenSpec is already initialized in this project.',
+            };
+          }
         } else {
           return {
             type: 'message',
@@ -179,6 +264,42 @@ export const initCommand: SlashCommand = {
       fs.mkdirSync(changesDir, { recursive: true });
       fs.mkdirSync(archiveDir, { recursive: true });
       
+      // Create project.md file with project conventions
+      const projectMdPath = path.join(openspecDir, 'project.md');
+      const projectMdContent = `# Project Conventions
+
+This file defines the project-specific conventions and guidelines for using OpenSpec in this project.
+
+## Naming Conventions
+
+- Change folders should use verb-led prefixes (add-, update-, remove-, refactor-)
+- Use kebab-case for all file and directory names
+- Specification files should be named descriptively and match their content
+
+## Specification Guidelines
+
+- All specifications should follow the standard OpenSpec format
+- Include concrete examples and scenarios for all requirements
+- Use normative language (SHALL/MUST, SHOULD/RECOMMENDED, MAY/OPTIONAL)
+
+## Change Management
+
+- Create small, focused changes (<100 lines of new code per change)
+- Prefer single-file implementations until proven insufficient
+- Write clear, actionable task descriptions
+
+## Review Process
+
+- All changes should be reviewed before implementation
+- Validate changes with \`/openspec validate\` before applying
+- Archive completed changes with \`/openspec archive\`
+
+## Team-Specific Notes
+
+Add any project-specific notes, conventions, or guidelines here.
+`;
+      fs.writeFileSync(projectMdPath, projectMdContent);
+      
       // Create AGENTS.md files
       try {
         // Create root-level AGENTS.md (universal stub)
@@ -202,6 +323,9 @@ export const initCommand: SlashCommand = {
         
         // Write OpenSpec instructions AGENTS.md file
         fs.writeFileSync(openSpecAgentsPath, OPENSPEC_AGENTS_MD_TEMPLATE);
+        
+        // Create tool-specific AGENTS.md files
+        createToolSpecificAgentsFiles(openspecDir);
       } catch (error) {
         return {
           type: 'message',
@@ -308,8 +432,103 @@ Outline testing approaches and acceptance criteria.
         }
       }
       
+      // Create sample spec file in the specs directory
       const sampleSpecPath = path.join(specsDir, specFileName);
       fs.writeFileSync(sampleSpecPath, sampleSpecContent);
+      
+      // Create a sample change folder to demonstrate the structure
+      const sampleChangeDir = path.join(changesDir, 'sample-change');
+      fs.mkdirSync(sampleChangeDir, { recursive: true });
+      
+      // Create sample change files
+      const sampleProposalContent = `# Sample Change
+
+## Overview
+This is a sample change proposal to demonstrate the structure.
+
+## Motivation
+Explain why this change is needed and what problem it solves.
+
+## Implementation Plan
+Detail the steps required to implement this change.
+
+## Impact Assessment
+Describe the potential impact of this change on the system.
+`;
+      
+      const sampleTasksContent = `# Implementation Tasks
+
+- [ ] Task 1: Describe the first implementation task
+- [ ] Task 2: Describe the second implementation task
+- [ ] Task 3: Describe the third implementation task
+`;
+      
+      const sampleDesignContent = `# Technical Design for Sample Change
+
+## Approach
+Describe the technical approach for implementing this change.
+
+## Architecture
+Outline any architectural considerations or changes.
+
+## Dependencies
+List any dependencies or prerequisites for this change.
+`;
+      
+      fs.writeFileSync(path.join(sampleChangeDir, 'proposal.md'), sampleProposalContent);
+      fs.writeFileSync(path.join(sampleChangeDir, 'tasks.md'), sampleTasksContent);
+      fs.writeFileSync(path.join(sampleChangeDir, 'design.md'), sampleDesignContent);
+      
+      // Create specs directory for the sample change
+      const sampleChangeSpecsDir = path.join(sampleChangeDir, 'specs');
+      fs.mkdirSync(sampleChangeSpecsDir, { recursive: true });
+      
+      // Create structured delta template with proper specification formatting
+      const sampleSpecDeltaContent = `# Specification Deltas for Change: Sample Change
+
+## ADDED Requirements
+
+### Requirement: [Descriptive Name]
+[Requirement description using SHALL/MUST for mandatory requirements]
+
+#### Scenario: [Descriptive Name]
+- **WHEN** [specific condition or action]
+- **THEN** [expected outcome]
+
+#### Scenario: [Alternative or Edge Case]
+- **WHEN** [specific condition or action]
+- **THEN** [expected outcome]
+
+## MODIFIED Requirements
+
+### Requirement: [Existing Requirement Name]
+[Complete updated requirement description]
+
+#### Scenario: [Descriptive Name]
+- **WHEN** [specific condition or action]
+- **THEN** [expected outcome]
+
+## REMOVED Requirements
+
+### Requirement: [Deprecated Requirement Name]
+**Reason**: [Justification for removal]
+**Migration**: [How to handle existing usage]
+
+## RENAMED Requirements
+- FROM: \`[Old Requirement Name]\`
+- TO: \`[New Requirement Name]\`
+
+---
+Specification Format Guidelines:
+- Use SHALL/MUST for mandatory requirements
+- Use SHOULD/RECOMMENDED for recommended practices  
+- Use MAY/OPTIONAL for optional features
+- Each requirement MUST have at least one scenario
+- Scenarios MUST use the format: #### Scenario: [Name] (4 hashtags)
+- WHEN/THEN format MUST be used in scenarios
+`;
+
+      fs.writeFileSync(path.join(sampleChangeSpecsDir, 'delta-template.md'), sampleSpecDeltaContent);
       
       // Clear cache since we've created new files
       const cacheService = getOpenSpecCacheService();
@@ -334,9 +553,21 @@ ${
 Created directory structure:
 openspec/
 ├── AGENTS.md              # AI assistant instructions
+├── project.md             # Project conventions
 ├── specs/                 # Current source-of-truth specifications
 │   └── ${specFileName}     # ${hasDescription && usedLLM ? 'Specification based on your description' : 'Sample specification'}
 ├── changes/               # Proposed updates (active changes)
+│   └── sample-change/     # Sample change folder
+│       ├── proposal.md    # Change proposal
+│       ├── tasks.md       # Implementation tasks
+│       ├── design.md      # Technical design
+│       └── specs/         # Specification deltas
+│           └── delta-template.md  # Sample spec delta
+├── tools/                 # Tool-specific AGENTS.md files
+│   ├── qwen-code-agents.md    # Qwen Code integration instructions
+│   ├── claude-agents.md       # Claude integration instructions
+│   ├── chatgpt-agents.md      # ChatGPT integration instructions
+│   └── github-copilot-agents.md  # GitHub Copilot integration instructions
 └── archive/               # Completed changes
 
 Next steps:
