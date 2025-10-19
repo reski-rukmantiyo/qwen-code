@@ -21,6 +21,9 @@ import {
   GITHUB_COPILOT_AGENTS_TEMPLATE
 } from '../../../templates/agentsMdTemplates.js';
 
+// Import chalk for colorful output
+import chalk from 'chalk';
+
 // Helper function to generate content using LLM with fallback
 async function generateContentWithLLM(context: CommandContext, prompt: string): Promise<string> {
   try {
@@ -371,12 +374,15 @@ export const initCommand: SlashCommand = {
       }
       
       // Create directory structure
+      console.log(chalk.blue('📁 Creating OpenSpec directory structure...'));
       fs.mkdirSync(openspecDir, { recursive: true });
       fs.mkdirSync(specsDir, { recursive: true });
       fs.mkdirSync(changesDir, { recursive: true });
       fs.mkdirSync(archiveDir, { recursive: true });
+      console.log(chalk.green('✅ Directory structure created successfully'));
       
       // Create project.md file with project conventions
+      console.log(chalk.blue('📄 Creating project.md file...'));
       const projectMdPath = path.join(openspecDir, 'project.md');
       const projectMdContent = `# Project Conventions
 
@@ -411,9 +417,11 @@ This file defines the project-specific conventions and guidelines for using Open
 Add any project-specific notes, conventions, or guidelines here.
 `;
       fs.writeFileSync(projectMdPath, projectMdContent);
+      console.log(chalk.green('✅ project.md created successfully'));
       
       // Create AGENTS.md files
       try {
+        console.log(chalk.blue('🤖 Creating AGENTS.md files...'));
         // Create root-level AGENTS.md (universal stub)
         const rootAgentsPath = path.join(projectRoot, 'AGENTS.md');
         
@@ -438,6 +446,7 @@ Add any project-specific notes, conventions, or guidelines here.
         
         // Create tool-specific AGENTS.md files
         createToolSpecificAgentsFiles(openspecDir, tools, false); // Not in extension mode
+        console.log(chalk.green('✅ AGENTS.md files created successfully'));
       } catch (error) {
         return {
           type: 'message',
@@ -447,6 +456,7 @@ Add any project-specific notes, conventions, or guidelines here.
       }
       
       // Create a sample spec file based on description or use default
+      console.log(chalk.blue('📝 Creating sample specification file...'));
       let sampleSpecContent: string;
       let usedLLM = false;
       let specFileName = 'sample-spec.md';
@@ -547,8 +557,10 @@ Outline testing approaches and acceptance criteria.
       // Create sample spec file in the specs directory
       const sampleSpecPath = path.join(specsDir, specFileName);
       fs.writeFileSync(sampleSpecPath, sampleSpecContent);
+      console.log(chalk.green('✅ Sample specification file created successfully'));
       
       // Create a sample change folder to demonstrate the structure
+      console.log(chalk.blue('🔄 Creating sample change folder...'));
       const sampleChangeDir = path.join(changesDir, 'sample-change');
       fs.mkdirSync(sampleChangeDir, { recursive: true });
       
@@ -641,12 +653,15 @@ Specification Format Guidelines:
 `;
 
       fs.writeFileSync(path.join(sampleChangeSpecsDir, 'delta-template.md'), sampleSpecDeltaContent);
+      console.log(chalk.green('✅ Sample change folder created successfully'));
       
       // Clear cache since we've created new files
+      console.log(chalk.blue('🧹 Clearing OpenSpec cache...'));
       const cacheService = getOpenSpecCacheService();
       if (cacheService) {
         cacheService.clearCache();
       }
+      console.log(chalk.green('✅ Cache cleared successfully'));
       
       // Provide success feedback
       const hasDescription = !!description;
