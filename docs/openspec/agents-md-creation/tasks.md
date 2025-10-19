@@ -128,4 +128,4 @@ Update relevant documentation to reflect the new AGENTS.md creation functionalit
 ### Files to Modify
 - `docs/openspec/README.md`
 - `docs/openspec/openspec-commands.md`
-- `docs/openspec/agents-md-creation/agents-definition.md` (if needed)
+- `docs/agents.md` (new comprehensive AGENTS.md documentation)
