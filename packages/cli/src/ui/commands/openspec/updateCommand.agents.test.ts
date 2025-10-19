@@ -178,7 +178,6 @@ describe('updateCommand - AGENTS.md functionality', () => {
     }
 
     // Assert: Check that both AGENTS.md files were updated
-    const rootAgentsPath = path.join(tempDir, 'AGENTS.md');
     const openSpecAgentsPath = path.join(tempDir, 'openspec', 'AGENTS.md');
     
     // Check that openspec/AGENTS.md was written
