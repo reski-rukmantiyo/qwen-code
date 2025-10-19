@@ -33,6 +33,9 @@ All OpenSpec functionality is accessible through the `/openspec` command with th
 **Description**: 
 Sets up the OpenSpec directory structure in the current project. This command creates the foundational folders needed for specification-driven development.
 
+**Important Note**: 
+The actual content of the `specs/` and `changes/` directories should be created and managed using the `/openspec spec` and `/openspec change` commands respectively. The `init` command only creates the basic directory structure.
+
 **Examples**:
 ```bash
 # Initialize OpenSpec in current directory
@@ -43,7 +46,6 @@ Sets up the OpenSpec directory structure in the current project. This command cr
 - Located in `/packages/cli/src/ui/commands/openspec/initCommand.ts`
 - Validates Node.js version compatibility (requires >= 20.19.0)
 - Creates directory structure: `openspec/specs/`, `openspec/changes/`, `openspec/archive/`
-- Generates sample specification and change files for reference
 - Creates two AGENTS.md files for AI assistant integration:
   - Root-level AGENTS.md (universal stub) at `{project-root}/AGENTS.md`
   - OpenSpec Instructions AGENTS.md at `{project-root}/openspec/AGENTS.md`
@@ -55,15 +57,8 @@ Sets up the OpenSpec directory structure in the current project. This command cr
 **File Structure Created**:
 ```
 openspec/
-├── specs/                 # Current source-of-truth specifications
-│   └── sample-spec.md     # Sample specification
-├── changes/               # Proposed updates (active changes)
-│   └── sample-change/     # Sample change folder
-│       ├── proposal.md    # Change proposal
-│       ├── tasks.md       # Implementation tasks
-│       ├── design.md      # Technical design
-│       └── specs/         # Specification deltas
-│           └── sample-spec.md  # Sample spec delta
+├── specs/                 # Current source-of-truth specifications (populate with /openspec spec)
+├── changes/               # Proposed updates (active changes) (populate with /openspec change)
 └── archive/               # Completed changes
 
 AGENTS.md files:
@@ -491,22 +486,23 @@ Located in `/packages/cli/src/services/AgentsStandardConfigurator.ts`, this serv
 ### Project Structure After Initialization
 ```
 openspec/
-├── specs/                 # Current source-of-truth specifications
-│   └── auth/             # Example spec category
-│       └── spec.md       # Individual spec file
-├── changes/              # Proposed updates (active changes)
-│   └── add-2fa/          # Example change folder
-│       ├── proposal.md   # Why and what changes
-│       ├── tasks.md      # Implementation checklist
-│       ├── design.md     # Technical decisions (optional)
-│       └── specs/        # Spec deltas for this change
-│           └── auth/
-│               └── spec.md  # Delta showing additions/changes
-└── archive/              # Completed changes (automatically managed)
-    └── ...
+├── specs/                 # Current source-of-truth specifications (populate with /openspec spec)
+├── changes/               # Proposed updates (active changes) (populate with /openspec change)
+└── archive/               # Completed changes (automatically managed)
 ```
 
+### Important Note on Directory Content Population
+
+The content of the `specs/` and `changes/` directories is not created during initialization. Instead, these directories are populated through dedicated commands:
+
+1. **Specifications** (`specs/` directory): Populate using the `/openspec spec` command
+2. **Changes** (`changes/` directory): Populate using the `/openspec change` command
+
+This separation ensures that the initialization process is lightweight and that content creation is intentional and properly structured.
+
 ### Change Folder Components
+
+When created with `/openspec change`, each change folder contains:
 
 1. **proposal.md**: Captures the rationale and overview of the proposed change
 2. **tasks.md**: Contains implementation tasks/checklist for AI assistants
@@ -574,8 +570,8 @@ All OpenSpec commands have been fully implemented with comprehensive test covera
 ## Usage Workflow
 
 1. **Initialize**: Set up OpenSpec with `/openspec init`
-2. **Draft**: Create change proposals with `/openspec change`
-3. **Define**: Create detailed specifications with `/openspec spec`
+2. **Define**: Create detailed specifications with `/openspec spec`
+3. **Draft**: Create change proposals with `/openspec change`
 4. **Review**: Validate and refine with `/openspec validate/show`
 5. **Implement**: Apply changes according to specifications with `/openspec apply`
 6. **Archive**: Complete changes with `/openspec archive`
