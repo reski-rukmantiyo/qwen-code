@@ -11,9 +11,9 @@
  * in an update command to manage root AGENTS.md files with OPENSPEC:START/END markers.
  */
 
-import type { CommandContext } from '../types.js';
-import { AgentsStandardConfigurator } from '../../../services/AgentsStandardConfigurator.js';
-import { ROOT_AGENTS_MD_TEMPLATE } from '../../../templates/agentsMdTemplates.js';
+import type { CommandContext } from '../ui/commands/types.js';
+import { AgentsStandardConfigurator } from './AgentsStandardConfigurator.js';
+import { ROOT_AGENTS_MD_TEMPLATE } from '../templates/agentsMdTemplates.js';
 import process from 'node:process';
 import * as path from 'node:path';
 
@@ -41,15 +41,15 @@ async function updateRootAgentsExample(context: CommandContext) {
       const result = configurator.createRootAgentsFile(ROOT_AGENTS_MD_TEMPLATE);
       
       if (result.success) {
-        context.ui.displayMessage({
+        context.ui.addItem({
           type: 'info',
-          content: `✅ Created new root AGENTS.md file at ${result.filePath}`
-        });
+          text: `✅ Created new root AGENTS.md file at ${result.filePath}`
+        }, Date.now());
       } else {
-        context.ui.displayMessage({
+        context.ui.addItem({
           type: 'error',
-          content: result.error || 'Failed to create root AGENTS.md file'
-        });
+          text: result.error || 'Failed to create root AGENTS.md file'
+        }, Date.now());
       }
     } else {
       // Update existing root AGENTS.md file
@@ -61,28 +61,28 @@ Always open \`@/openspec/AGENTS.md\` when working with specifications.`;
       
       if (result.success) {
         if (result.contentUpdated) {
-          context.ui.displayMessage({
+          context.ui.addItem({
             type: 'info',
-            content: `✅ Updated root AGENTS.md file at ${result.filePath}`
-          });
+            text: `✅ Updated root AGENTS.md file at ${result.filePath}`
+          }, Date.now());
         } else {
-          context.ui.displayMessage({
+          context.ui.addItem({
             type: 'info',
-            content: `ℹ️ Root AGENTS.md file is already up to date at ${result.filePath}`
-          });
+            text: `ℹ️ Root AGENTS.md file is already up to date at ${result.filePath}`
+          }, Date.now());
         }
       } else {
-        context.ui.displayMessage({
+        context.ui.addItem({
           type: 'error',
-          content: result.error || 'Failed to update root AGENTS.md file'
-        });
+          text: result.error || 'Failed to update root AGENTS.md file'
+        }, Date.now());
       }
     }
   } catch (error) {
-    context.ui.displayMessage({
+    context.ui.addItem({
       type: 'error',
-      content: `❌ Error updating root AGENTS.md: ${error instanceof Error ? error.message : 'Unknown error'}`
-    });
+      text: `❌ Error updating root AGENTS.md: ${error instanceof Error ? error.message : 'Unknown error'}`
+    }, Date.now());
   }
 }
 

@@ -50,6 +50,7 @@ export * from './utils/ignorePatterns.js';
 export * from './utils/partUtils.js';
 export * from './utils/subagentGenerator.js';
 export * from './utils/projectSummary.js';
+export * from './utils/LruCache.js';
 
 // Export services
 export * from './services/fileDiscoveryService.js';

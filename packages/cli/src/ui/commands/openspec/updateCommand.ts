@@ -13,7 +13,6 @@ import { ROOT_AGENTS_MD_TEMPLATE, OPENSPEC_AGENTS_MD_TEMPLATE } from '../../../t
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import process from 'node:process';
-import type { HistoryItemWithoutId } from '../../types.js';
 
 // Constants for file paths
 const AGENTS_MD_FILENAME = 'AGENTS.md';
@@ -29,7 +28,6 @@ export const updateCommand: SlashCommand = {
       context.ui.setPendingItem({
         type: 'info',
         text: '🔄 Updating agent instructions and AI guidance...',
-        timestamp: Date.now(),
       });
 
       // Step 1: Refresh subagents configured to use OpenSpec specifications
@@ -42,7 +40,6 @@ export const updateCommand: SlashCommand = {
             context.ui.setPendingItem({
               type: 'info',
               text: '🔄 Updating agent instructions and AI guidance...\n✓ Refreshed subagents configured to use OpenSpec specifications',
-              timestamp: Date.now(),
             });
           } catch (error) {
             console.warn('Failed to refresh subagents:', error);
@@ -64,7 +61,6 @@ export const updateCommand: SlashCommand = {
         context.ui.setPendingItem({
           type: 'info',
           text: '🔄 Updating agent instructions and AI guidance...\n✓ Refreshed subagents configured to use OpenSpec specifications\n✓ Regenerated AI guidance files based on current specifications',
-          timestamp: Date.now(),
         });
       } catch (error) {
         console.warn('Failed to regenerate AI guidance:', error);
@@ -90,7 +86,6 @@ export const updateCommand: SlashCommand = {
         context.ui.setPendingItem({
           type: 'info',
           text: '🔄 Updating agent instructions and AI guidance...\n✓ Refreshed subagents configured to use OpenSpec specifications\n✓ Regenerated AI guidance files based on current specifications\n✓ Updated OpenSpec AGENTS.md with latest template',
-          timestamp: Date.now(),
         });
         
         // Update root AGENTS.md using AgentsStandardConfigurator with marker-based updates
@@ -107,7 +102,6 @@ export const updateCommand: SlashCommand = {
           context.ui.setPendingItem({
             type: 'info',
             text: '🔄 Updating agent instructions and AI guidance...\n✓ Refreshed subagents configured to use OpenSpec specifications\n✓ Regenerated AI guidance files based on current specifications\n✓ Updated OpenSpec AGENTS.md with latest template\n✓ Updated root AGENTS.md with marker-based updates',
-            timestamp: Date.now(),
           });
           
           if (result.contentUpdated) {

@@ -8,6 +8,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { updateCommand } from './updateCommand.js';
 import { createMockCommandContext } from '../../../test-utils/mockCommandContext.js';
 import { type CommandContext } from '../types.js';
+import { ROOT_AGENTS_MD_TEMPLATE, OPENSPEC_AGENTS_MD_TEMPLATE } from '../../../templates/agentsMdTemplates.js';
 
 // Mock the file system
 vi.mock('node:fs', async () => {
@@ -107,6 +108,31 @@ describe('updateCommand', () => {
     expect(content).toContain('Updated root AGENTS.md with marker-based updates');
   });
 
+  it('should update AGENTS.md files with correct templates', async () => {
+    // Import the actual modules to access the constants
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    
+    // Act: Run the command's action
+    await updateCommand.action!(mockContext, '');
+    
+    // Assert: Check that AGENTS.md files were updated with correct templates
+    const projectRoot = '/mock/project/path';
+    const openSpecDir = path.join(projectRoot, 'openspec');
+    
+    // Check that OpenSpec AGENTS.md was updated with the correct template
+    expect(fs.writeFileSync).toHaveBeenCalledWith(
+      path.join(openSpecDir, 'AGENTS.md'),
+      OPENSPEC_AGENTS_MD_TEMPLATE,
+      'utf-8'
+    );
+    
+    // Verify that the AgentsStandardConfigurator was called with the correct template
+    const { AgentsStandardConfigurator } = await import('../../../services/AgentsStandardConfigurator.js');
+    const configuratorInstance = (AgentsStandardConfigurator as any).mock.results[0].value;
+    expect(configuratorInstance.updateRootAgentsFile).toHaveBeenCalledWith(ROOT_AGENTS_MD_TEMPLATE);
+  });
+
   it('should ignore any arguments passed to the command', async () => {
     // Act: Run the command's action with arguments
     const result = await updateCommand.action!(mockContext, '--force --verbose');
@@ -126,6 +152,37 @@ describe('updateCommand', () => {
         listSubagents: vi.fn().mockRejectedValue(new Error('Test error'))
       });
     }
+
+    // Act: Run the command's action
+    const result = await updateCommand.action!(mockContext, '');
+
+    // Assert: Check that we still get a success message (errors are handled internally)
+    expect(result).toEqual({
+      type: 'message',
+      messageType: 'info',
+      content: expect.stringContaining('✅ Agent instructions and AI guidance updated successfully!'),
+    });
+  });
+  
+  it('should handle AGENTS.md update errors gracefully', async () => {
+    // Mock an error in AgentsStandardConfigurator
+    const { AgentsStandardConfigurator } = await import('../../../services/AgentsStandardConfigurator.js');
+    (AgentsStandardConfigurator as any).mockImplementation(() => {
+      return {
+        updateRootAgentsFile: vi.fn().mockReturnValue({
+          success: false,
+          error: 'Test error'
+        })
+      };
+    });
+    
+    // Mock fs.writeFileSync to throw an error for OpenSpec AGENTS.md
+    const fs = await import('node:fs');
+    (fs.writeFileSync as any).mockImplementation((filePath: string) => {
+      if (filePath.includes('openspec') && filePath.includes('AGENTS.md')) {
+        throw new Error('Permission denied');
+      }
+    });
 
     // Act: Run the command's action
     const result = await updateCommand.action!(mockContext, '');

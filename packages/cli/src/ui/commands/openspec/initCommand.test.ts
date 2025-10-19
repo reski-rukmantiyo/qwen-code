@@ -90,7 +90,13 @@ describe('initCommand', () => {
     vi.spyOn(process, 'version', 'get').mockReturnValue('v20.19.0');
     
     // Simulate that OpenSpec directory does not exist
-    vi.mocked(fs.existsSync).mockReturnValue(false);
+    vi.mocked(fs.existsSync).mockImplementation((p: any) => {
+      // For the main openspec directory, return false to trigger initialization
+      const openspecDir = path.join(tempDir, 'openspec');
+      if (p === openspecDir) return false;
+      // For all other paths, return false by default (they don't exist yet)
+      return false;
+    });
 
     // Act: Run the command's action
     const result = await initCommand.action!(mockContext, '');
@@ -109,7 +115,8 @@ describe('initCommand', () => {
     // Assert: Check that sample files were created
     expect(fs.writeFileSync).toHaveBeenCalledWith(
       path.join(specsDir, 'sample-spec.md'),
-      expect.stringContaining('Describe the purpose and scope of this specification')
+      expect.stringContaining('Describe the purpose and scope of this specification'),
+      'utf-8'
     );
     
     // Assert: Check that AGENTS.md files were created
@@ -225,7 +232,13 @@ describe('initCommand', () => {
     vi.spyOn(process, 'version', 'get').mockReturnValue('v20.19.0');
     
     // Simulate that OpenSpec directory does not exist
-    vi.mocked(fs.existsSync).mockReturnValue(false);
+    vi.mocked(fs.existsSync).mockImplementation((p: any) => {
+      // For the main openspec directory, return false to trigger initialization
+      const openspecDir = path.join(tempDir, 'openspec');
+      if (p === openspecDir) return false;
+      // For all other paths, return false by default (they don't exist yet)
+      return false;
+    });
 
     // Act: Run the command's action with a description
     const description = 'create webserver based on golang where this website connect to postgre';
@@ -252,7 +265,8 @@ describe('initCommand', () => {
     
     expect(fs.writeFileSync).toHaveBeenCalledWith(
       path.join(specsDir, expect.stringMatching(/.*\.md/)),
-      expect.any(String)
+      expect.any(String),
+      'utf-8'
     );
     
     // Assert: Check that AGENTS.md files were created

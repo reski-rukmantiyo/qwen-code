@@ -190,4 +190,93 @@ OPENSPEC:END`;
     expect(result.success).toBe(true);
     expect(result.contentUpdated).toBe(false);
   });
+  
+  it('should handle files with special characters in paths', () => {
+    // Create a directory with special characters
+    const specialDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agents-config-test-специальный-'));
+    const specialOpenspecDir = path.join(specialDir, 'openspec');
+    fs.mkdirSync(specialOpenspecDir);
+    
+    // Initialize a new configurator with special characters in path
+    const specialConfigurator = new AgentsStandardConfigurator({
+      projectRoot: specialDir,
+      openSpecDir: specialOpenspecDir,
+      enableRollback: true
+    });
+    
+    const result = specialConfigurator.updateRootAgentsFile('Test content with special chars: специальный');
+    
+    expect(result.success).toBe(true);
+    expect(result.filePath).toBe(path.join(specialDir, 'AGENTS.md'));
+    
+    // Clean up
+    fs.rmSync(specialDir, { recursive: true, force: true });
+  });
+  
+  it('should handle very long content between markers', () => {
+    // Create very long content
+    const longContent = 'A'.repeat(10000); // 10KB of content
+    
+    const result = configurator.updateRootAgentsFile(longContent);
+    
+    expect(result.success).toBe(true);
+    expect(result.contentUpdated).toBe(true);
+    
+    // Verify file content
+    const fileContent = fs.readFileSync(result.filePath, 'utf-8');
+    expect(fileContent).toContain('OPENSPEC:START');
+    expect(fileContent).toContain(longContent);
+    expect(fileContent).toContain('OPENSPEC:END');
+  });
+  
+  it('should preserve existing content outside of markers when updating', () => {
+    const existingContent = `# My Custom AGENTS.md
+
+This is my custom content that should be preserved.
+
+OPENSPEC:START
+Old content
+OPENSPEC:END
+
+More custom content at the end.`;
+    
+    const agentsPath = path.join(tempDir, 'AGENTS.md');
+    fs.writeFileSync(agentsPath, existingContent);
+    
+    const newContent = 'New updated content';
+    const result = configurator.updateRootAgentsFile(newContent);
+    
+    expect(result.success).toBe(true);
+    expect(result.contentUpdated).toBe(true);
+    
+    // Verify file content
+    const fileContent = fs.readFileSync(result.filePath, 'utf-8');
+    expect(fileContent).toContain('# My Custom AGENTS.md');
+    expect(fileContent).toContain('This is my custom content that should be preserved.');
+    expect(fileContent).toContain('OPENSPEC:START');
+    expect(fileContent).toContain(newContent);
+    expect(fileContent).toContain('OPENSPEC:END');
+    expect(fileContent).toContain('More custom content at the end.');
+  });
+  
+  it('should handle content with special markdown characters', () => {
+    const specialContent = `# Header
+## Subheader
+[Link](http://example.com)
+\`inline code\`
+\`\`\`
+code block
+\`\`\`
+> Blockquote
+- List item
+1. Numbered list`;
+    
+    const result = configurator.updateRootAgentsFile(specialContent);
+    
+    expect(result.success).toBe(true);
+    
+    // Verify file content
+    const fileContent = fs.readFileSync(result.filePath, 'utf-8');
+    expect(fileContent).toContain(specialContent);
+  });
 });
