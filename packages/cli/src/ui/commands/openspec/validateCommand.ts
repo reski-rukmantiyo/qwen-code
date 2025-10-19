@@ -460,7 +460,7 @@ function validateDeltaOperationsFormat(content: string): { isValid: boolean; iss
   
   // Check for proper delta operation headers
   const validHeaders = ['## ADDED Requirements', '## MODIFIED Requirements', '## REMOVED Requirements', '## RENAMED Requirements'];
-  const headerRegex = /^## [A-Z]+/gm;
+  const headerRegex = /^## (ADDED|MODIFIED|REMOVED|RENAMED) Requirements/gm;
   const headers = content.match(headerRegex) || [];
   
   for (const header of headers) {

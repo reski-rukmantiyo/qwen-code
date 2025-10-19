@@ -245,7 +245,7 @@ export class DeltaOperationsParser {
     
     // Check for proper delta operation headers
     const validHeaders = ['## ADDED Requirements', '## MODIFIED Requirements', '## REMOVED Requirements', '## RENAMED Requirements'];
-    const headerRegex = /^## [A-Z]+/gm;
+    const headerRegex = /^## (ADDED|MODIFIED|REMOVED|RENAMED) Requirements/gm;
     const headers = content.match(headerRegex) || [];
     
     // Track operation types
