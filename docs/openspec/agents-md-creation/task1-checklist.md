@@ -30,8 +30,8 @@
 - [x] Validate that the templates can be imported and used in other modules
 
 ## Subagents to Use
-- [ ] **documentation-writer**: To ensure the content follows proper markdown formatting and is clear for AI assistants
-- [ ] **typescript-monorepo-ai-expert**: To integrate the templates properly within the existing TypeScript codebase structure
+- [x] **documentation-writer**: To ensure the content follows proper markdown formatting and is clear for AI assistants
+- [x] **typescript-monorepo-ai-expert**: To integrate the templates properly within the existing TypeScript codebase structure
 
 ## Files to Modify/Create
-- [ ] Create `packages/cli/src/templates/agentsMdTemplates.ts`
+- [x] Create `packages/cli/src/templates/agentsMdTemplates.ts`
