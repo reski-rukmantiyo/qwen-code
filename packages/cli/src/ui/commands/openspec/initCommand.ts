@@ -11,6 +11,9 @@ import * as path from 'node:path';
 import process from 'node:process';
 import { getOpenSpecCacheService } from '../../hooks/useOpenSpecWatcher.js';
 
+// Import AGENTS.md templates
+import { ROOT_AGENTS_MD_TEMPLATE, OPENSPEC_AGENTS_MD_TEMPLATE } from '../../../templates/agentsMdTemplates.js';
+
 // Helper function to generate content using LLM with fallback
 async function generateContentWithLLM(context: CommandContext, prompt: string): Promise<string> {
   try {
@@ -176,6 +179,37 @@ export const initCommand: SlashCommand = {
       fs.mkdirSync(changesDir, { recursive: true });
       fs.mkdirSync(archiveDir, { recursive: true });
       
+      // Create AGENTS.md files
+      try {
+        // Create root-level AGENTS.md (universal stub)
+        const rootAgentsPath = path.join(projectRoot, 'AGENTS.md');
+        
+        // Check if parent directory exists (should be guaranteed by process.cwd())
+        if (!fs.existsSync(path.dirname(rootAgentsPath))) {
+          throw new Error(`Parent directory for root AGENTS.md does not exist: ${path.dirname(rootAgentsPath)}`);
+        }
+        
+        // Write root-level AGENTS.md file
+        fs.writeFileSync(rootAgentsPath, ROOT_AGENTS_MD_TEMPLATE);
+        
+        // Create OpenSpec instructions AGENTS.md
+        const openSpecAgentsPath = path.join(openspecDir, 'AGENTS.md');
+        
+        // Check if parent directory exists (should be guaranteed by mkdirSync above)
+        if (!fs.existsSync(path.dirname(openSpecAgentsPath))) {
+          throw new Error(`Parent directory for OpenSpec AGENTS.md does not exist: ${path.dirname(openSpecAgentsPath)}`);
+        }
+        
+        // Write OpenSpec instructions AGENTS.md file
+        fs.writeFileSync(openSpecAgentsPath, OPENSPEC_AGENTS_MD_TEMPLATE);
+      } catch (error) {
+        return {
+          type: 'message',
+          messageType: 'error',
+          content: `Failed to create AGENTS.md files: ${(error as Error).message}`,
+        };
+      }
+      
       // Create a sample spec file based on description or use default
       let sampleSpecContent: string;
       let usedLLM = false;
@@ -299,6 +333,7 @@ ${
 
 Created directory structure:
 openspec/
+├── AGENTS.md              # AI assistant instructions
 ├── specs/                 # Current source-of-truth specifications
 │   └── ${specFileName}     # ${hasDescription && usedLLM ? 'Specification based on your description' : 'Sample specification'}
 ├── changes/               # Proposed updates (active changes)

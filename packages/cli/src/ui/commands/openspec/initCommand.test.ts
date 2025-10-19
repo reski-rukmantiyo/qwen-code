@@ -109,29 +109,18 @@ describe('initCommand', () => {
     // Assert: Check that sample files were created
     expect(fs.writeFileSync).toHaveBeenCalledWith(
       path.join(specsDir, 'sample-spec.md'),
-      expect.stringContaining('# Sample Specification')
+      expect.stringContaining('Describe the purpose and scope of this specification')
     );
     
-    const sampleChangeDir = path.join(changesDir, 'sample-change');
+    // Assert: Check that AGENTS.md files were created
     expect(fs.writeFileSync).toHaveBeenCalledWith(
-      path.join(sampleChangeDir, 'proposal.md'),
-      expect.stringContaining('# Sample Change Proposal')
-    );
-    
-    expect(fs.writeFileSync).toHaveBeenCalledWith(
-      path.join(sampleChangeDir, 'tasks.md'),
-      expect.stringContaining('# Implementation Tasks')
+      path.join(tempDir, 'AGENTS.md'),
+      expect.stringContaining('OpenSpec Instructions')
     );
     
     expect(fs.writeFileSync).toHaveBeenCalledWith(
-      path.join(sampleChangeDir, 'design.md'),
-      expect.stringContaining('# Technical Design')
-    );
-    
-    const changeSpecsDir = path.join(sampleChangeDir, 'specs');
-    expect(fs.writeFileSync).toHaveBeenCalledWith(
-      path.join(changeSpecsDir, 'sample-spec.md'),
-      expect.stringContaining('# Sample Change Specification')
+      path.join(openspecDir, 'AGENTS.md'),
+      expect.stringContaining('OpenSpec Instructions for AI Assistants')
     );
 
     // Assert: Check for the correct success message
@@ -143,6 +132,7 @@ describe('initCommand', () => {
     
     const content = (result as any).content;
     expect(content).toContain('openspec/');
+    expect(content).toContain('AGENTS.md');
     expect(content).toContain('specs/');
     expect(content).toContain('changes/');
     expect(content).toContain('archive/');
@@ -261,30 +251,19 @@ describe('initCommand', () => {
     console.log('writeFileSync calls:', writeFileSyncCalls); // Debug log
     
     expect(fs.writeFileSync).toHaveBeenCalledWith(
-      path.join(specsDir, 'sample-spec.md'),
+      path.join(specsDir, expect.stringMatching(/.*\.md/)),
       expect.any(String)
     );
     
-    const sampleChangeDir = path.join(changesDir, 'sample-change');
+    // Assert: Check that AGENTS.md files were created
     expect(fs.writeFileSync).toHaveBeenCalledWith(
-      path.join(sampleChangeDir, 'proposal.md'),
-      expect.any(String)
+      path.join(tempDir, 'AGENTS.md'),
+      expect.stringContaining('OpenSpec Instructions')
     );
     
     expect(fs.writeFileSync).toHaveBeenCalledWith(
-      path.join(sampleChangeDir, 'tasks.md'),
-      expect.any(String)
-    );
-    
-    expect(fs.writeFileSync).toHaveBeenCalledWith(
-      path.join(sampleChangeDir, 'design.md'),
-      expect.any(String)
-    );
-    
-    const changeSpecsDir = path.join(sampleChangeDir, 'specs');
-    expect(fs.writeFileSync).toHaveBeenCalledWith(
-      path.join(changeSpecsDir, 'sample-spec.md'),
-      expect.any(String)
+      path.join(openspecDir, 'AGENTS.md'),
+      expect.stringContaining('OpenSpec Instructions for AI Assistants')
     );
 
     // Assert: Check for the correct success message
