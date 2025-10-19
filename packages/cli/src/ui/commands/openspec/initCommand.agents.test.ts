@@ -13,10 +13,6 @@ import { createMockCommandContext } from '../../../test-utils/mockCommandContext
 import { type CommandContext } from '../types.js';
 import { ROOT_AGENTS_MD_TEMPLATE, OPENSPEC_AGENTS_MD_TEMPLATE } from '../../../templates/agentsMdTemplates.js';
 
-// Debug logging for template values
-console.log('ROOT_AGENTS_MD_TEMPLATE starts with:', ROOT_AGENTS_MD_TEMPLATE.substring(0, 50));
-console.log('OPENSPEC_AGENTS_MD_TEMPLATE starts with:', OPENSPEC_AGENTS_MD_TEMPLATE.substring(0, 50));
-
 // Mock the 'fs' module with both named and default exports to avoid breaking default import sites
 vi.mock('node:fs', async (importOriginal) => {
   const actual = await importOriginal();
@@ -48,6 +44,7 @@ describe('initCommand - AGENTS.md functionality', () => {
   let mockContext: CommandContext;
   let tempDir: string;
   let createdDirs: Set<string>;
+  let writeFileCalls: any[];
 
   beforeEach(() => {
     // Create a temporary directory for testing
@@ -64,10 +61,16 @@ describe('initCommand - AGENTS.md functionality', () => {
     
     // Initialize the createdDirs set for tracking directory creation
     createdDirs = new Set<string>();
+    writeFileCalls = [];
     
     // Reset fs mocks
     vi.mocked(fs.mkdirSync).mockImplementation((p) => {
       createdDirs.add(p as string);
+      return undefined;
+    });
+    
+    vi.mocked(fs.writeFileSync).mockImplementation((...args: any[]) => {
+      writeFileCalls.push(args);
       return undefined;
     });
   });
@@ -89,12 +92,16 @@ describe('initCommand - AGENTS.md functionality', () => {
     const archiveDir = path.join(openspecDir, 'archive');
     
     vi.mocked(fs.existsSync).mockImplementation((p) => {
+      // Return true for our temp directory and its parent directories
+      if (p === tempDir || p === path.dirname(tempDir)) {
+        return true;
+      }
       // For the openspec directory and its subdirectories, return true if they've been created
       if (p === openspecDir || p === specsDir || p === changesDir || p === archiveDir) {
         return createdDirs.has(p as string);
       }
-      // Return true for parent directories (including our temp dir)
-      return true;
+      // Default to false for anything else
+      return false;
     });
 
     // Act: Run the command's action
@@ -104,10 +111,14 @@ describe('initCommand - AGENTS.md functionality', () => {
 
     // Assert: Check that root AGENTS.md was created with correct content
     const rootAgentsPath = path.join(tempDir, 'AGENTS.md');
-    expect(fs.writeFileSync).toHaveBeenCalledWith(
-      rootAgentsPath,
-      ROOT_AGENTS_MD_TEMPLATE
-    );
+    let foundCall = false;
+    for (const call of writeFileCalls) {
+      if (call[0] === rootAgentsPath && call[1] === ROOT_AGENTS_MD_TEMPLATE) {
+        foundCall = true;
+        break;
+      }
+    }
+    expect(foundCall).toBe(true);
   });
 
   it('should create openspec/AGENTS.md with correct template content', async () => {
@@ -118,16 +129,17 @@ describe('initCommand - AGENTS.md functionality', () => {
     const archiveDir = path.join(openspecDir, 'archive');
     
     vi.mocked(fs.existsSync).mockImplementation((p) => {
+      // Return true for our temp directory and its parent directories
+      if (p === tempDir || p === path.dirname(tempDir)) {
+        return true;
+      }
       // For the openspec directory and its subdirectories, return true if they've been created
       if (p === openspecDir || p === specsDir || p === changesDir || p === archiveDir) {
         return createdDirs.has(p as string);
       }
-      // Return true for parent directories (including our temp dir)
-      return true;
+      // Default to false for anything else
+      return false;
     });
-    
-    // Mock mkdirSync to ensure it works
-    vi.mocked(fs.mkdirSync).mockReturnValue(undefined);
 
     // Act: Run the command's action
     if (initCommand.action) {
@@ -136,10 +148,14 @@ describe('initCommand - AGENTS.md functionality', () => {
 
     // Assert: Check that openspec/AGENTS.md was created with correct content
     const openSpecAgentsPath = path.join(openspecDir, 'AGENTS.md');
-    expect(fs.writeFileSync).toHaveBeenCalledWith(
-      openSpecAgentsPath,
-      OPENSPEC_AGENTS_MD_TEMPLATE
-    );
+    let foundCall = false;
+    for (const call of writeFileCalls) {
+      if (call[0] === openSpecAgentsPath && call[1] === OPENSPEC_AGENTS_MD_TEMPLATE) {
+        foundCall = true;
+        break;
+      }
+    }
+    expect(foundCall).toBe(true);
   });
 
   it('should create both AGENTS.md files with correct paths', async () => {
@@ -150,16 +166,17 @@ describe('initCommand - AGENTS.md functionality', () => {
     const archiveDir = path.join(openspecDir, 'archive');
     
     vi.mocked(fs.existsSync).mockImplementation((p) => {
+      // Return true for our temp directory and its parent directories
+      if (p === tempDir || p === path.dirname(tempDir)) {
+        return true;
+      }
       // For the openspec directory and its subdirectories, return true if they've been created
       if (p === openspecDir || p === specsDir || p === changesDir || p === archiveDir) {
         return createdDirs.has(p as string);
       }
-      // Return true for parent directories (including our temp dir)
-      return true;
+      // Default to false for anything else
+      return false;
     });
-    
-    // Mock mkdirSync to ensure it works
-    vi.mocked(fs.mkdirSync).mockReturnValue(undefined);
 
     // Act: Run the command's action
     if (initCommand.action) {
@@ -170,9 +187,7 @@ describe('initCommand - AGENTS.md functionality', () => {
     const rootAgentsPath = path.join(tempDir, 'AGENTS.md');
     const openSpecAgentsPath = path.join(tempDir, 'openspec', 'AGENTS.md');
     
-    const writeFileSyncCalls = vi.mocked(fs.writeFileSync).mock.calls;
-    const writtenPaths = writeFileSyncCalls.map(call => call[0]);
-    
+    const writtenPaths = writeFileCalls.map(call => call[0]);
     expect(writtenPaths).toContain(rootAgentsPath);
     expect(writtenPaths).toContain(openSpecAgentsPath);
   });
@@ -185,12 +200,16 @@ describe('initCommand - AGENTS.md functionality', () => {
     const archiveDir = path.join(openspecDir, 'archive');
     
     vi.mocked(fs.existsSync).mockImplementation((p) => {
+      // Return true for our temp directory and its parent directories
+      if (p === tempDir || p === path.dirname(tempDir)) {
+        return true;
+      }
       // For the openspec directory and its subdirectories, return true if they've been created
       if (p === openspecDir || p === specsDir || p === changesDir || p === archiveDir) {
         return createdDirs.has(p as string);
       }
-      // Return true for parent directories (including our temp dir)
-      return true;
+      // Default to false for anything else
+      return false;
     });
     
     // Mock writeFileSync to throw an error
@@ -220,35 +239,51 @@ describe('initCommand - AGENTS.md functionality', () => {
     const archiveDir = path.join(openspecDir, 'archive');
     
     vi.mocked(fs.existsSync).mockImplementation((p) => {
+      // Return true for our temp directory and its parent directories
+      if (p === tempDir || p === path.dirname(tempDir)) {
+        return true;
+      }
       // For the openspec directory and its subdirectories, return true if they've been created
       if (p === openspecDir || p === specsDir || p === changesDir || p === archiveDir) {
         return createdDirs.has(p as string);
       }
-      // Return true for parent directories (including our temp dir)
-      return true;
+      // Default to false for anything else
+      return false;
     });
-    
-    // Mock mkdirSync to ensure it works
-    vi.mocked(fs.mkdirSync).mockReturnValue(undefined);
 
     // Act: Run the command's action with a description
     const description = 'Create a web server API';
+    let result;
     if (initCommand.action) {
-      await initCommand.action(mockContext, `"${description}"`);
+      result = await initCommand.action(mockContext, `"${description}"`);
     }
 
-    // Assert: Check that both AGENTS.md files were still created
+    // Log the result for debugging
+    console.log('Result when description provided:', result);
+    console.log('Number of writeFile calls:', writeFileCalls.length);
+    console.log('WriteFile calls:', writeFileCalls);
+
+    // Assert: Check that we have the expected number of file writes
+    // Should have 3 calls: root AGENTS.md, openspec AGENTS.md, and sample spec file
+    expect(writeFileCalls.length).toBeGreaterThanOrEqual(2); // At least the two AGENTS.md files
+    
+    // Check that the AGENTS.md files were created with correct content
     const rootAgentsPath = path.join(tempDir, 'AGENTS.md');
     const openSpecAgentsPath = path.join(tempDir, 'openspec', 'AGENTS.md');
     
-    expect(fs.writeFileSync).toHaveBeenCalledWith(
-      rootAgentsPath,
-      ROOT_AGENTS_MD_TEMPLATE
-    );
+    let foundRootAgents = false;
+    let foundOpenSpecAgents = false;
     
-    expect(fs.writeFileSync).toHaveBeenCalledWith(
-      openSpecAgentsPath,
-      OPENSPEC_AGENTS_MD_TEMPLATE
-    );
+    for (const call of writeFileCalls) {
+      if (call[0] === rootAgentsPath && call[1] === ROOT_AGENTS_MD_TEMPLATE) {
+        foundRootAgents = true;
+      }
+      if (call[0] === openSpecAgentsPath && call[1] === OPENSPEC_AGENTS_MD_TEMPLATE) {
+        foundOpenSpecAgents = true;
+      }
+    }
+    
+    expect(foundRootAgents).toBe(true);
+    expect(foundOpenSpecAgents).toBe(true);
   });
 });

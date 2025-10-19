@@ -21,6 +21,8 @@ vi.mock('node:fs', async () => {
     existsSync: vi.fn().mockReturnValue(true),
     writeFileSync: vi.fn(),
     readFileSync: vi.fn().mockReturnValue(''),
+    copyFileSync: vi.fn(),
+    unlinkSync: vi.fn(),
   };
 });
 
@@ -45,14 +47,16 @@ vi.mock('../../../services/OpenSpecCacheService.js', () => {
   };
 });
 
-// Simple mock for AgentsStandardConfigurator
+// Mock AgentsStandardConfigurator
 const mockUpdateRootAgentsFile = vi.fn();
 
 vi.mock('../../../services/AgentsStandardConfigurator.js', () => {
   return {
     AgentsStandardConfigurator: vi.fn().mockImplementation(() => {
       return {
-        updateRootAgentsFile: mockUpdateRootAgentsFile
+        updateRootAgentsFile: mockUpdateRootAgentsFile,
+        getRootAgentsPath: vi.fn().mockReturnValue('/tmp/test/AGENTS.md'),
+        getOpenSpecAgentsPath: vi.fn().mockReturnValue('/tmp/test/openspec/AGENTS.md')
       };
     })
   };
@@ -86,6 +90,8 @@ describe('updateCommand - AGENTS.md functionality', () => {
     vi.mocked(fs.existsSync).mockReturnValue(true);
     vi.mocked(fs.writeFileSync).mockClear();
     vi.mocked(fs.readFileSync).mockClear();
+    vi.mocked(fs.copyFileSync).mockClear();
+    vi.mocked(fs.unlinkSync).mockClear();
     mockUpdateRootAgentsFile.mockClear();
     
     // Set default mock implementation
@@ -175,13 +181,14 @@ describe('updateCommand - AGENTS.md functionality', () => {
     const rootAgentsPath = path.join(tempDir, 'AGENTS.md');
     const openSpecAgentsPath = path.join(tempDir, 'openspec', 'AGENTS.md');
     
-    // Check that both files were written
+    // Check that openspec/AGENTS.md was written
     expect(fs.writeFileSync).toHaveBeenCalledWith(
       openSpecAgentsPath,
       OPENSPEC_AGENTS_MD_TEMPLATE,
       'utf-8'
     );
     
+    // Check that the configurator was called for root AGENTS.md
     expect(mockUpdateRootAgentsFile).toHaveBeenCalledWith(ROOT_AGENTS_MD_TEMPLATE);
   });
 });
