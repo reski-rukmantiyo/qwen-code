@@ -241,7 +241,7 @@ None
 
 **Usage Syntax**:
 ```bash
-/openspec archive <change-name> [--yes|-y]
+/openspec archive <change-name> [--yes|-y] [--skip-specs] [--no-validate] [--validate]
 ```
 
 **Parameters**:
@@ -249,9 +249,18 @@ None
 
 **Options**:
 - `--yes`, `-y`: Automatically confirm archiving without interactive prompts
+- `--skip-specs`: Skip updating specification files during archive
+- `--no-validate`: Skip validation of change proposals and delta specs
+- `--validate`: Enable validation of change proposals and delta specs (default)
 
 **Description**: 
 Moves a completed change from the `openspec/changes/` directory to the `openspec/archive/` directory. This helps maintain a clean workspace by removing completed work from active view.
+
+Before archiving, the command performs several checks:
+- Validates change proposals and delta specifications
+- Checks for incomplete tasks in the change
+- Applies delta operations to update baseline specifications
+- Prompts for confirmation when needed
 
 **Examples**:
 ```bash
@@ -260,12 +269,22 @@ Moves a completed change from the `openspec/changes/` directory to the `openspec
 
 # Archive a change without confirmation
 /openspec archive implement-user-profile --yes
+
+# Archive a change without updating specifications
+/openspec archive implement-user-profile --skip-specs
+
+# Archive a change without validation (not recommended)
+/openspec archive implement-user-profile --no-validate
 ```
 
 **Implementation Details**:
 - Located in `/packages/cli/src/ui/commands/openspec/archiveCommand.ts`
 - Accepts change name as parameter and validates its existence
-- Supports --yes/-y flag for non-interactive mode
+- Supports multiple flags for controlling archive behavior
+- Validates change proposals and delta specifications before archiving
+- Checks for incomplete tasks in tasks.md file
+- Applies delta operations to update baseline specifications in `openspec/specs/`
+- Creates archive directory with date prefix for better organization
 - Moves directory from `openspec/changes/` to `openspec/archive/` using filesystem operations
 - Handles conflicts in archive directory with proper error messages
 - Integrates with Qwen Code's confirmation system using standard dialog interface

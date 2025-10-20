@@ -5,6 +5,22 @@
  */
 
 /**
+ * Represents a requirement in a specification
+ */
+export interface SpecificationRequirement {
+  header: string;
+  scenarios: SpecificationScenario[];
+}
+
+/**
+ * Represents a scenario within a requirement
+ */
+export interface SpecificationScenario {
+  header: string;
+  description: string;
+}
+
+/**
  * Represents a delta operation in a specification change
  */
 export interface DeltaOperation {
@@ -12,6 +28,32 @@ export interface DeltaOperation {
   header: string;
   content: string;
   previousHeader?: string; // For RENAMED operations
+  
+  // For more structured access to requirements within operations
+  requirements?: SpecificationRequirement[];
+}
+
+/**
+ * Extended delta operation types for structured access
+ */
+export interface AddedOperation extends DeltaOperation {
+  type: 'ADDED';
+  requirements: SpecificationRequirement[];
+}
+
+export interface ModifiedOperation extends DeltaOperation {
+  type: 'MODIFIED';
+  requirements: SpecificationRequirement[];
+}
+
+export interface RemovedOperation extends DeltaOperation {
+  type: 'REMOVED';
+}
+
+export interface RenamedOperation extends DeltaOperation {
+  type: 'RENAMED';
+  from: { header: string; content: string };
+  to: { header: string; content: string };
 }
 
 /**
@@ -36,6 +78,21 @@ export class DeltaOperationsParser {
         // Save previous operation if exists
         if (currentOperation) {
           currentOperation.content = currentContent.trim();
+          
+          // Parse requirements for ADDED and MODIFIED operations
+          if ((currentOperation.type === 'ADDED' || currentOperation.type === 'MODIFIED') && currentOperation.content) {
+            currentOperation.requirements = this.parseRequirementsFromContent(currentOperation.content);
+          }
+          
+          // Parse from/to for RENAMED operations
+          if (currentOperation.type === 'RENAMED' && currentOperation.content) {
+            const renamedParts = this.parseRenamedOperation(currentOperation.content);
+            if (renamedParts) {
+              (currentOperation as RenamedOperation).from = renamedParts.from;
+              (currentOperation as RenamedOperation).to = renamedParts.to;
+            }
+          }
+          
           operations.push(currentOperation);
         }
 
@@ -73,6 +130,21 @@ export class DeltaOperationsParser {
     // Save the last operation
     if (currentOperation) {
       currentOperation.content = currentContent.trim();
+      
+      // Parse requirements for ADDED and MODIFIED operations
+      if ((currentOperation.type === 'ADDED' || currentOperation.type === 'MODIFIED') && currentOperation.content) {
+        currentOperation.requirements = this.parseRequirementsFromContent(currentOperation.content);
+      }
+      
+      // Parse from/to for RENAMED operations
+      if (currentOperation.type === 'RENAMED' && currentOperation.content) {
+        const renamedParts = this.parseRenamedOperation(currentOperation.content);
+        if (renamedParts) {
+          (currentOperation as RenamedOperation).from = renamedParts.from;
+          (currentOperation as RenamedOperation).to = renamedParts.to;
+        }
+      }
+      
       operations.push(currentOperation);
     }
 
@@ -93,6 +165,144 @@ export class DeltaOperationsParser {
     }
     
     return content.trim();
+  }
+
+  /**
+   * Parses requirements from content
+   * @param content Content to parse
+   * @returns Array of parsed requirements
+   */
+  static parseRequirementsFromContent(content: string): SpecificationRequirement[] {
+    const requirements: SpecificationRequirement[] = [];
+    const lines = content.split('\n');
+    
+    let currentRequirement: SpecificationRequirement | null = null;
+    let currentScenario: SpecificationScenario | null = null;
+    let currentContent = '';
+    
+    for (const line of lines) {
+      // Check for requirement headers
+      const requirementMatch = line.match(/^### Requirement: (.+)$/);
+      if (requirementMatch) {
+        // Save previous requirement if exists
+        if (currentRequirement) {
+          if (currentScenario) {
+            currentScenario.description = currentContent.trim();
+            currentRequirement.scenarios.push(currentScenario);
+          }
+          requirements.push(currentRequirement);
+        }
+        
+        // Start new requirement
+        const header = requirementMatch[1].trim();
+        currentRequirement = { header, scenarios: [] };
+        currentScenario = null;
+        currentContent = '';
+        continue;
+      }
+      
+      // Check for scenario headers
+      const scenarioMatch = line.match(/^#### Scenario: (.+)$/);
+      if (scenarioMatch && currentRequirement) {
+        // Save previous scenario if exists
+        if (currentScenario) {
+          currentScenario.description = currentContent.trim();
+          currentRequirement.scenarios.push(currentScenario);
+        }
+        
+        // Start new scenario
+        const header = scenarioMatch[1].trim();
+        currentScenario = { header, description: '' };
+        currentContent = '';
+        continue;
+      }
+      
+      // Accumulate content for current section
+      if (currentRequirement) {
+        currentContent += line + '\n';
+      }
+    }
+    
+    // Save the last scenario and requirement
+    if (currentRequirement) {
+      if (currentScenario) {
+        currentScenario.description = currentContent.trim();
+        currentRequirement.scenarios.push(currentScenario);
+      }
+      requirements.push(currentRequirement);
+    }
+    
+    return requirements;
+  }
+
+  /**
+   * Parses renamed operation content into from/to parts
+   * @param content Content to parse
+   * @returns Parsed from/to parts or null if not found
+   */
+  static parseRenamedOperation(content: string): { from: { header: string; content: string }; to: { header: string; content: string } } | null {
+    // Simple implementation - in a real implementation, this would parse the content
+    // to extract the FROM and TO requirements
+    const lines = content.split('\n');
+    let fromHeader = '';
+    let toHeader = '';
+    
+    // Look for FROM and TO markers
+    for (const line of lines) {
+      const fromMatch = line.match(/^- FROM: (.+)$/);
+      const toMatch = line.match(/^- TO: (.+)$/);
+      
+      if (fromMatch) {
+        fromHeader = fromMatch[1].trim();
+      } else if (toMatch) {
+        toHeader = toMatch[1].trim();
+      }
+    }
+    
+    if (fromHeader && toHeader) {
+      return {
+        from: { header: fromHeader, content: '' },
+        to: { header: toHeader, content: '' }
+      };
+    }
+    
+    return null;
+  }
+
+  /**
+   * Organizes operations by type for easier access
+   * @param operations Array of delta operations
+   * @returns Operations organized by type
+   */
+  static organizeOperationsByType(operations: DeltaOperation[]): {
+    added: AddedOperation[];
+    modified: ModifiedOperation[];
+    removed: RemovedOperation[];
+    renamed: RenamedOperation[];
+  } {
+    const added: AddedOperation[] = [];
+    const modified: ModifiedOperation[] = [];
+    const removed: RemovedOperation[] = [];
+    const renamed: RenamedOperation[] = [];
+    
+    for (const op of operations) {
+      switch (op.type) {
+        case 'ADDED':
+          added.push(op as AddedOperation);
+          break;
+        case 'MODIFIED':
+          modified.push(op as ModifiedOperation);
+          break;
+        case 'REMOVED':
+          removed.push(op as RemovedOperation);
+          break;
+        case 'RENAMED':
+          renamed.push(op as RenamedOperation);
+          break;
+      }
+    }
+    
+    return { added, modified, removed, renamed };
   }
 
   /**

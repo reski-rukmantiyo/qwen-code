@@ -74,21 +74,40 @@ describe('archiveCommand', () => {
   it('should return error when no change name is provided', async () => {
     // Act: Run the command's action without arguments
     const result = await archiveCommand.action!(mockContext, '');
+    
+    // Assert: Check for the correct error message
+    expect(result).toEqual({
+      type: 'message',
+      messageType: 'error',
+      content: 'Please specify a change name. Usage: /openspec archive <change-name> [--yes|-y] [--skip-specs] [--no-validate] [--validate]',
+    });
+  });
+
+  it('should return error when OpenSpec is not initialized', async () => {
+    // Arrange: Simulate that the changes directory does not exist
+    vi.mocked(fs.existsSync).mockImplementation((p: any) => {
+      if (p === changesDir) return false;
+      return false;
+    });
+
+    // Act: Run the command's action
+    const result = await archiveCommand.action!(mockContext, 'some-change');
 
     // Assert: Check for the correct error message
     expect(result).toEqual({
       type: 'message',
       messageType: 'error',
-      content: 'Please specify a change name. Usage: /openspec archive <change-name> [--yes|-y]',
+      content: "No OpenSpec changes directory found. Run 'openspec init' first.",
     });
   });
 
   it('should return error when change does not exist', async () => {
-    // Arrange: Simulate that the change directory does not exist
+    // Arrange: Simulate that the changes directory exists but the change directory does not
     const changeName = 'non-existent-change';
     const changeDir = path.join(changesDir, changeName);
     
     vi.mocked(fs.existsSync).mockImplementation((p: any) => {
+      if (p === changesDir) return true;
       if (p === changeDir) return false;
       return false;
     });
@@ -105,16 +124,22 @@ describe('archiveCommand', () => {
   });
 
   it('should return error when change is already archived', async () => {
-    // Arrange: Simulate that the change is already archived
+    // Arrange: Simulate that the changes directory exists and the change is already archived
     const changeName = 'already-archived';
     const changeDir = path.join(changesDir, changeName);
-    const archivedChangeDir = path.join(archiveDir, changeName);
+    const archiveName = `2025-10-20-${changeName}`; // Using a fixed date for testing
+    const archivedChangeDir = path.join(archiveDir, archiveName);
     
     vi.mocked(fs.existsSync).mockImplementation((p: any) => {
-      if (p === changeDir) return false;          // Not in changes
-      if (p === archivedChangeDir) return true;   // But already in archive
+      if (p === changesDir) return true;          // Changes directory exists
+      if (p === changeDir) return true;          // Still in changes (but will be checked for archive)
+      if (p === archivedChangeDir) return true;   // Already in archive
       return false;
     });
+
+    // Mock getArchiveDate to return a fixed date for testing
+    const _getArchiveDateSpy = vi.spyOn(await import('./archiveCommand.js'), 'getArchiveDate').mockReturnValue('2025-10-20');
+    void _getArchiveDateSpy; // Explicitly ignore the spy to avoid TS6133 error
 
     // Act: Run the command's action
     const result = await archiveCommand.action!(mockContext, changeName);
@@ -123,7 +148,7 @@ describe('archiveCommand', () => {
     expect(result).toEqual({
       type: 'message',
       messageType: 'error',
-      content: `Change "${changeName}" not found. Run /openspec list to see available changes.`,
+      content: `Archive '2025-10-20-already-archived' already exists.`,
     });
   });
 
@@ -131,13 +156,24 @@ describe('archiveCommand', () => {
     // Arrange: Simulate that the change exists and is not archived
     const changeName = 'completed-feature';
     const changeDir = path.join(changesDir, changeName);
-    const archivedChangeDir = path.join(archiveDir, changeName);
+    const archiveName = `2025-10-20-${changeName}`; // Using a fixed date for testing
+    const archivedChangeDir = path.join(archiveDir, archiveName);
     
     vi.mocked(fs.existsSync).mockImplementation((p: any) => {
+      if (p === changesDir) return true;          // Changes directory exists
       if (p === changeDir) return true;           // Exists in changes
       if (p === archivedChangeDir) return false;  // Not in archive
       if (p === archiveDir) return true;          // Archive directory exists
       return false;
+    });
+
+    // Mock getArchiveDate to return a fixed date for testing
+    vi.mock('./archiveCommand.js', async (importOriginal) => {
+      const actual = await importOriginal<any>();
+      return {
+        ...actual,
+        getArchiveDate: vi.fn().mockReturnValue('2025-10-20')
+      };
     });
 
     // Act: Run the command's action
@@ -150,7 +186,7 @@ describe('archiveCommand', () => {
     expect(result).toEqual({
       type: 'message',
       messageType: 'info',
-      content: `✅ Change "${changeName}" has been archived successfully.`,
+      content: `✅ Change "${changeName}" has been archived as "2025-10-20-${changeName}".`,
     });
   });
 
@@ -158,14 +194,20 @@ describe('archiveCommand', () => {
     // Arrange: Simulate that the change exists and archive directory does not
     const changeName = 'new-feature';
     const changeDir = path.join(changesDir, changeName);
-    const archivedChangeDir = path.join(archiveDir, changeName);
+    const archiveName = `2025-10-20-${changeName}`; // Using a fixed date for testing
+    const archivedChangeDir = path.join(archiveDir, archiveName);
     
     vi.mocked(fs.existsSync).mockImplementation((p: any) => {
+      if (p === changesDir) return true;          // Changes directory exists
       if (p === changeDir) return true;           // Exists in changes
       if (p === archivedChangeDir) return false;  // Not in archive
       if (p === archiveDir) return false;         // Archive directory doesn't exist
       return false;
     });
+
+    // Mock getArchiveDate to return a fixed date for testing
+    const _getArchiveDateSpy = vi.spyOn(await import('./archiveCommand.js'), 'getArchiveDate').mockReturnValue('2025-10-20');
+    void _getArchiveDateSpy; // Explicitly ignore the spy to avoid TS6133 error
 
     // Act: Run the command's action
     const result = await archiveCommand.action!(mockContext, changeName);
@@ -180,7 +222,7 @@ describe('archiveCommand', () => {
     expect(result).toEqual({
       type: 'message',
       messageType: 'info',
-      content: `✅ Change "${changeName}" has been archived successfully.`,
+      content: `✅ Change "${changeName}" has been archived as "2025-10-20-${changeName}".`,
     });
   });
 
@@ -188,14 +230,20 @@ describe('archiveCommand', () => {
     // Arrange: Simulate that the change exists
     const changeName = 'confirmed-feature';
     const changeDir = path.join(changesDir, changeName);
-    const archivedChangeDir = path.join(archiveDir, changeName);
+    const archiveName = `2025-10-20-${changeName}`; // Using a fixed date for testing
+    const archivedChangeDir = path.join(archiveDir, archiveName);
     
     vi.mocked(fs.existsSync).mockImplementation((p: any) => {
+      if (p === changesDir) return true;          // Changes directory exists
       if (p === changeDir) return true;           // Exists in changes
       if (p === archivedChangeDir) return false;  // Not in archive
       if (p === archiveDir) return true;          // Archive directory exists
       return false;
     });
+
+    // Mock getArchiveDate to return a fixed date for testing
+    const _getArchiveDateSpy = vi.spyOn(await import('./archiveCommand.js'), 'getArchiveDate').mockReturnValue('2025-10-20');
+    void _getArchiveDateSpy; // Explicitly ignore the spy to avoid TS6133 error
 
     // Act: Run the command's action with --yes flag
     const result = await archiveCommand.action!(mockContext, `${changeName} --yes`);
@@ -207,7 +255,7 @@ describe('archiveCommand', () => {
     expect(result).toEqual({
       type: 'message',
       messageType: 'info',
-      content: `✅ Change "${changeName}" has been archived successfully.`,
+      content: `✅ Change "${changeName}" has been archived as "2025-10-20-${changeName}".`,
     });
   });
 
@@ -215,13 +263,24 @@ describe('archiveCommand', () => {
     // Arrange: Simulate that the change exists
     const changeName = 'short-flag-feature';
     const changeDir = path.join(changesDir, changeName);
-    const archivedChangeDir = path.join(archiveDir, changeName);
+    const archiveName = `2025-10-20-${changeName}`; // Using a fixed date for testing
+    const archivedChangeDir = path.join(archiveDir, archiveName);
     
     vi.mocked(fs.existsSync).mockImplementation((p: any) => {
+      if (p === changesDir) return true;          // Changes directory exists
       if (p === changeDir) return true;           // Exists in changes
       if (p === archivedChangeDir) return false;  // Not in archive
       if (p === archiveDir) return true;          // Archive directory exists
       return false;
+    });
+
+    // Mock getArchiveDate to return a fixed date for testing
+    vi.mock('./archiveCommand.js', async (importOriginal) => {
+      const actual = await importOriginal<any>();
+      return {
+        ...actual,
+        getArchiveDate: vi.fn().mockReturnValue('2025-10-20')
+      };
     });
 
     // Act: Run the command's action with -y flag
@@ -234,17 +293,160 @@ describe('archiveCommand', () => {
     expect(result).toEqual({
       type: 'message',
       messageType: 'info',
-      content: `✅ Change "${changeName}" has been archived successfully.`,
+      content: `✅ Change "${changeName}" has been archived as "2025-10-20-${changeName}".`,
+    });
+  });
+
+  it('should handle --skip-specs flag correctly', async () => {
+    // Arrange: Simulate that the change exists
+    const changeName = 'skip-specs-feature';
+    const changeDir = path.join(changesDir, changeName);
+    const archiveName = `2025-10-20-${changeName}`; // Using a fixed date for testing
+    const archivedChangeDir = path.join(archiveDir, archiveName);
+    
+    vi.mocked(fs.existsSync).mockImplementation((p: any) => {
+      if (p === changesDir) return true;          // Changes directory exists
+      if (p === changeDir) return true;           // Exists in changes
+      if (p === archivedChangeDir) return false;  // Not in archive
+      if (p === archiveDir) return true;          // Archive directory exists
+      return false;
+    });
+
+    // Mock getArchiveDate to return a fixed date for testing
+    vi.mock('./archiveCommand.js', async (importOriginal) => {
+      const actual = await importOriginal<any>();
+      return {
+        ...actual,
+        getArchiveDate: vi.fn().mockReturnValue('2025-10-20')
+      };
+    });
+
+    // Act: Run the command's action with --skip-specs flag
+    const result = await archiveCommand.action!(mockContext, `${changeName} --skip-specs`);
+
+    // Assert: Check that the rename operation was called
+    expect(fs.renameSync).toHaveBeenCalledWith(changeDir, archivedChangeDir);
+
+    // Assert: Check for the correct success message
+    expect(result).toEqual({
+      type: 'message',
+      messageType: 'info',
+      content: `✅ Change "${changeName}" has been archived as "2025-10-20-${changeName}".`,
+    });
+  });
+
+  it('should handle --no-validate flag correctly', async () => {
+    // Arrange: Simulate that the change exists
+    const changeName = 'no-validate-feature';
+    const changeDir = path.join(changesDir, changeName);
+    const archiveName = `2025-10-20-${changeName}`; // Using a fixed date for testing
+    const archivedChangeDir = path.join(archiveDir, archiveName);
+    
+    vi.mocked(fs.existsSync).mockImplementation((p: any) => {
+      if (p === changesDir) return true;          // Changes directory exists
+      if (p === changeDir) return true;           // Exists in changes
+      if (p === archivedChangeDir) return false;  // Not in archive
+      if (p === archiveDir) return true;          // Archive directory exists
+      return false;
+    });
+
+    // Mock getArchiveDate to return a fixed date for testing
+    const _getArchiveDateSpy = vi.spyOn(await import('./archiveCommand.js'), 'getArchiveDate').mockReturnValue('2025-10-20');
+    void _getArchiveDateSpy; // Explicitly ignore the spy to avoid TS6133 error
+
+    // Act: Run the command's action with --no-validate flag
+    const result = await archiveCommand.action!(mockContext, `${changeName} --no-validate`);
+
+    // Assert: Check that it returns a confirmation dialog
+    expect(result && 'type' in result && result.type).toBe('confirm_action');
+    expect(result && 'prompt' in result && result.prompt).toEqual(expect.stringContaining('WARNING: Skipping validation may archive invalid specs. Continue?'));
+  });
+
+  it('should handle --no-validate flag with --yes flag correctly', async () => {
+    // Arrange: Simulate that the change exists
+    const changeName = 'no-validate-with-yes-feature';
+    const changeDir = path.join(changesDir, changeName);
+    const archiveName = `2025-10-20-${changeName}`; // Using a fixed date for testing
+    const archivedChangeDir = path.join(archiveDir, archiveName);
+    
+    vi.mocked(fs.existsSync).mockImplementation((p: any) => {
+      if (p === changesDir) return true;          // Changes directory exists
+      if (p === changeDir) return true;           // Exists in changes
+      if (p === archivedChangeDir) return false;  // Not in archive
+      if (p === archiveDir) return true;          // Archive directory exists
+      return false;
+    });
+
+    // Mock getArchiveDate to return a fixed date for testing
+    vi.mock('./archiveCommand.js', async (importOriginal) => {
+      const actual = await importOriginal<any>();
+      return {
+        ...actual,
+        getArchiveDate: vi.fn().mockReturnValue('2025-10-20')
+      };
+    });
+
+    // Act: Run the command's action with --no-validate and --yes flags
+    const result = await archiveCommand.action!(mockContext, `${changeName} --no-validate --yes`);
+
+    // Assert: Check that the rename operation was called
+    expect(fs.renameSync).toHaveBeenCalledWith(changeDir, archivedChangeDir);
+
+    // Assert: Check for the correct success message
+    expect(result).toEqual({
+      type: 'message',
+      messageType: 'info',
+      content: `✅ Change "${changeName}" has been archived as "2025-10-20-${changeName}".`,
+    });
+  });
+
+  it('should handle --validate flag correctly', async () => {
+    // Arrange: Simulate that the change exists
+    const changeName = 'validate-feature';
+    const changeDir = path.join(changesDir, changeName);
+    const archiveName = `2025-10-20-${changeName}`; // Using a fixed date for testing
+    const archivedChangeDir = path.join(archiveDir, archiveName);
+    
+    vi.mocked(fs.existsSync).mockImplementation((p: any) => {
+      if (p === changesDir) return true;          // Changes directory exists
+      if (p === changeDir) return true;           // Exists in changes
+      if (p === archivedChangeDir) return false;  // Not in archive
+      if (p === archiveDir) return true;          // Archive directory exists
+      return false;
+    });
+
+    // Mock getArchiveDate to return a fixed date for testing
+    vi.mock('./archiveCommand.js', async (importOriginal) => {
+      const actual = await importOriginal<any>();
+      return {
+        ...actual,
+        getArchiveDate: vi.fn().mockReturnValue('2025-10-20')
+      };
+    });
+
+    // Act: Run the command's action with --validate flag
+    const result = await archiveCommand.action!(mockContext, `${changeName} --validate`);
+
+    // Assert: Check that the rename operation was called
+    expect(fs.renameSync).toHaveBeenCalledWith(changeDir, archivedChangeDir);
+
+    // Assert: Check for the correct success message
+    expect(result).toEqual({
+      type: 'message',
+      messageType: 'info',
+      content: `✅ Change "${changeName}" has been archived as "2025-10-20-${changeName}".`,
     });
   });
 
   it('should handle file system errors gracefully', async () => {
-    // Arrange: Simulate that renaming throws an error
+    // Arrange: Simulate that the changes directory exists and renaming throws an error
     const changeName = 'error-feature';
     const changeDir = path.join(changesDir, changeName);
-    const archivedChangeDir = path.join(archiveDir, changeName);
+    const archiveName = `2025-10-20-${changeName}`; // Using a fixed date for testing
+    const archivedChangeDir = path.join(archiveDir, archiveName);
     
     vi.mocked(fs.existsSync).mockImplementation((p: any) => {
+      if (p === changesDir) return true;          // Changes directory exists
       if (p === changeDir) return true;           // Exists in changes
       if (p === archivedChangeDir) return false;  // Not in archive
       if (p === archiveDir) return true;          // Archive directory exists
@@ -253,6 +455,15 @@ describe('archiveCommand', () => {
     
     vi.mocked(fs.renameSync).mockImplementation(() => {
       throw new Error('Permission denied');
+    });
+
+    // Mock getArchiveDate to return a fixed date for testing
+    vi.mock('./archiveCommand.js', async (importOriginal) => {
+      const actual = await importOriginal<any>();
+      return {
+        ...actual,
+        getArchiveDate: vi.fn().mockReturnValue('2025-10-20')
+      };
     });
 
     // Act: Run the command's action
@@ -296,13 +507,16 @@ describe('archiveCommand', () => {
     const suggestions = await archiveCommand.completion!(mockContext, '--');
 
     // Assert: Check for the correct suggestions
-    expect(suggestions).toEqual(['--yes', '-y']);
+    expect(suggestions).toEqual(['--yes', '-y', '--skip-specs', '--no-validate', '--validate']);
   });
 
   it('should handle completion errors gracefully', async () => {
     // Arrange: Simulate that reading changes directory throws an error
-    vi.mocked(fs.existsSync).mockImplementation(() => {
-      throw new Error('Permission denied');
+    vi.mocked(fs.existsSync).mockImplementation((p: any) => {
+      if (p === changesDir) {
+        throw new Error('Permission denied');
+      }
+      return false;
     });
 
     // Act: Run the completion function
