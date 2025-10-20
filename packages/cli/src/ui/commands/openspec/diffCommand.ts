@@ -101,7 +101,7 @@ export const diffCommand: SlashCommand = {
       }
       
       const changes = fs.readdirSync(changesDir, { withFileTypes: true })
-        .filter(dirent => dirent.isDirectory())
+        .filter(dirent => dirent.isDirectory() && dirent.name.toLowerCase() !== 'archive')
         .map(dirent => dirent.name);
       
       return changes.filter(change => change.startsWith(partialArg));

@@ -10,7 +10,6 @@ import * as path from 'node:path';
 import * as os from 'node:os';
 import { listCommand } from './listCommand.js';
 import { createMockCommandContext } from '../../../test-utils/mockCommandContext.js';
-import { type CommandContext } from '../types.js';
 
 // Mock the 'fs' module with both named and default exports to avoid breaking default import sites
 vi.mock('node:fs', async (importOriginal) => {
@@ -30,16 +29,12 @@ vi.mock('node:fs', async (importOriginal) => {
 });
 
 describe('listCommand', () => {
-  let mockContext: CommandContext;
+  let mockContext: any;
   let tempDir: string;
-  let openspecDir: string;
-  let changesDir: string;
 
   beforeEach(() => {
     // Create a temporary directory for testing
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'openspec-list-test-'));
-    openspecDir = path.join(tempDir, 'openspec');
-    changesDir = path.join(openspecDir, 'changes');
     
     // Mock process.cwd() to return our temp directory
     vi.spyOn(process, 'cwd').mockReturnValue(tempDir);
@@ -64,7 +59,7 @@ describe('listCommand', () => {
   });
 
   it('should return error when OpenSpec is not initialized', async () => {
-    // Arrange: Simulate that OpenSpec directory does not exist
+    // Arrange: Simulate that the changes directory does not exist
     vi.mocked(fs.existsSync).mockReturnValue(false);
 
     // Act: Run the command's action
@@ -78,18 +73,192 @@ describe('listCommand', () => {
     });
   });
 
-  it('should return info message when no changes are found', async () => {
-    // Arrange: Simulate that OpenSpec directory exists but changes dir is empty
-    vi.mocked(fs.existsSync).mockImplementation((p: any) => {
-      if (p === changesDir) return true;
-      return false;
+  it('should list changes excluding archive directory', async () => {
+    // Arrange: Simulate that the changes directory exists with some changes including an archive directory
+    vi.mocked(fs.existsSync).mockReturnValue(true);
+    vi.mocked(fs.readdirSync).mockReturnValue([
+      { isDirectory: () => true, name: 'feature-auth' },
+      { isDirectory: () => true, name: 'api-improvements' },
+      { isDirectory: () => true, name: 'archive' }, // This should be excluded
+      { isDirectory: () => true, name: 'bug-fixes' },
+      { isDirectory: () => true, name: 'Archive' }, // This should also be excluded (case insensitive)
+    ] as any);
+
+    // Act: Run the command's action
+    const result = await listCommand.action!(mockContext, '');
+
+    // Assert: Check that archive directories are excluded from the list
+    expect(result).toEqual({
+      type: 'message',
+      messageType: 'info',
+      content: expect.stringContaining('Active changes (3):'),
     });
+    
+    // Check that the archive directories are not in the content
+    expect(result).toEqual({
+      type: 'message',
+      messageType: 'info',
+      content: expect.not.stringContaining('archive'),
+    });
+    
+    // Check that the other changes are listed
+    expect(result).toEqual({
+      type: 'message',
+      messageType: 'info',
+      content: expect.stringContaining('feature-auth'),
+    });
+    expect(result).toEqual({
+      type: 'message',
+      messageType: 'info',
+      content: expect.stringContaining('api-improvements'),
+    });
+    expect(result).toEqual({
+      type: 'message',
+      messageType: 'info',
+      content: expect.stringContaining('bug-fixes'),
+    });
+  });
+
+  it('should handle case insensitive archive directory names', async () => {
+    // Arrange: Simulate that the changes directory exists with various case archive directories
+    vi.mocked(fs.existsSync).mockReturnValue(true);
+    vi.mocked(fs.readdirSync).mockReturnValue([
+      { isDirectory: () => true, name: 'feature-auth' },
+      { isDirectory: () => true, name: 'ARCHIVE' }, // Uppercase archive
+      { isDirectory: () => true, name: 'Archive' }, // Title case archive
+      { isDirectory: () => true, name: 'bug-fixes' },
+      { isDirectory: () => true, name: 'archived-changes' }, // Should not be excluded
+    ] as any);
+
+    // Act: Run the command's action
+    const result = await listCommand.action!(mockContext, '');
+
+    // Assert: Check that archive directories are excluded but archived-changes is not
+    expect(result).toEqual({
+      type: 'message',
+      messageType: 'info',
+      content: expect.stringContaining('Active changes (3):'),
+    });
+    
+    // Check that the archive directories are not in the content
+    expect(result).toEqual({
+      type: 'message',
+      messageType: 'info',
+      content: expect.not.stringContaining('ARCHIVE'),
+    });
+    expect(result).toEqual({
+      type: 'message',
+      messageType: 'info',
+      content: expect.not.stringContaining('Archive'),
+    });
+    
+    // Check that archived-changes is still included
+    expect(result).toEqual({
+      type: 'message',
+      messageType: 'info',
+      content: expect.stringContaining('archived-changes'),
+    });
+  });
+
+  it('should not exclude nested directories named archive', async () => {
+    // Arrange: Simulate that the changes directory exists with nested archive directories
+    vi.mocked(fs.existsSync).mockReturnValue(true);
+    vi.mocked(fs.readdirSync).mockReturnValue([
+      { isDirectory: () => true, name: 'feature-auth' },
+      { isDirectory: () => true, name: 'nested-change' },
+      { isDirectory: () => true, name: 'bug-fixes' },
+    ] as any);
+
+    // Act: Run the command's action
+    const result = await listCommand.action!(mockContext, '');
+
+    // Assert: Check that all directories are listed (none should be excluded)
+    expect(result).toEqual({
+      type: 'message',
+      messageType: 'info',
+      content: expect.stringContaining('Active changes (3):'),
+    });
+    
+    // Check that all changes are listed
+    expect(result).toEqual({
+      type: 'message',
+      messageType: 'info',
+      content: expect.stringContaining('feature-auth'),
+    });
+    expect(result).toEqual({
+      type: 'message',
+      messageType: 'info',
+      content: expect.stringContaining('nested-change'),
+    });
+    expect(result).toEqual({
+      type: 'message',
+      messageType: 'info',
+      content: expect.stringContaining('bug-fixes'),
+    });
+  });
+
+  it('should handle edge cases with special characters', async () => {
+    // Arrange: Simulate that the changes directory exists with special character names
+    vi.mocked(fs.existsSync).mockReturnValue(true);
+    vi.mocked(fs.readdirSync).mockReturnValue([
+      { isDirectory: () => true, name: 'feature-auth' },
+      { isDirectory: () => true, name: 'archivé' }, // Special character, should not be excluded
+      { isDirectory: () => true, name: 'archivë' }, // Different special character, should not be excluded
+      { isDirectory: () => true, name: 'archive' }, // Regular archive, should be excluded
+      { isDirectory: () => true, name: 'bug-fixes' },
+    ] as any);
+
+    // Act: Run the command's action
+    const result = await listCommand.action!(mockContext, '');
+
+    // Assert: Check that only exact 'archive' match is excluded
+    expect(result).toEqual({
+      type: 'message',
+      messageType: 'info',
+      content: expect.stringContaining('Active changes (4):'),
+    });
+    
+    // Check that regular archive is excluded
+    expect(result).toEqual({
+      type: 'message',
+      messageType: 'info',
+      content: expect.not.stringContaining('archive'),
+    });
+    
+    // Check that special character names are still included
+    expect(result).toEqual({
+      type: 'message',
+      messageType: 'info',
+      content: expect.stringContaining('archivé'),
+    });
+    expect(result).toEqual({
+      type: 'message',
+      messageType: 'info',
+      content: expect.stringContaining('archivë'),
+    });
+    
+    // Check that other changes are still included
+    expect(result).toEqual({
+      type: 'message',
+      messageType: 'info',
+      content: expect.stringContaining('feature-auth'),
+    });
+    expect(result).toEqual({
+      type: 'message',
+      messageType: 'info',
+      content: expect.stringContaining('bug-fixes'),
+    });
+  });
+
+  it('should handle empty changes directory', async () => {
+    // Arrange: Simulate that the changes directory exists but is empty
+    vi.mocked(fs.existsSync).mockReturnValue(true);
     vi.mocked(fs.readdirSync).mockReturnValue([]);
 
     // Act: Run the command's action
     const result = await listCommand.action!(mockContext, '');
 
-    // Assert: Check for the correct info message
+    // Assert: Check for the correct message
     expect(result).toEqual({
       type: 'message',
       messageType: 'info',
@@ -97,43 +266,10 @@ describe('listCommand', () => {
     });
   });
 
-  it('should list active changes when they exist', async () => {
-    // Arrange: Simulate that OpenSpec directory exists with changes
-    vi.mocked(fs.existsSync).mockImplementation((p: any) => {
-      if (p === changesDir) return true;
-      return false;
-    });
-    
-    vi.mocked(fs.readdirSync).mockImplementation((p: any) => {
-      if (p === changesDir) {
-        return [
-          { isDirectory: () => true, name: 'feature-a' },
-          { isDirectory: () => true, name: 'feature-b' },
-          { isDirectory: () => true, name: 'bug-fix' },
-        ] as any;
-      }
-      return [];
-    });
-
-    // Act: Run the command's action
-    const result = await listCommand.action!(mockContext, '');
-
-    // Assert: Check for the correct list output
-    expect(result).toEqual({
-      type: 'message',
-      messageType: 'info',
-      content: expect.stringContaining('Active changes (3):'),
-    });
-    
-    const content = (result as any).content;
-    expect(content).toContain('1. bug-fix');
-    expect(content).toContain('2. feature-a');
-    expect(content).toContain('3. feature-b');
-  });
-
   it('should handle file system errors gracefully', async () => {
-    // Arrange: Simulate that checking for changes directory throws an error
-    vi.mocked(fs.existsSync).mockImplementation(() => {
+    // Arrange: Simulate that reading the changes directory throws an error
+    vi.mocked(fs.existsSync).mockReturnValue(true);
+    vi.mocked(fs.readdirSync).mockImplementation(() => {
       throw new Error('Permission denied');
     });
 

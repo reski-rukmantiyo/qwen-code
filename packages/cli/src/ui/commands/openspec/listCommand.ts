@@ -39,7 +39,7 @@ export const listCommand: SlashCommand = {
       
       // Read changes directory
       const changes = fs.readdirSync(changesDir, { withFileTypes: true })
-        .filter(dirent => dirent.isDirectory())
+        .filter(dirent => dirent.isDirectory() && dirent.name.toLowerCase() !== 'archive')
         .map(dirent => dirent.name)
         .sort();
       
