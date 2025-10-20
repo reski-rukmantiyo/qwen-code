@@ -53,19 +53,32 @@ export const clearCommand: SlashCommand = {
       // Default behavior: completely reset OpenSpec by removing the directory structure
       const projectRoot = process.cwd();
       const openspecDir = path.join(projectRoot, 'openspec');
+      const rootAgentsPath = path.join(projectRoot, 'AGENTS.md');
+      
+      let removedItems = [];
       
       if (fs.existsSync(openspecDir)) {
         fs.rmSync(openspecDir, { recursive: true, force: true });
+        removedItems.push('OpenSpec directory');
+      }
+      
+      // Also remove the root-level AGENTS.md file if it exists
+      if (fs.existsSync(rootAgentsPath)) {
+        fs.rmSync(rootAgentsPath, { force: true });
+        removedItems.push('root AGENTS.md file');
+      }
+      
+      if (removedItems.length > 0) {
         return {
           type: 'message',
           messageType: 'info',
-          content: '✅ OpenSpec has been completely reset. All specifications and changes have been removed.\\n\\nYou can now run "/openspec init" to initialize a fresh OpenSpec environment.',
+          content: `✅ OpenSpec has been completely reset. Removed: ${removedItems.join(' and ')}.\n\nYou can now run "/openspec init" to initialize a fresh OpenSpec environment.`,
         };
       } else {
         return {
           type: 'message',
           messageType: 'info',
-          content: '✅ No OpenSpec directory found. Nothing to reset.',
+          content: '✅ No OpenSpec directory or root AGENTS.md file found. Nothing to reset.',
         };
       }
     } catch (error) {

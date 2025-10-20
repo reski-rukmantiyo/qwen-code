@@ -66,10 +66,10 @@ describe('clearCommand', () => {
     vi.clearAllMocks();
   });
 
-  it('should completely reset OpenSpec by default (removing directory)', async () => {
+  it('should completely reset OpenSpec by default (removing directory and root AGENTS.md)', async () => {
     // Arrange
     vi.mocked(fs.existsSync).mockImplementation((path: any) => {
-      if (typeof path === 'string' && path.includes('openspec')) {
+      if (typeof path === 'string' && (path.includes('openspec') || path.endsWith('AGENTS.md'))) {
         return true;
       }
       return false;
@@ -82,9 +82,11 @@ describe('clearCommand', () => {
 
     // Assert
     expect(rmSyncSpy).toHaveBeenCalledWith(expect.stringContaining('openspec'), { recursive: true, force: true });
+    expect(rmSyncSpy).toHaveBeenCalledWith(expect.stringContaining('AGENTS.md'), { force: true });
     expect(result.type).toBe('message');
     expect(result.messageType).toBe('info');
     expect(result.content).toContain('✅ OpenSpec has been completely reset');
+    expect(result.content).toContain('Removed:');
   });
 
   it('should clear the OpenSpec cache when --cache-only flag is used and service is available', async () => {
@@ -162,7 +164,7 @@ describe('clearCommand', () => {
   it('should completely reset OpenSpec by default when directory exists', async () => {
     // Arrange
     vi.mocked(fs.existsSync).mockImplementation((path: any) => {
-      if (typeof path === 'string' && path.includes('openspec')) {
+      if (typeof path === 'string' && (path.includes('openspec') || path.endsWith('AGENTS.md'))) {
         return true;
       }
       return false;
@@ -175,15 +177,17 @@ describe('clearCommand', () => {
 
     // Assert
     expect(rmSyncSpy).toHaveBeenCalledWith(expect.stringContaining('openspec'), { recursive: true, force: true });
+    expect(rmSyncSpy).toHaveBeenCalledWith(expect.stringContaining('AGENTS.md'), { force: true });
     expect(result.type).toBe('message');
     expect(result.messageType).toBe('info');
     expect(result.content).toContain('✅ OpenSpec has been completely reset');
+    expect(result.content).toContain('Removed:');
   });
 
-  it('should report nothing to reset when no openspec directory exists (default behavior)', async () => {
+  it('should report nothing to reset when no openspec directory or root AGENTS.md exists (default behavior)', async () => {
     // Arrange
     vi.mocked(fs.existsSync).mockImplementation((path: any) => {
-      if (typeof path === 'string' && path.includes('openspec')) {
+      if (typeof path === 'string' && (path.includes('openspec') || path.endsWith('AGENTS.md'))) {
         return false;
       }
       return false;
@@ -195,6 +199,31 @@ describe('clearCommand', () => {
     // Assert
     expect(result.type).toBe('message');
     expect(result.messageType).toBe('info');
-    expect(result.content).toContain('✅ No OpenSpec directory found. Nothing to reset.');
+    expect(result.content).toContain('✅ No OpenSpec directory or root AGENTS.md file found. Nothing to reset.');
+  });
+
+  it('should remove only root AGENTS.md when openspec directory does not exist but root AGENTS.md does', async () => {
+    // Arrange
+    vi.mocked(fs.existsSync).mockImplementation((path: any) => {
+      if (typeof path === 'string' && path.includes('openspec')) {
+        return false;
+      }
+      if (typeof path === 'string' && path.endsWith('AGENTS.md')) {
+        return true;
+      }
+      return false;
+    });
+    
+    const rmSyncSpy = vi.mocked(fs.rmSync);
+
+    // Act
+    const result = await clearCommand.action!(mockContext, '') as MessageActionReturn;
+
+    // Assert
+    expect(rmSyncSpy).toHaveBeenCalledWith(expect.stringContaining('AGENTS.md'), { force: true });
+    expect(result.type).toBe('message');
+    expect(result.messageType).toBe('info');
+    expect(result.content).toContain('✅ OpenSpec has been completely reset');
+    expect(result.content).toContain('Removed: root AGENTS.md file');
   });
 });
