@@ -21,6 +21,7 @@ import { clearCommand } from './openspec/clearCommand.js';
 import { applyCommand } from './openspec/applyCommand.js';
 import { diffCommand } from './openspec/diffCommand.js';
 import { searchCommand } from './openspec/searchCommand.js';
+import { proposalCommand } from './openspec/proposalCommand.js';
 
 export const openspecCommand: SlashCommand = {
   name: 'openspec',
@@ -40,6 +41,7 @@ export const openspecCommand: SlashCommand = {
     applyCommand,
     diffCommand,
     searchCommand,
+    proposalCommand,
   ],
   action: async (context: any, args: string) => {
     // If no subcommand is provided, show help
@@ -65,8 +67,10 @@ Commands:
   apply       Apply a change by submitting tasks to AI for implementation
   diff        Show specification differences for a change
   search      Search for text in OpenSpec specifications using ripgrep
+  proposal    Interactively create and manage change proposals
 
-Use /openspec <command> --help for more information about a command.`,
+Use /openspec <command> --help for more information about a command.
+See documentation at https://github.com/google-gemini/qwen-code/blob/main/docs/openspec/proposal-command.md for details on the proposal command.`,
       };
     }
     
