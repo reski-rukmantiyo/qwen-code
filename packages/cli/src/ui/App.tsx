@@ -131,6 +131,8 @@ import { isNarrowWidth } from './utils/isNarrowWidth.js';
 import { useWorkspaceMigration } from './hooks/useWorkspaceMigration.js';
 import { WorkspaceMigrationDialog } from './components/WorkspaceMigrationDialog.js';
 import { WelcomeBackDialog } from './components/WelcomeBackDialog.js';
+import { OpenSpecProposalDirSelectionDialog } from './components/openspec/OpenSpecProposalDirSelectionDialog.js';
+import { OpenSpecProposalDescriptionInputDialog } from './components/openspec/OpenSpecProposalDescriptionInputDialog.js';
 
 // Maximum number of queued messages to display in UI to prevent performance issues
 const MAX_DISPLAYED_QUEUED_MESSAGES = 3;
@@ -715,6 +717,8 @@ const App = ({ config, settings, startupWarnings = [], version }: AppProps) => {
     shellConfirmationRequest,
     confirmationRequest,
     quitConfirmationRequest,
+    openSpecProposalDirSelectionRequest,
+    openSpecProposalDescriptionInputRequest,
   } = useSlashCommandProcessor(
     config,
     settings,
@@ -1497,6 +1501,18 @@ const App = ({ config, settings, startupWarnings = [], version }: AppProps) => {
             />
           ) : isVisionSwitchDialogOpen ? (
             <ModelSwitchDialog onSelect={handleVisionSwitchSelect} />
+          ) : openSpecProposalDirSelectionRequest ? (
+            <OpenSpecProposalDirSelectionDialog
+              directories={openSpecProposalDirSelectionRequest.directories}
+              onSelect={openSpecProposalDirSelectionRequest.onConfirm}
+              onCancel={openSpecProposalDirSelectionRequest.onCancel}
+            />
+          ) : openSpecProposalDescriptionInputRequest ? (
+            <OpenSpecProposalDescriptionInputDialog
+              onSubmit={openSpecProposalDescriptionInputRequest.onSubmit}
+              onCancel={openSpecProposalDescriptionInputRequest.onCancel}
+              initialDescription={openSpecProposalDescriptionInputRequest.initialDescription}
+            />
           ) : showPrivacyNotice ? (
             <PrivacyNotice
               onExit={() => setShowPrivacyNotice(false)}

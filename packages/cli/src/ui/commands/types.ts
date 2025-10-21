@@ -119,7 +119,9 @@ export interface OpenDialogActionReturn {
     | 'model'
     | 'subagent_create'
     | 'subagent_list'
-    | 'subagent_default';
+    | 'subagent_default'
+    | 'openspec_proposal_dir_selection'
+    | 'openspec_proposal_description_input';
 }
 
 /**
@@ -165,12 +167,17 @@ export interface ConfirmActionReturn {
   };
 }
 
+export interface OpenDialogWithDataActionReturn extends OpenDialogActionReturn {
+  data?: Record<string, any>;
+}
+
 export type SlashCommandActionReturn =
   | ToolActionReturn
   | MessageActionReturn
   | QuitActionReturn
   | QuitConfirmationActionReturn
   | OpenDialogActionReturn
+  | OpenDialogWithDataActionReturn
   | LoadHistoryActionReturn
   | SubmitPromptActionReturn
   | ConfirmShellCommandsActionReturn

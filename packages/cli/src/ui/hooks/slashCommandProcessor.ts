@@ -85,6 +85,21 @@ export const useSlashCommandProcessor = (
       onConfirm: (shouldQuit: boolean, action?: string) => void;
     }>(null);
 
+  // State variables for OpenSpec proposal dialogs
+  const [openSpecProposalDirSelectionRequest, setOpenSpecProposalDirSelectionRequest] =
+    useState<null | {
+      directories: string[];
+      onConfirm: (selectedDir: string) => void;
+      onCancel: () => void;
+    }>(null);
+    
+  const [openSpecProposalDescriptionInputRequest, setOpenSpecProposalDescriptionInputRequest] =
+    useState<null | {
+      onSubmit: (description: string) => void;
+      onCancel: () => void;
+      initialDescription?: string;
+    }>(null);
+
   const [sessionShellAllowlist, setSessionShellAllowlist] = useState(
     new Set<string>(),
   );
@@ -423,6 +438,111 @@ export const useSlashCommandProcessor = (
                       return { type: 'handled' };
                     case 'help':
                       return { type: 'handled' };
+                    case 'openspec_proposal_dir_selection':
+                      // Handle OpenSpec proposal directory selection dialog
+                      if ('data' in result && result.data && typeof result.data === 'object' && 'directories' in result.data) {
+                        const data = result.data as { directories: string[] };
+                        setOpenSpecProposalDirSelectionRequest({
+                          directories: data.directories,
+                          onConfirm: (selectedDir: string) => {
+                            setOpenSpecProposalDirSelectionRequest(null);
+                            // Process the selected directory
+                            handleSlashCommand(`/openspec proposal ${selectedDir}`);
+                          },
+                          onCancel: () => {
+                            setOpenSpecProposalDirSelectionRequest(null);
+                            // Add a message indicating cancellation
+                            addItem(
+                              {
+                                type: MessageType.INFO,
+                                text: 'Directory selection cancelled.',
+                              },
+                              Date.now(),
+                            );
+                          }
+                        });
+                      }
+                      return { type: 'handled' };
+                    case 'openspec_proposal_description_input':
+                      // Handle OpenSpec proposal description input dialog
+                      if ('data' in result && result.data && typeof result.data === 'object') {
+                        const data = result.data as { directory: string; fileStatus: Record<string, any>; allFilesExist: boolean };
+                        setOpenSpecProposalDescriptionInputRequest({
+                          onSubmit: (description: string) => {
+                            setOpenSpecProposalDescriptionInputRequest(null);
+                            // Import and call the processing function
+                            import('../commands/openspec/proposalCommand.js').then(module => {
+                              module.processProposalDescription(
+                                commandContext,
+                                data.directory,
+                                description,
+                                data.fileStatus,
+                                data.allFilesExist
+                              ).then(response => {
+                                if (response.type === 'message') {
+                                  addMessage({
+                                    type: response.messageType === 'info' ? MessageType.INFO : MessageType.ERROR,
+                                    content: response.content,
+                                    timestamp: new Date(),
+                                  });
+                                }
+                              });
+                            });
+                          },
+                          onCancel: () => {
+                            setOpenSpecProposalDescriptionInputRequest(null);
+                            // Add a message indicating cancellation
+                            addItem(
+                              {
+                                type: MessageType.INFO,
+                                text: 'Description input cancelled.',
+                              },
+                              Date.now(),
+                            );
+                          }
+                        });
+                      }
+                      return { type: 'handled' };
+                    case 'openspec_proposal_description_input':
+                      // Handle OpenSpec proposal description input dialog
+                      if ('data' in result && result.data && typeof result.data === 'object') {
+                        const data = result.data as { directory: string; fileStatus: Record<string, any>; allFilesExist: boolean };
+                        setOpenSpecProposalDescriptionInputRequest({
+                          onSubmit: (description: string) => {
+                            setOpenSpecProposalDescriptionInputRequest(null);
+                            // Import and call the processing function
+                            import('../commands/openspec/proposalCommand.js').then(module => {
+                              module.processProposalDescription(
+                                commandContext,
+                                data.directory,
+                                description,
+                                data.fileStatus,
+                                data.allFilesExist
+                              ).then(response => {
+                                if (response.type === 'message') {
+                                  addMessage({
+                                    type: response.messageType === 'info' ? MessageType.INFO : MessageType.ERROR,
+                                    content: response.content,
+                                    timestamp: new Date(),
+                                  });
+                                }
+                              });
+                            });
+                          },
+                          onCancel: () => {
+                            setOpenSpecProposalDescriptionInputRequest(null);
+                            // Add a message indicating cancellation
+                            addItem(
+                              {
+                                type: MessageType.INFO,
+                                text: 'Description input cancelled.',
+                              },
+                              Date.now(),
+                            );
+                          }
+                        });
+                      }
+                      return { type: 'handled' };
                     default: {
                       const unhandled: never = result.dialog;
                       throw new Error(
@@ -687,5 +807,7 @@ export const useSlashCommandProcessor = (
     shellConfirmationRequest,
     confirmationRequest,
     quitConfirmationRequest,
+    openSpecProposalDirSelectionRequest,
+    openSpecProposalDescriptionInputRequest,
   };
 };
