@@ -4,6 +4,17 @@
 1. When running "/openspec proposal", it won't allow user to choose directory under ./openspec/changes directory
 2. There is no description textbox after directory selection
 3. When running "/openspec proposal", it doesn't do anything
+4. The generated content inside proposal.md, tasks.md, design.md is not using the template of its file
+5. The content should be clean
+6. Two directories are being processed and shown in the output when only one should be processed
+7. When creating proposal.md, tasks.md, design.md, the system attempts to create code instead of focusing only on documentation
+8. Content under "specs" directory after "/openspec proposal" executed should not be there - it should be created under ./openspec/specs directory after "/openspec archive"
+9. Methods to differentiate proposal.md, design.md and tasks.md should be removed
+10. In tasks.md, subagents that match with the tasks should be added
+11. When running "/openspec proposal", directory selection dialog doesn't appear even when directories exist
+12. After directory selection, description input dialog doesn't appear
+13. There's no message after inputting description in "/openspec proposal" flow - it should show a message to wait while content of proposal.md, tasks.md, design.md is generated
+14. Content of tasks.md should contain tasks to create source code based on proposal.md and design.md, with information about which subagent should be involved in source code creation (but this is only for tasks documentation)
 
 ## Bug Analysis
 
@@ -23,6 +34,61 @@
 - **Location**: Command execution flow in proposalCommand.ts
 - **Impact**: Users get no response when running the command, making the feature unusable
 - **Root Cause**: The command may not be properly registered or there might be an issue in the command processing flow that prevents it from executing
+
+### Bug 4: Generated Content Not Using File Templates
+- **Location**: Content generation in proposalCommand.ts and processProposalDescription function
+- **Impact**: Generated files don't follow the expected structure and format, making them inconsistent with OpenSpec standards
+- **Root Cause**: The content generation logic may not be properly using the template structure for each file type
+
+### Bug 5: Content Quality Issues
+- **Location**: Content generation algorithms in proposalCommand.ts
+- **Impact**: Generated content may be messy, repetitive, or not well-structured
+- **Root Cause**: The content generation logic may lack proper formatting and cleaning mechanisms
+
+### Bug 6: Duplicate Processing and Output
+- **Location**: Process flow in proposalCommand.ts and processProposalDescription function
+- **Impact**: Users see confusing duplicate output messages and potentially incorrect diff file generation
+- **Root Cause**: The command may be executing twice or there's a duplicate callback in the processing flow
+
+### Bug 7: Incorrect Focus on Code Creation Instead of Documentation
+- **Location**: Content generation logic in proposalCommand.ts
+- **Impact**: Generated content may include implementation details or code snippets instead of focusing on documentation and specifications
+- **Root Cause**: The content generation prompts may be encouraging LLM to generate code implementation details rather than documentation-focused content
+
+### Bug 8: Incorrect Location for Specs Directory Content
+- **Location**: Diff generation and saving logic in proposalCommand.ts
+- **Impact**: Specification diff files are being created in the wrong location (./openspec/changes/[change-name]/spec/) instead of the correct location (./openspec/specs/)
+- **Root Cause**: The diff saving functionality was implemented incorrectly and should only be triggered during the archive process, not during proposal creation
+
+### Bug 9: Unnecessary File Differentiation Logic
+- **Location**: Template comparison and file processing logic in proposalCommand.ts
+- **Impact**: Overly complex logic for differentiating between file types that is no longer needed
+- **Root Cause**: The original implementation plan included complex file differentiation that is not required for the simplified proposal workflow
+
+### Bug 10: Missing Subagent Information in Tasks
+- **Location**: Task generation logic in proposalCommand.ts
+- **Impact**: Generated tasks.md files don't include subagent information that would help match tasks with appropriate AI assistants
+- **Root Cause**: The task generation logic doesn't consider subagent matching when creating implementation tasks
+
+### Bug 11: Directory Selection Dialog Not Appearing
+- **Location**: Command execution flow in proposalCommand.ts and UI rendering in App.tsx
+- **Impact**: Users cannot select existing change directories even when they exist, preventing them from updating existing proposals
+- **Root Cause**: The dialog request may not be properly handled or rendered in the UI layer
+
+### Bug 12: Description Input Dialog Not Appearing
+- **Location**: Process flow in proposalCommand.ts and UI rendering in App.tsx
+- **Impact**: Users cannot provide a description for their change after selecting a directory
+- **Root Cause**: The dialog request may not be properly handled or rendered in the UI layer
+
+### Bug 13: Missing Progress Message During Content Generation
+- **Location**: Process flow in proposalCommand.ts and processProposalDescription function
+- **Impact**: Users don't receive feedback during the content generation process, leading to uncertainty about whether the system is working
+- **Root Cause**: The processProposalDescription function doesn't provide progress updates or status messages during file generation
+
+### Bug 14: Incorrect Task Content in tasks.md
+- **Location**: Content generation logic in proposalCommand.ts
+- **Impact**: Generated tasks.md files don't contain appropriate tasks for source code creation based on the proposal and design documents
+- **Root Cause**: The task generation logic may not be properly considering the need to create implementation tasks based on the generated documentation
 
 ## Fix Tasks
 
@@ -68,3 +134,80 @@
 - [x] Verify command processing flow in slashCommandProcessor.ts
 - [x] Add proper error handling and user feedback
 - [x] Test command execution with various scenarios
+
+### Task 7: Fix Template Usage in Generated Content
+- [x] Investigate why generated content is not using proper file templates
+- [x] Review template structure for proposal.md, tasks.md, and design.md files
+- [x] Ensure content generation follows the correct template structure for each file type
+- [x] Implement proper template-based content generation
+- [x] Test template usage with various input scenarios
+
+### Task 8: Improve Content Quality and Cleanliness
+- [x] Analyze current content generation algorithms for quality issues
+- [x] Implement content cleaning and formatting mechanisms
+- [x] Ensure generated content is well-structured and readable
+- [x] Add validation for content quality before writing to files
+- [x] Test content quality with various input descriptions
+
+### Task 9: Fix Duplicate Processing and Output Issue
+- [x] Investigate why the command is processing twice and showing duplicate output
+- [x] Check for duplicate callbacks or event triggers in the processing flow
+- [x] Ensure the processProposalDescription function is only called once per user action
+- [x] Verify that diff files are generated correctly without duplication
+- [x] Test the fix with various scenarios to ensure single execution
+
+### Task 10: Fix Content Focus to Documentation Only
+- [x] Investigate why the content generation includes code implementation details
+- [x] Update LLM prompts to focus exclusively on documentation and specifications
+- [x] Ensure generated content for proposal.md, tasks.md, and design.md focuses on documentation
+- [x] Remove any code generation or implementation details from the generated content
+- [x] Test the updated prompts with various input scenarios to ensure documentation focus
+
+### Task 11: Remove Incorrect Specs Directory Creation
+- [x] Identify and remove all code related to creating content under "specs" directory during proposal execution
+- [x] Ensure no diff files are generated during proposal creation
+- [x] Verify that specs directory content creation is handled only during "/openspec archive" command
+- [x] Remove all documentation related to incorrect specs directory creation
+- [x] Test that proposal creation no longer generates unwanted specs directory content
+
+### Task 12: Remove Unnecessary File Differentiation Logic
+- [x] Identify and remove all methods used to differentiate between proposal.md, design.md and tasks.md files
+- [x] Simplify file processing logic to treat all files uniformly
+- [x] Remove template comparison and hash-based differentiation logic
+- [x] Ensure file processing focuses only on creation/updating without complex differentiation
+- [x] Test simplified file processing with various scenarios
+
+### Task 13: Add Subagent Information to Tasks
+- [x] Update task generation logic to include subagent information in tasks.md
+- [x] Implement subagent matching based on task types
+- [x] Ensure generated tasks include appropriate subagent recommendations
+- [x] Test task generation with subagent information for various input scenarios
+- [x] Verify that subagent information is properly formatted and useful
+
+### Task 14: Fix Directory Selection Dialog Not Appearing
+- [x] Investigate why the directory selection dialog doesn't appear even when directories exist
+- [x] Check command execution flow in proposalCommand.ts
+- [x] Verify UI rendering logic in App.tsx for the dialog
+- [x] Test directory selection with various scenarios (empty directory, multiple directories, special characters)
+- [x] Ensure the dialog appears and functions correctly
+
+### Task 15: Fix Description Input Dialog Not Appearing
+- [x] Investigate why the description input dialog doesn't appear after directory selection
+- [x] Check process flow in proposalCommand.ts
+- [x] Verify UI rendering logic in App.tsx for the dialog
+- [x] Test description input with various scenarios (empty input, long text, special characters)
+- [x] Ensure the dialog appears and functions correctly
+
+### Task 16: Add Progress Message During Content Generation
+- [x] Investigate why no progress message is shown during content generation
+- [x] Add status messages to inform users that content is being generated
+- [x] Implement progress updates during file creation process
+- [x] Test progress messaging with various scenarios
+- [x] Ensure messages are clear and informative to the user
+
+### Task 17: Fix Task Content in tasks.md
+- [x] Investigate why tasks.md doesn't contain appropriate source code creation tasks
+- [x] Update task generation logic to include implementation tasks based on proposal.md and design.md
+- [x] Ensure tasks include subagent recommendations for source code creation
+- [x] Test task generation with various input scenarios
+- [x] Verify that generated tasks are properly formatted and useful for implementation

@@ -470,46 +470,14 @@ export const useSlashCommandProcessor = (
                         setOpenSpecProposalDescriptionInputRequest({
                           onSubmit: (description: string) => {
                             setOpenSpecProposalDescriptionInputRequest(null);
-                            // Import and call the processing function
-                            import('../commands/openspec/proposalCommand.js').then(module => {
-                              module.processProposalDescription(
-                                commandContext,
-                                data.directory,
-                                description,
-                                data.fileStatus,
-                                data.allFilesExist
-                              ).then(response => {
-                                if (response.type === 'message') {
-                                  addMessage({
-                                    type: response.messageType === 'info' ? MessageType.INFO : MessageType.ERROR,
-                                    content: response.content,
-                                    timestamp: new Date(),
-                                  });
-                                }
-                              });
-                            });
-                          },
-                          onCancel: () => {
-                            setOpenSpecProposalDescriptionInputRequest(null);
-                            // Add a message indicating cancellation
+                            // Add a progress message
                             addItem(
                               {
                                 type: MessageType.INFO,
-                                text: 'Description input cancelled.',
+                                text: 'Generating proposal content, please wait...',
                               },
                               Date.now(),
                             );
-                          }
-                        });
-                      }
-                      return { type: 'handled' };
-                    case 'openspec_proposal_description_input':
-                      // Handle OpenSpec proposal description input dialog
-                      if ('data' in result && result.data && typeof result.data === 'object') {
-                        const data = result.data as { directory: string; fileStatus: Record<string, any>; allFilesExist: boolean };
-                        setOpenSpecProposalDescriptionInputRequest({
-                          onSubmit: (description: string) => {
-                            setOpenSpecProposalDescriptionInputRequest(null);
                             // Import and call the processing function
                             import('../commands/openspec/proposalCommand.js').then(module => {
                               module.processProposalDescription(
