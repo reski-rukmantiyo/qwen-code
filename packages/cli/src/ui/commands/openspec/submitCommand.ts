@@ -270,6 +270,7 @@ async function generateTasksWithLLM(context: CommandContext, changeName: string,
 Change Name: ${changeName}
 Activity Type: ${activity}
 Description: ${description}
+Subagent: {SUBAGENT name}
 
 Proposal Document:
 ${proposalContent.substring(0, 1000)}...
@@ -279,7 +280,15 @@ ${designContent.substring(0, 1000)}...
 
 Please create a list of implementation tasks that would address the ${activity} described. Format the response as a markdown task list with checkboxes. Include tasks for code implementation, testing, and documentation.
 
-IMPORTANT: Do not use any tools. Generate document content only.`;
+IMPORTANT: 
+- EXCEPT for SUBAGENT, DO NOT USE TOOLS
+- Generate task content only.
+- Do not include any explanations or additional text outside of the task list.
+- Ensure the tasks are specific to the provided change and activity type.
+- Limit the response to 500 words maximum per task
+- Use markdown formatting with checkboxes.
+- Use appropriate subagent for this.
+`;
     
     // Use the LLM to generate content
     const response = await geminiClient.generateContent(
