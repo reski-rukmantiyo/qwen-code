@@ -100,6 +100,29 @@ export const useSlashCommandProcessor = (
       initialDescription?: string;
     }>(null);
 
+  // State variables for OpenSpec submit dialogs
+  const [openSpecSubmitDirSelectionRequest, setOpenSpecSubmitDirSelectionRequest] =
+    useState<null | {
+      directories: string[];
+      onConfirm: (selectedDir: string) => void;
+      onCancel: () => void;
+    }>(null);
+    
+  const [openSpecSubmitActivitySelectionRequest, setOpenSpecSubmitActivitySelectionRequest] =
+    useState<null | {
+      changeName: string;
+      onSelect: (activity: string) => void;
+      onCancel: () => void;
+    }>(null);
+    
+  const [openSpecSubmitDescriptionInputRequest, setOpenSpecSubmitDescriptionInputRequest] =
+    useState<null | {
+      changeName: string;
+      activity: string;
+      onSubmit: (description: string) => void;
+      onCancel: () => void;
+    }>(null);
+
   const [sessionShellAllowlist, setSessionShellAllowlist] = useState(
     new Set<string>(),
   );
@@ -503,6 +526,97 @@ export const useSlashCommandProcessor = (
                         });
                       }
                       return { type: 'handled' };
+                    case 'openspec_submit_change_selection':
+                      // Handle OpenSpec submit change selection dialog
+                      if ('data' in result && result.data && typeof result.data === 'object' && 'directories' in result.data) {
+                        const data = result.data as { directories: string[] };
+                        setOpenSpecSubmitDirSelectionRequest({
+                          directories: data.directories,
+                          onConfirm: (selectedDir: string) => {
+                            setOpenSpecSubmitDirSelectionRequest(null);
+                            // Process the selected directory
+                            handleSlashCommand(`/openspec submit ${selectedDir}`);
+                          },
+                          onCancel: () => {
+                            setOpenSpecSubmitDirSelectionRequest(null);
+                            // Add a message indicating cancellation
+                            addItem(
+                              {
+                                type: MessageType.INFO,
+                                text: 'Change selection cancelled.',
+                              },
+                              Date.now(),
+                            );
+                          }
+                        });
+                      }
+                      return { type: 'handled' };
+                    case 'openspec_submit_activity_selection':
+                      // Handle OpenSpec submit activity selection dialog
+                      if ('data' in result && result.data && typeof result.data === 'object' && 'changeName' in result.data) {
+                        const data = result.data as { changeName: string };
+                        setOpenSpecSubmitActivitySelectionRequest({
+                          changeName: data.changeName,
+                          onSelect: (activity: string) => {
+                            setOpenSpecSubmitActivitySelectionRequest(null);
+                            // Process the selected activity
+                            handleSlashCommand(`/openspec submit ${data.changeName} ${activity}`);
+                          },
+                          onCancel: () => {
+                            setOpenSpecSubmitActivitySelectionRequest(null);
+                            // Add a message indicating cancellation
+                            addItem(
+                              {
+                                type: MessageType.INFO,
+                                text: 'Activity selection cancelled.',
+                              },
+                              Date.now(),
+                            );
+                          }
+                        });
+                      }
+                      return { type: 'handled' };
+                    case 'openspec_submit_description_input':
+                      // Handle OpenSpec submit description input dialog
+                      if ('data' in result && result.data && typeof result.data === 'object' && 'changeName' in result.data && 'activity' in result.data) {
+                        const data = result.data as { changeName: string; activity: string };
+                        setOpenSpecSubmitDescriptionInputRequest({
+                          changeName: data.changeName,
+                          activity: data.activity,
+                          onSubmit: (description: string) => {
+                            setOpenSpecSubmitDescriptionInputRequest(null);
+                            // Import and call the processing function
+                            import('../commands/openspec/submitCommand.js').then(module => {
+                              module.processSubmitDescriptionInput(
+                                commandContext,
+                                data.changeName,
+                                data.activity,
+                                description
+                              ).then(response => {
+                                if (response.type === 'message') {
+                                  addMessage({
+                                    type: response.messageType === 'info' ? MessageType.INFO : MessageType.ERROR,
+                                    content: response.content,
+                                    timestamp: new Date(),
+                                  });
+                                }
+                              });
+                            });
+                          },
+                          onCancel: () => {
+                            setOpenSpecSubmitDescriptionInputRequest(null);
+                            // Add a message indicating cancellation
+                            addItem(
+                              {
+                                type: MessageType.INFO,
+                                text: 'Description input cancelled.',
+                              },
+                              Date.now(),
+                            );
+                          }
+                        });
+                      }
+                      return { type: 'handled' };
                     default: {
                       const unhandled: never = result.dialog;
                       throw new Error(
@@ -768,6 +882,9 @@ export const useSlashCommandProcessor = (
     confirmationRequest,
     quitConfirmationRequest,
     openSpecProposalDirSelectionRequest,
+    openSpecSubmitDirSelectionRequest,
+    openSpecSubmitActivitySelectionRequest,
+    openSpecSubmitDescriptionInputRequest,
     openSpecProposalDescriptionInputRequest,
   };
 };

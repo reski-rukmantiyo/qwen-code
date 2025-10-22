@@ -109,7 +109,7 @@ describe('submitCommand', () => {
     // Assert: Check that we get a dialog with the list of changes
     expect(result).toEqual({
       type: 'dialog',
-      dialog: 'openspec_proposal_dir_selection',
+      dialog: 'openspec_submit_change_selection',
       data: {
         directories: ['feature-auth', 'api-improvements']
       }
@@ -169,7 +169,7 @@ describe('submitCommand', () => {
     // Assert: Check that we get a dialog for activity selection
     expect(result).toEqual({
       type: 'dialog',
-      dialog: 'openspec_proposal_description_input',
+      dialog: 'openspec_submit_activity_selection',
       data: {
         changeName: 'feature-auth'
       }
@@ -227,7 +227,7 @@ describe('submitCommand', () => {
     // Assert: Check that we get a dialog for description input
     expect(result).toEqual({
       type: 'dialog',
-      dialog: 'openspec_proposal_description_input',
+      dialog: 'openspec_submit_description_input',
       data: {
         changeName: 'feature-auth',
         activity: 'bugs'

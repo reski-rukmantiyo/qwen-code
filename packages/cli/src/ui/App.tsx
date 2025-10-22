@@ -133,6 +133,7 @@ import { WorkspaceMigrationDialog } from './components/WorkspaceMigrationDialog.
 import { WelcomeBackDialog } from './components/WelcomeBackDialog.js';
 import { OpenSpecProposalDirSelectionDialog } from './components/openspec/OpenSpecProposalDirSelectionDialog.js';
 import { OpenSpecProposalDescriptionInputDialog } from './components/openspec/OpenSpecProposalDescriptionInputDialog.js';
+import { OpenSpecSubmitActivitySelectionDialog } from './components/openspec/OpenSpecSubmitActivitySelectionDialog.js';
 
 // Maximum number of queued messages to display in UI to prevent performance issues
 const MAX_DISPLAYED_QUEUED_MESSAGES = 3;
@@ -718,6 +719,9 @@ const App = ({ config, settings, startupWarnings = [], version }: AppProps) => {
     confirmationRequest,
     quitConfirmationRequest,
     openSpecProposalDirSelectionRequest,
+    openSpecSubmitDirSelectionRequest,
+    openSpecSubmitActivitySelectionRequest,
+    openSpecSubmitDescriptionInputRequest,
     openSpecProposalDescriptionInputRequest,
   } = useSlashCommandProcessor(
     config,
@@ -1506,6 +1510,23 @@ const App = ({ config, settings, startupWarnings = [], version }: AppProps) => {
               directories={openSpecProposalDirSelectionRequest.directories}
               onSelect={openSpecProposalDirSelectionRequest.onConfirm}
               onCancel={openSpecProposalDirSelectionRequest.onCancel}
+            />
+          ) : openSpecSubmitDirSelectionRequest ? (
+            <OpenSpecProposalDirSelectionDialog
+              directories={openSpecSubmitDirSelectionRequest.directories}
+              onSelect={openSpecSubmitDirSelectionRequest.onConfirm}
+              onCancel={openSpecSubmitDirSelectionRequest.onCancel}
+            />
+          ) : openSpecSubmitActivitySelectionRequest ? (
+            <OpenSpecSubmitActivitySelectionDialog
+              changeName={openSpecSubmitActivitySelectionRequest.changeName}
+              onSelect={openSpecSubmitActivitySelectionRequest.onSelect}
+              onCancel={openSpecSubmitActivitySelectionRequest.onCancel}
+            />
+          ) : openSpecSubmitDescriptionInputRequest ? (
+            <OpenSpecProposalDescriptionInputDialog
+              onSubmit={openSpecSubmitDescriptionInputRequest.onSubmit}
+              onCancel={openSpecSubmitDescriptionInputRequest.onCancel}
             />
           ) : openSpecProposalDescriptionInputRequest ? (
             <OpenSpecProposalDescriptionInputDialog

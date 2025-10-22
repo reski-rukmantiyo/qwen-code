@@ -121,7 +121,10 @@ export interface OpenDialogActionReturn {
     | 'subagent_list'
     | 'subagent_default'
     | 'openspec_proposal_dir_selection'
-    | 'openspec_proposal_description_input';
+    | 'openspec_proposal_description_input'
+    | 'openspec_submit_change_selection'
+    | 'openspec_submit_activity_selection'
+    | 'openspec_submit_description_input';
 }
 
 /**

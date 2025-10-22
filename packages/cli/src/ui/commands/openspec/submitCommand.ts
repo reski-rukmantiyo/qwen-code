@@ -66,7 +66,7 @@ export const submitCommand: SlashCommand = {
         // Interactive selection of directory
         return {
           type: 'dialog',
-          dialog: 'openspec_proposal_dir_selection',
+          dialog: 'openspec_submit_change_selection',
           data: {
             directories
           }
@@ -92,7 +92,7 @@ export const submitCommand: SlashCommand = {
       if (changeName && !activity) {
         return {
           type: 'dialog',
-          dialog: 'openspec_proposal_description_input',
+          dialog: 'openspec_submit_activity_selection',
           data: {
             changeName
           }
@@ -112,7 +112,7 @@ export const submitCommand: SlashCommand = {
       if (changeName && activity && !description) {
         return {
           type: 'dialog',
-          dialog: 'openspec_proposal_description_input',
+          dialog: 'openspec_submit_description_input',
           data: {
             changeName,
             activity
@@ -317,7 +317,7 @@ export async function processSubmitChangeSelection(context: CommandContext, sele
     // After selecting a change, ask for activity type
     return {
       type: 'dialog',
-      dialog: 'openspec_proposal_description_input',
+      dialog: 'openspec_submit_activity_selection',
       data: {
         changeName: selectedChange
       }
@@ -344,7 +344,7 @@ export async function processSubmitActivitySelection(context: CommandContext, ch
     
     return {
       type: 'dialog',
-      dialog: 'openspec_proposal_description_input',
+      dialog: 'openspec_submit_description_input',
       data: {
         changeName,
         activity: selectedActivity

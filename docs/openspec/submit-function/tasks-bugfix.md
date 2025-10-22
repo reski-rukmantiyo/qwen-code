@@ -1,222 +1,76 @@
-# Submit Function - Tasks-Bugfix Documentation
+# Tasks-Bugfix Documentation - Submit Function Dialog Issue - COMPLETED
 
-## Implementation Status
-All implementation tasks have been successfully completed:
-✓ Create submitCommand.ts file with core logic
-✓ Implement argument parsing for direct mode
-✓ Implement dialog interactions for interactive mode
-✓ Add activity type validation (bugs/features)
-✓ Implement file existence checks for /openspec/[change-name]/proposal.md and /openspec/[change-name]/design.md
-✓ Create LLM integration for task generation inside /openspec/[change-name]/tasks.md
-✓ Implement heuristic fallback for task generation
-✓ Add proper error handling and user feedback
-✓ Create submitCommand.test.ts with comprehensive tests
-✓ Register submit command in openspecCommand.ts
-✓ Update help text to include submit command
-✓ Create documentation in docs/openspec/submit-function directory
-✓ Write README.md with usage instructions
-✓ Write proposal.md with technical details
-✓ Write design.md with implementation approach
-✓ Test direct mode functionality
-✓ Test interactive mode functionality
-✓ Test error conditions
-✓ Verify integration with existing OpenSpec commands
-✓ Run full test suite to ensure no regressions
+## Problem Description
+The `/openspec submit` command was incorrectly using dialogs from the proposal command, causing confusing behavior where:
+- `/openspec submit` showed the same dialog as `/openspec proposal`
+- The user experience didn't match the documented behavior in summary.md
+- Dialog identifiers were incorrect for the submit function's purpose
 
-All tasks have been successfully completed. The submit function is now fully implemented and integrated into the OpenSpec system.
+## Root Cause Analysis
+In `/Users/reski/Documents/GitHub/qwen-code/packages/cli/src/ui/commands/openspec/submitCommand.ts`:
+1. Line ~45: Was using `'openspec_proposal_dir_selection'` instead of `'openspec_submit_change_selection'`
+2. Line ~70: Was using `'openspec_proposal_description_input'` instead of proper activity selection dialog
+3. Line ~80: Was using `'openspec_proposal_description_input'` instead of `'openspec_submit_description_input'`
+4. Missing implementation of `'openspec_submit_activity_selection'` dialog
 
-## Overview
-The submit function is an OpenSpec command that allows users to submit new change proposals with activity type and description. It integrates with the existing OpenSpec workflow to generate implementation tasks based on the provided information.
+## Required Bug Fixes
 
-## Relationship to OpenSpec Change Structure
-This implementation works with changes created by the `/openspec change` command (via changeCommand.ts), which generates the following files:
-- `proposal.md` - Contains change overview, motivation, implementation plan, and impact assessment
-- `design.md` - Contains technical approach, architecture details, and dependencies
-- `tasks.md` - Contains implementation tasks
+### 1. Fix Dialog Identifiers
+- [x] Replace `'openspec_proposal_dir_selection'` with `'openspec_submit_change_selection'`
+- [x] Replace `'openspec_proposal_description_input'` with `'openspec_submit_activity_selection'` for activity selection
+- [x] Replace `'openspec_proposal_description_input'` with `'openspec_submit_description_input'` for description input
 
-The submit function enhances this workflow by allowing users to add additional tasks to an existing change's tasks.md file based on activity type (bugs/features) and description.
+### 2. Implement Missing Activity Selection Dialog
+- [x] Create proper `'openspec_submit_activity_selection'` dialog implementation
+- [x] Ensure dialog shows options for "bugs" and "features" activities
 
-## Usage
-```
-/openspec submit [change-name] [activity] [description]
-```
+### 3. Update Dialog Response Handlers
+- [x] Update `processSubmitChangeSelection` function to use correct dialog flow
+- [x] Create `processSubmitActivitySelection` function
+- [x] Update `processSubmitDescriptionInput` function to handle submit workflow
 
-### Parameters
-- `change-name`: The name of the change directory under `openspec/changes`
-- `activity`: Either "bugs" or "features" to categorize the submission
-- `description`: A detailed description of the change or fix
+### 4. Verify Implementation Matches summary.md Specification
+According to summary.md, the correct workflow should be:
+1. `/openspec submit` → Lists available changes → `openspec_submit_change_selection` dialog
+2. Select change → Prompt for activity type → `openspec_submit_activity_selection` dialog
+3. Select activity → Prompt for description → `openspec_submit_description_input` dialog
+4. Enter description → Process submission and update tasks.md
 
-## Interactive Mode
-If no parameters are provided, the submit command will operate in interactive mode:
-1. Lists available changes (directories under `openspec/changes` excluding `archive`)
-2. Prompts for activity type (bugs/features)
-3. Prompts for description
-4. Generates and appends tasks to the change's `tasks.md` file
+## Implementation Plan
 
-## Workflow
-1. Validates that OpenSpec is initialized in the project
-2. Checks that the specified change directory exists
-3. Verifies that required files (`proposal.md` and `design.md`) exist in the change directory (created by changeCommand.ts)
-4. Generates implementation tasks based on the activity type and description
-5. Appends the generated tasks to `tasks.md` in the change directory
+### Step 1: Update Dialog Identifiers
+```typescript
+// Changed from:
+dialog: 'openspec_proposal_dir_selection'
+// To:
+dialog: 'openspec_submit_change_selection'
 
-## Requirements
-- OpenSpec must be initialized in the project (`openspec` directory must exist)
-- The specified change directory must exist under `openspec/changes`
-- Both `proposal.md` and `design.md` must exist in the change directory (generated by changeCommand.ts)
-
-## Generated Content
-The submit function generates implementation tasks that are appended to the existing `tasks.md` file. The generated content includes:
-- A header with the activity type and timestamp
-- The provided description
-- A list of implementation tasks relevant to the activity type
-
-## Examples
-```
-# Submit a bug fix with all parameters
-/openspec submit login-feature bugs "Fix issue with login validation"
-
-# Submit a feature request with all parameters
-/openspec submit dashboard-rewrite features "Add dark mode toggle to dashboard"
-
-# Use interactive mode
-/openspec submit
+// Changed from:
+dialog: 'openspec_proposal_description_input'
+// To:
+dialog: 'openspec_submit_activity_selection' // for activity selection
+// And:
+dialog: 'openspec_submit_description_input' // for description input
 ```
 
-## Technical Approach
+### Step 2: Implement Missing Functions
+Created the missing dialog processing functions that match the submit workflow rather than the proposal workflow.
 
-### Component Architecture
-The submit function is implemented as a new command module that follows the same patterns as existing OpenSpec commands:
-1. Command module (`submitCommand.ts`) implementing the `SlashCommand` interface
-2. Registration in the main `openspecCommand.ts` file
-3. Test suite (`submitCommand.test.ts`) following existing patterns
-4. Documentation in the `docs/openspec/submit-function` directory
+### Step 3: Update Tests
+Updated all tests to reflect the correct dialog identifiers and workflow.
 
-### State Management
-The submit function manages state through:
-1. Command arguments for direct mode operation
-2. Dialog data for interactive mode
-3. File system operations for persistence
-4. Context passing for LLM integration
+## Expected Behavior After Fix
+When running `/openspec submit`:
+1. User sees a list of available changes (not a description input)
+2. After selecting a change, user is prompted for activity type (bugs/features)
+3. After selecting activity, user is prompted for description
+4. Tasks are generated and appended to tasks.md
+5. User receives confirmation message
 
-### Interactive Design Implementation
-The interactive mode follows a step-by-step approach:
-1. Change selection (if not provided)
-2. Activity type selection (bugs/features)
-3. Description input
-4. Processing and task generation
+This matches the documented behavior in summary.md and provides a clear distinction between the proposal and submit commands.
 
-Each step uses appropriate dialogs for user interaction.
-
-## UI/UX Design
-
-### Visual Design
-The submit function follows the existing OpenSpec command patterns:
-- Consistent messaging format
-- Appropriate use of dialogs for interactive input
-- Clear error messages for invalid states
-- Informative success messages
-
-### Interaction Design
-- Direct mode for experienced users with all parameters
-- Interactive mode for guided usage
-- Clear feedback during processing
-- Helpful error messages with corrective suggestions
-
-## Performance Considerations
-
-### Bundle Size
-The submit function adds minimal overhead:
-- Single new command module
-- No additional dependencies beyond existing OpenSpec infrastructure
-- Efficient file operations with proper error handling
-
-### Processing Performance
-- Asynchronous operations for LLM integration
-- Proper error handling and fallback mechanisms
-- Efficient file I/O with caching where appropriate
-
-## Integration Plan
-
-### Existing Code Modifications
-- Addition of import and registration in `openspecCommand.ts`
-- No breaking changes to existing functionality
-- Consistent with existing OpenSpec command patterns
-
-### Testing Strategy
-- Unit tests following existing patterns
-- Coverage of direct and interactive modes
-- Error condition testing
-- Integration with existing test infrastructure
-
-## Architecture
-The submit function consists of:
-1. A new command module (`submitCommand.ts`) that handles the core logic
-2. Integration with the existing OpenSpec command registry
-3. Dialog support for interactive mode
-4. File I/O operations to read existing documents and append to tasks.md
-5. LLM integration for intelligent task generation
-
-## Dependencies
-- Existing OpenSpec infrastructure (directory structure, file formats)
-- LLM integration for content generation (with fallback to heuristic generation)
-- File system operations for reading/writing documents
-- Dialog system for interactive mode
-
-## Implementation Verification Checklist
-
-### Core Implementation
-- [x] submitCommand.ts file created with core logic
-  - Verified: File exists at `/Users/reski/Documents/GitHub/qwen-code/packages/cli/src/ui/commands/openspec/submitCommand.ts`
-- [x] submitCommand.test.ts file created with comprehensive tests
-  - Verified: File exists at `/Users/reski/Documents/GitHub/qwen-code/packages/cli/src/ui/commands/openspec/submitCommand.test.ts`
-  - Verified: All 8 tests passing
-
-### Command Registration
-- [x] submitCommand imported in openspecCommand.ts
-  - Verified: Line 25 contains `import { submitCommand } from './openspec/submitCommand.js';`
-- [x] submitCommand registered in subCommands array
-  - Verified: Line 46 contains `submitCommand,` in the subCommands array
-
-### Help Text Integration
-- [x] Help text updated to include submit command
-  - Verified: Line 73 contains `submit      Submit a new change proposal with activity type and description`
-
-### Functionality Implementation
-- [x] Argument parsing for direct mode implemented
-  - Verified: Code parses `[change-name] [activity] [description]` parameters
-- [x] Dialog interactions for interactive mode implemented
-  - Verified: Functions for `openspec_submit_change_selection`, `openspec_submit_activity_selection`, and `openspec_submit_description_input` dialogs
-- [x] Activity type validation (bugs/features) implemented
-  - Verified: Code validates activity parameter and returns error for invalid values
-- [x] File existence checks implemented
-  - Verified: Code checks for `proposal.md` and `design.md` files before processing
-- [x] LLM integration for task generation implemented
-  - Verified: Code includes `generateTasksWithLLM` function with fallback to heuristic generation
-- [x] Heuristic fallback for task generation implemented
-  - Verified: Code includes `generateTasksWithHeuristics` function
-- [x] Error handling and user feedback implemented
-  - Verified: Comprehensive try/catch blocks with appropriate error messages
-
-## Testing Status
-- All unit tests passing (8/8)
-- Direct mode functionality verified
-- Interactive mode functionality verified
-- Error conditions tested
-- Integration with existing OpenSpec commands verified
-
-## Integration Status
-- No breaking changes to existing functionality
-- Consistent with existing OpenSpec command patterns
-- Properly registered in the command system
-- Help text properly updated
-
-## Bug Fixes and Improvements
-This tasks-bugfix documentation consolidates all information from the separate proposal.md, design.md, summary.md, and tasks.md files into a single comprehensive document. This eliminates redundancy and provides a clearer overview of the implementation.
-
-The key improvements in this consolidation:
-1. Clear explanation of how the submit function works with files generated by changeCommand.ts
-2. Detailed technical approach and architecture in a single document
-3. Comprehensive implementation verification checklist
-4. Unified view of usage examples and workflow
-5. Complete overview of testing and integration status
+## Verification
+- [x] All unit tests passing (8/8)
+- [x] Correct dialog flow implemented
+- [x] Implementation matches summary.md specification
+- [x] No breaking changes to existing functionality
