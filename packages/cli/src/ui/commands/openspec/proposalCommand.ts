@@ -109,11 +109,10 @@ async function processProposalForDirectory(context: CommandContext, selectedDir:
       design: path.join(changeDir, 'design.md')
     };
     
-    // Check existence and content
+    // Check existence
     interface FileStatus {
       exists: boolean;
       content: string | null;
-      isTemplate: boolean;
     }
     
     const fileStatus: Record<string, FileStatus> = {};
@@ -124,43 +123,27 @@ async function processProposalForDirectory(context: CommandContext, selectedDir:
         const content = fs.readFileSync(filePath, 'utf8');
         fileStatus[key] = {
           exists: true,
-          content: content,
-          isTemplate: isTemplateContent(content, filePath)
+          content: content
         };
       } else {
         fileStatus[key] = {
           exists: false,
-          content: null,
-          isTemplate: false
+          content: null
         };
         allFilesExist = false;
       }
     }
     
-    // If files don't exist or contain templates, we need to ask for description
-    if (!allFilesExist || Object.values(fileStatus).some(status => status.isTemplate)) {
-      // Ask for description to generate content
-      return {
-        type: 'dialog',
-        dialog: 'openspec_proposal_description_input',
-        data: {
-          directory: selectedDir,
-          fileStatus: fileStatus,
-          allFilesExist: allFilesExist
-        }
-      } as OpenDialogWithDataActionReturn;
-    } else {
-      // All files exist and are modified, ask for description to update
-      return {
-        type: 'dialog',
-        dialog: 'openspec_proposal_description_input',
-        data: {
-          directory: selectedDir,
-          fileStatus: fileStatus,
-          allFilesExist: allFilesExist
-        }
-      } as OpenDialogWithDataActionReturn;
-    }
+    // Always ask for description to generate or update content
+    return {
+      type: 'dialog',
+      dialog: 'openspec_proposal_description_input',
+      data: {
+        directory: selectedDir,
+        fileStatus: fileStatus,
+        allFilesExist: allFilesExist
+      }
+    } as OpenDialogWithDataActionReturn;
   } catch (error) {
     return {
       type: 'message',
@@ -190,6 +173,11 @@ export async function processProposalDescription(context: CommandContext, select
     const changesDir = path.join(projectRoot, 'openspec', 'changes');
     const changeDir = path.join(changesDir, selectedDir);
     
+    // Ensure the change directory exists
+    if (!fs.existsSync(changeDir)) {
+      fs.mkdirSync(changeDir, { recursive: true });
+    }
+    
     // Generate new content based on description
     const newContent = await generateContentFromDescription(context, description, selectedDir);
     
@@ -200,21 +188,96 @@ export async function processProposalDescription(context: CommandContext, select
       design: path.join(changeDir, 'design.md')
     };
     
+    // Debug information for file paths
+    if (context.services.config?.getDebugMode()) {
+      console.log(`[DEBUG] File paths:`);
+      console.log(`[DEBUG] - Proposal: ${files.proposal}`);
+      console.log(`[DEBUG] - Tasks: ${files.tasks}`);
+      console.log(`[DEBUG] - Design: ${files.design}`);
+    }
+    
     // Update or create files as needed
     // Always replace content for all files when processing a proposal
-    fs.writeFileSync(files.proposal, newContent.proposal);
-    fs.writeFileSync(files.tasks, newContent.tasks);
-    fs.writeFileSync(files.design, newContent.design);
+    // Add individual error handling for each file
+    let allFilesCreated = true;
+    const writeResults: Record<string, boolean> = {};
+    
+    try {
+      fs.writeFileSync(files.proposal, newContent.proposal);
+      writeResults['proposal'] = true;
+      if (context.services.config?.getDebugMode()) {
+        console.log(`[DEBUG] Successfully wrote proposal.md`);
+      }
+    } catch (error) {
+      allFilesCreated = false;
+      writeResults['proposal'] = false;
+      console.error(`[ERROR] Failed to write proposal.md: ${(error as Error).message}`);
+    }
+    
+    try {
+      fs.writeFileSync(files.tasks, newContent.tasks);
+      writeResults['tasks'] = true;
+      if (context.services.config?.getDebugMode()) {
+        console.log(`[DEBUG] Successfully wrote tasks.md`);
+      }
+    } catch (error) {
+      allFilesCreated = false;
+      writeResults['tasks'] = false;
+      console.error(`[ERROR] Failed to write tasks.md: ${(error as Error).message}`);
+    }
+    
+    try {
+      fs.writeFileSync(files.design, newContent.design);
+      writeResults['design'] = true;
+      if (context.services.config?.getDebugMode()) {
+        console.log(`[DEBUG] Successfully wrote design.md`);
+      }
+    } catch (error) {
+      allFilesCreated = false;
+      writeResults['design'] = false;
+      console.error(`[ERROR] Failed to write design.md: ${(error as Error).message}`);
+    }
+    
+    // Verify that files were actually created
+    const verification = {
+      proposal: fs.existsSync(files.proposal),
+      tasks: fs.existsSync(files.tasks),
+      design: fs.existsSync(files.design)
+    };
+    
+    // If verification shows all files exist, override any write errors
+    const allFilesVerified = verification.proposal && verification.tasks && verification.design;
+    
+    // Prepare file status information for the user
+    const fileStatusInfo = `
+File status:
+- proposal.md: ${verification.proposal ? '✅ created' : '❌ failed'}
+- tasks.md: ${verification.tasks ? '✅ created' : '❌ failed'}
+- design.md: ${verification.design ? '✅ created' : '❌ failed'}`;
+    
+    // Add detailed information if in debug mode
+    let debugInfo = '';
+    if (context.services.config?.getDebugMode()) {
+      debugInfo = `
+      
+Debug info:
+- Write results: ${JSON.stringify(writeResults)}
+- File verification: ${JSON.stringify(verification)}
+- All files created: ${allFilesCreated}
+- All files verified: ${allFilesVerified}`;
+    }
+    
+    // Determine message type based on results
+    // Use 'info' if all files are verified to exist, otherwise use 'warning'
+    const messageType = allFilesVerified ? 'info' : 'warning';
+    const statusMessage = allFilesVerified ? 
+      `✅ Processed change proposal for "${selectedDir}"` : 
+      `⚠️  Processed change proposal for "${selectedDir}" (some files may have failed)`;
     
     return {
       type: 'message',
-      messageType: 'info',
-      content: `✅ Processed change proposal for "${selectedDir}"
-      
-File status:
-- proposal.md: ${fileStatus['proposal'] ? (fileStatus['proposal'].exists ? 'exists' : 'missing') : 'missing'} ${fileStatus['proposal'] && fileStatus['proposal'].exists ? (fileStatus['proposal'].isTemplate ? '(template)' : '(modified)') : ''}
-- tasks.md: ${fileStatus['tasks'] ? (fileStatus['tasks'].exists ? 'exists' : 'missing') : 'missing'} ${fileStatus['tasks'] && fileStatus['tasks'].exists ? (fileStatus['tasks'].isTemplate ? '(template)' : '(modified)') : ''}
-- design.md: ${fileStatus['design'] ? (fileStatus['design'].exists ? 'exists' : 'missing') : 'missing'} ${fileStatus['design'] && fileStatus['design'].exists ? (fileStatus['design'].isTemplate ? '(template)' : '(modified)') : ''}`
+      messageType: messageType,
+      content: `${statusMessage}${fileStatusInfo}${debugInfo}`
     };
   } catch (error) {
     return {
@@ -225,38 +288,7 @@ File status:
   }
 }
 
-// Function to check if content matches template patterns using structural matching
-function isTemplateContent(content: string, filePath: string): boolean {
-  // For proposal creation, we'll check if the content matches our template
-  // This is a simplified approach that just checks for the presence of template sections
-  const templateSections = [
-    '## Overview',
-    '## Motivation',
-    '## Implementation Plan',
-    '## Impact Assessment'
-  ];
-  
-  // For tasks.md
-  if (path.basename(filePath) === 'tasks.md') {
-    // Check if it contains the basic template structure
-    return content.includes('# Implementation Tasks') && 
-           (content.includes('- [ ] Task 1:') || content.includes('- [ ] Task 2:') || content.includes('- [ ] Task 3:'));
-  }
-  
-  // For design.md
-  if (path.basename(filePath) === 'design.md') {
-    // Check if it contains the basic template structure
-    return content.includes('# Technical Design for') && 
-           content.includes('## Approach') && 
-           content.includes('## Architecture') && 
-           content.includes('## Dependencies');
-  }
-  
-  // For proposal.md
-  // Check if it contains the basic template structure
-  return content.includes('# ') && 
-         templateSections.some(section => content.includes(section));
-}
+
 
 // Helper function to generate meaningful short name with heuristics (fallback)
 export function generateMeaningfulShortNameWithHeuristics(description: string): string {
