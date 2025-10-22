@@ -15,6 +15,10 @@
 12. After directory selection, description input dialog doesn't appear
 13. There's no message after inputting description in "/openspec proposal" flow - it should show a message to wait while content of proposal.md, tasks.md, design.md is generated
 14. Content of tasks.md should contain tasks to create source code based on proposal.md and design.md, with information about which subagent should be involved in source code creation (but this is only for tasks documentation)
+15. Message while waiting is not proper - duplicated messages and should be in 1 line
+16. Content of tasks.md and proposal.md is not created - files should be replaced with new content
+17. Waiting message still appears on multiple lines instead of a single line
+18. Content of tasks.md is still not proper
 
 ## Bug Analysis
 
@@ -89,6 +93,41 @@
 - **Location**: Content generation logic in proposalCommand.ts
 - **Impact**: Generated tasks.md files don't contain appropriate tasks for source code creation based on the proposal and design documents
 - **Root Cause**: The task generation logic may not be properly considering the need to create implementation tasks based on the generated documentation
+
+### Bug 15: Duplicated and Improper Progress Messages
+- **Location**: Process flow in proposalCommand.ts and processProposalDescription function
+- **Impact**: Users see duplicated progress messages which are confusing and not properly formatted
+- **Root Cause**: The progress message implementation may be adding messages multiple times or not properly managing message display
+
+### Bug 16: Content Not Created/Replaced in Files
+- **Location**: File processing logic in proposalCommand.ts and processProposalDescription function
+- **Impact**: Generated content is not properly written to proposal.md and tasks.md files
+- **Root Cause**: The file writing logic may not be properly replacing existing content or may have issues with file operations
+
+### Bug 17: Improper Progress Message Formatting
+- **Location**: Process flow in proposalCommand.ts and processProposalDescription function
+- **Impact**: Progress messages appear on multiple lines instead of a single line, causing visual clutter
+- **Root Cause**: The progress message implementation may not be properly formatting messages or there may be duplicate message additions
+
+### Bug 18: Incorrect Task Content in tasks.md
+- **Location**: Content generation logic in proposalCommand.ts
+- **Impact**: Generated tasks.md files don't contain appropriate or properly formatted content for source code creation
+- **Root Cause**: The task generation logic may not be properly considering the need to create implementation tasks based on the generated documentation or formatting tasks correctly
+
+### Bug 19: Content Not Created/Replaced in Files
+- **Location**: File processing logic in proposalCommand.ts and processProposalDescription function
+- **Impact**: Generated content is not properly written to proposal.md and tasks.md files
+- **Root Cause**: The file writing logic may not be properly replacing existing content or may have issues with file operations
+
+### Bug 20: Improper Progress Message Formatting
+- **Location**: Process flow in proposalCommand.ts and processProposalDescription function
+- **Impact**: Progress messages appear on multiple lines instead of a single line, causing visual clutter
+- **Root Cause**: The progress message implementation may not be properly formatting messages or there may be duplicate message additions
+
+### Bug 21: Incorrect Task Content in tasks.md
+- **Location**: Content generation logic in proposalCommand.ts
+- **Impact**: Generated tasks.md files don't contain appropriate or properly formatted content for implementation
+- **Root Cause**: The task generation logic may not be properly structuring tasks for implementation or including necessary details
 
 ## Fix Tasks
 
@@ -211,3 +250,31 @@
 - [x] Ensure tasks include subagent recommendations for source code creation
 - [x] Test task generation with various input scenarios
 - [x] Verify that generated tasks are properly formatted and useful for implementation
+
+### Task 18: Fix Duplicated and Improper Progress Messages
+- [x] Investigate why progress messages are duplicated and improperly formatted
+- [x] Ensure progress messages are displayed only once
+- [x] Format progress messages to appear on a single line
+- [x] Test message display with various scenarios
+- [x] Verify that messages are clear and informative to the user
+
+### Task 19: Fix Content Creation/Replacement in Files
+- [x] Investigate why content is not properly created/replaced in proposal.md and tasks.md
+- [x] Ensure file writing operations properly replace existing content
+- [x] Verify that generated content is correctly written to all files
+- [x] Test file creation and replacement with various scenarios
+- [x] Ensure proper error handling for file operations
+
+### Task 20: Fix Progress Message Formatting
+- [x] Investigate why progress messages are appearing on multiple lines
+- [x] Ensure progress messages are formatted to appear on a single line
+- [x] Remove any duplicate message additions
+- [x] Test message formatting with various scenarios
+- [x] Verify that messages are clear and properly formatted
+
+### Task 21: Fix Task Content in tasks.md
+- [x] Investigate why tasks.md content is not proper
+- [x] Ensure generated tasks are properly formatted and useful
+- [x] Verify that tasks include appropriate subagent recommendations
+- [x] Test task generation with various input scenarios
+- [x] Ensure tasks are properly structured for implementation

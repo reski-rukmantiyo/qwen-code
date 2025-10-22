@@ -180,9 +180,10 @@ export async function processProposalDescription(context: CommandContext, select
     }
     
     // Add a message to inform the user that content generation is starting
+    // Use a single message instead of multiple to avoid duplication
     context.ui.addItem({
       type: 'info',
-      text: `Generating documentation content for "${selectedDir}"... Please wait.`,
+      text: `Generating content for "${selectedDir}"... Please wait.`,
     }, Date.now());
     
     const projectRoot = process.cwd();
@@ -200,17 +201,10 @@ export async function processProposalDescription(context: CommandContext, select
     };
     
     // Update or create files as needed
-    if (!fileStatus['proposal'].exists || fileStatus['proposal'].isTemplate) {
-      fs.writeFileSync(files.proposal, newContent.proposal);
-    }
-    
-    if (!fileStatus['tasks'].exists || fileStatus['tasks'].isTemplate) {
-      fs.writeFileSync(files.tasks, newContent.tasks);
-    }
-    
-    if (!fileStatus['design'].exists || fileStatus['design'].isTemplate) {
-      fs.writeFileSync(files.design, newContent.design);
-    }
+    // Always replace content for all files when processing a proposal
+    fs.writeFileSync(files.proposal, newContent.proposal);
+    fs.writeFileSync(files.tasks, newContent.tasks);
+    fs.writeFileSync(files.design, newContent.design);
     
     return {
       type: 'message',
@@ -233,7 +227,7 @@ File status:
 
 // Function to check if content matches template patterns using structural matching
 function isTemplateContent(content: string, filePath: string): boolean {
-  // For proposal creation, we'll simply check if the content matches our template
+  // For proposal creation, we'll check if the content matches our template
   // This is a simplified approach that just checks for the presence of template sections
   const templateSections = [
     '## Overview',
@@ -244,21 +238,24 @@ function isTemplateContent(content: string, filePath: string): boolean {
   
   // For tasks.md
   if (path.basename(filePath) === 'tasks.md') {
+    // Check if it contains the basic template structure
     return content.includes('# Implementation Tasks') && 
-           content.includes('- [ ] Task 1:') && 
-           content.includes('- [ ] Task 2:') && 
-           content.includes('- [ ] Task 3:');
+           (content.includes('- [ ] Task 1:') || content.includes('- [ ] Task 2:') || content.includes('- [ ] Task 3:'));
   }
   
   // For design.md
   if (path.basename(filePath) === 'design.md') {
-    return content.includes('## Approach') && 
+    // Check if it contains the basic template structure
+    return content.includes('# Technical Design for') && 
+           content.includes('## Approach') && 
            content.includes('## Architecture') && 
            content.includes('## Dependencies');
   }
   
   // For proposal.md
-  return templateSections.every(section => content.includes(section));
+  // Check if it contains the basic template structure
+  return content.includes('# ') && 
+         templateSections.some(section => content.includes(section));
 }
 
 // Helper function to generate meaningful short name with heuristics (fallback)

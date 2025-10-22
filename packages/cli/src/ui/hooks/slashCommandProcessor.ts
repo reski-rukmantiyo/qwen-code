@@ -470,14 +470,6 @@ export const useSlashCommandProcessor = (
                         setOpenSpecProposalDescriptionInputRequest({
                           onSubmit: (description: string) => {
                             setOpenSpecProposalDescriptionInputRequest(null);
-                            // Add a progress message
-                            addItem(
-                              {
-                                type: MessageType.INFO,
-                                text: 'Generating proposal content, please wait...',
-                              },
-                              Date.now(),
-                            );
                             // Import and call the processing function
                             import('../commands/openspec/proposalCommand.js').then(module => {
                               module.processProposalDescription(
