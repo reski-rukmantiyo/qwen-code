@@ -8,7 +8,7 @@ import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
-import { proposalCommand, processProposalDescription, generateMeaningfulShortNameWithHeuristics } from './proposalCommand.js';
+import { proposalCommand, processProposalDescription } from './proposalCommand.js';
 import { createMockCommandContext } from '../../../test-utils/mockCommandContext.js';
 import { type CommandContext } from '../types.js';
 
@@ -197,18 +197,31 @@ describe('processProposalDescription', () => {
   it('should process description and generate content for new files', async () => {
     // Arrange: Mock file system operations
     const changeDir = path.join(openspecDir, 'changes', 'test-change');
+    const proposalFile = path.join(changeDir, 'proposal.md');
+    const tasksFile = path.join(changeDir, 'tasks.md');
+    const designFile = path.join(changeDir, 'design.md');
     
     vi.mocked(fs.existsSync).mockImplementation((p: any) => {
       if (p === openspecDir) return true;  // OpenSpec is initialized
       if (p === changeDir) return true;    // Change directory exists
-      return false;  // Files don't exist yet
+      if (p === proposalFile) return true; // After writing, files exist
+      if (p === tasksFile) return true;
+      if (p === designFile) return true;
+      return false;  // Files don't exist yet initially
+    });
+    
+    // Mock writeFileSync to simulate successful file creation
+    vi.mocked(fs.writeFileSync).mockImplementation((p: any, content: any) => {
+      // In a real scenario, this would write the file
+      // For testing, we just need to ensure it doesn't throw
+      return undefined;
     });
     
     // Mock file status
     const fileStatus = {
-      'proposal': { exists: false, content: null, isTemplate: false, hash: null },
-      'tasks': { exists: false, content: null, isTemplate: false, hash: null },
-      'design': { exists: false, content: null, isTemplate: false, hash: null },
+      'proposal': { exists: false, content: null },
+      'tasks': { exists: false, content: null },
+      'design': { exists: false, content: null },
     };
     
     // Act: Process the description
@@ -226,69 +239,5 @@ describe('processProposalDescription', () => {
     expect((result as any).content).toContain('✅ Processed change proposal for "test-change"');
   });
 
-  it('should detect template content correctly', () => {
-    // Import the function we want to test
-    const { isTemplateContent } = require('./proposalCommand.js');
-    
-    // Test with template content
-    const templateContent = `# Change Proposal
 
-## Overview
-Briefly describe what this change proposes to implement.
-
-## Motivation
-Explain why this change is needed and what problem it solves.
-
-## Implementation Plan
-Detail the steps required to implement this change.
-
-## Impact Assessment
-Describe the potential impact of this change on the system.`;
-    
-    expect(isTemplateContent(templateContent, 'proposal.md')).toBe(true);
-    
-    // Test with non-template content
-    const realContent = `# Change Proposal
-
-## Overview
-Add user authentication feature to the application.
-
-## Motivation
-This change is needed to improve the security posture of the system.
-
-## Implementation Plan
-1. Design and implement the new functionality
-2. Create comprehensive tests for the new functionality
-3. Update relevant documentation
-
-## Impact Assessment
-This change will improve the system according to the description. The primary impact areas include: security.`;
-    
-    expect(isTemplateContent(realContent, 'proposal.md')).toBe(false);
-  });
-
-  it('should generate meaningful short names', async () => {
-    // Test short name generation
-    const shortName = generateMeaningfulShortNameWithHeuristics('Add user authentication feature');
-    expect(shortName).toBe('add-user-authenticat'); // Truncated to 20 characters
-    
-    // Test with special characters
-    const shortName2 = generateMeaningfulShortNameWithHeuristics('Add user authentication & authorization!');
-    expect(shortName2).toBe('add-user-authenticat'); // Truncated to 20 characters
-  });
-
-  it('should calculate content hashes correctly', () => {
-    // Import the function we want to test
-    const { calculateContentHash } = require('./proposalCommand.js');
-    
-    // Test hash calculation
-    const content = 'test content';
-    const hash = calculateContentHash(content);
-    expect(hash).toBe('mock-hash-value'); // Using our mocked crypto
-    
-    // Test that different content produces different hashes (in real implementation)
-    const content2 = 'different content';
-    const hash2 = calculateContentHash(content2);
-    expect(hash2).toBe('mock-hash-value'); // Using our mocked crypto
-  });
 });

@@ -55,11 +55,6 @@ export const proposalCommand: SlashCommand = {
         } as MessageActionReturn;
       }
       
-      // Debug information
-      if (context.services.config?.getDebugMode()) {
-        console.log(`[DEBUG] Found ${directories.length} change directories: ${directories.join(', ')}`);
-      }
-      
       // If a directory name was provided in args, use it
       if (args.trim()) {
         const argDir = args.trim();
@@ -96,11 +91,6 @@ export const proposalCommand: SlashCommand = {
 // Function to process proposal for a selected directory
 async function processProposalForDirectory(context: CommandContext, selectedDir: string, changesDir: string) {
   try {
-    // Debug information
-    if (context.services.config?.getDebugMode()) {
-      console.log(`[DEBUG] Processing proposal for directory: ${selectedDir}`);
-    }
-    
     // Check files in the selected directory
     const changeDir = path.join(changesDir, selectedDir);
     const files = {
@@ -156,14 +146,7 @@ async function processProposalForDirectory(context: CommandContext, selectedDir:
 // Function to process the description and generate/update content
 export async function processProposalDescription(context: CommandContext, selectedDir: string, description: string, fileStatus: Record<string, any>, allFilesExist: boolean) {
   try {
-    // Debug information
-    if (context.services.config?.getDebugMode()) {
-      console.log(`[DEBUG] Processing proposal description for directory: ${selectedDir}`);
-      console.log(`[DEBUG] Description: ${description}`);
-    }
-    
     // Add a message to inform the user that content generation is starting
-    // Use a single message instead of multiple to avoid duplication
     context.ui.addItem({
       type: 'info',
       text: `Generating content for "${selectedDir}"... Please wait.`,
@@ -181,103 +164,29 @@ export async function processProposalDescription(context: CommandContext, select
     // Generate new content based on description
     const newContent = await generateContentFromDescription(context, description, selectedDir);
     
-    // Check files in the selected directory
+    // Define file paths
     const files = {
       proposal: path.join(changeDir, 'proposal.md'),
       tasks: path.join(changeDir, 'tasks.md'),
       design: path.join(changeDir, 'design.md')
     };
     
-    // Debug information for file paths
-    if (context.services.config?.getDebugMode()) {
-      console.log(`[DEBUG] File paths:`);
-      console.log(`[DEBUG] - Proposal: ${files.proposal}`);
-      console.log(`[DEBUG] - Tasks: ${files.tasks}`);
-      console.log(`[DEBUG] - Design: ${files.design}`);
-    }
-    
-    // Update or create files as needed
     // Always replace content for all files when processing a proposal
-    // Add individual error handling for each file
-    let allFilesCreated = true;
-    const writeResults: Record<string, boolean> = {};
-    
-    try {
-      fs.writeFileSync(files.proposal, newContent.proposal);
-      writeResults['proposal'] = true;
-      if (context.services.config?.getDebugMode()) {
-        console.log(`[DEBUG] Successfully wrote proposal.md`);
-      }
-    } catch (error) {
-      allFilesCreated = false;
-      writeResults['proposal'] = false;
-      console.error(`[ERROR] Failed to write proposal.md: ${(error as Error).message}`);
-    }
-    
-    try {
-      fs.writeFileSync(files.tasks, newContent.tasks);
-      writeResults['tasks'] = true;
-      if (context.services.config?.getDebugMode()) {
-        console.log(`[DEBUG] Successfully wrote tasks.md`);
-      }
-    } catch (error) {
-      allFilesCreated = false;
-      writeResults['tasks'] = false;
-      console.error(`[ERROR] Failed to write tasks.md: ${(error as Error).message}`);
-    }
-    
-    try {
-      fs.writeFileSync(files.design, newContent.design);
-      writeResults['design'] = true;
-      if (context.services.config?.getDebugMode()) {
-        console.log(`[DEBUG] Successfully wrote design.md`);
-      }
-    } catch (error) {
-      allFilesCreated = false;
-      writeResults['design'] = false;
-      console.error(`[ERROR] Failed to write design.md: ${(error as Error).message}`);
-    }
-    
-    // Verify that files were actually created
-    const verification = {
-      proposal: fs.existsSync(files.proposal),
-      tasks: fs.existsSync(files.tasks),
-      design: fs.existsSync(files.design)
-    };
-    
-    // If verification shows all files exist, override any write errors
-    const allFilesVerified = verification.proposal && verification.tasks && verification.design;
+    fs.writeFileSync(files.proposal, newContent.proposal);
+    fs.writeFileSync(files.tasks, newContent.tasks);
+    fs.writeFileSync(files.design, newContent.design);
     
     // Prepare file status information for the user
     const fileStatusInfo = `
 File status:
-- proposal.md: ${verification.proposal ? '✅ created' : '❌ failed'}
-- tasks.md: ${verification.tasks ? '✅ created' : '❌ failed'}
-- design.md: ${verification.design ? '✅ created' : '❌ failed'}`;
-    
-    // Add detailed information if in debug mode
-    let debugInfo = '';
-    if (context.services.config?.getDebugMode()) {
-      debugInfo = `
-      
-Debug info:
-- Write results: ${JSON.stringify(writeResults)}
-- File verification: ${JSON.stringify(verification)}
-- All files created: ${allFilesCreated}
-- All files verified: ${allFilesVerified}`;
-    }
-    
-    // Determine message type based on results
-    // Use 'info' if all files are verified to exist, otherwise use 'warning'
-    const messageType = allFilesVerified ? 'info' : 'warning';
-    const statusMessage = allFilesVerified ? 
-      `✅ Processed change proposal for "${selectedDir}"` : 
-      `⚠️  Processed change proposal for "${selectedDir}" (some files may have failed)`;
+- proposal.md: ✅ created
+- tasks.md: ✅ created
+- design.md: ✅ created`;
     
     return {
       type: 'message',
-      messageType: messageType,
-      content: `${statusMessage}${fileStatusInfo}${debugInfo}`
+      messageType: 'info',
+      content: `✅ Processed change proposal for "${selectedDir}"${fileStatusInfo}`
     };
   } catch (error) {
     return {
@@ -288,21 +197,6 @@ Debug info:
   }
 }
 
-
-
-// Helper function to generate meaningful short name with heuristics (fallback)
-export function generateMeaningfulShortNameWithHeuristics(description: string): string {
-  // Extract key terms from description
-  const words = description.toLowerCase()
-    .replace(/[^a-z0-9\s]/g, '')
-    .split(/\s+/)
-    .filter(word => word.length > 2)
-    .slice(0, 5); // Take first 5 significant words
-  
-  // Join with hyphens and limit length
-  return words.join('-').substring(0, 20);
-}
-
 // Helper function to generate content using LLM or heuristics
 async function generateContentFromDescription(context: CommandContext, description: string, changeName: string): Promise<{proposal: string, tasks: string, design: string}> {
   try {
@@ -310,13 +204,13 @@ async function generateContentFromDescription(context: CommandContext, descripti
     const config = context.services.config;
     if (!config) {
       // Fallback to heuristic-based generation if config is not available
-      return generateContentWithHeuristics(description);
+      return generateContentWithHeuristics(description, changeName);
     }
     
     const geminiClient = config.getGeminiClient();
     if (!geminiClient) {
       // Fallback to heuristic-based generation if LLM client is not available
-      return generateContentWithHeuristics(description);
+      return generateContentWithHeuristics(description, changeName);
     }
     
     // Generate content for each file type
@@ -333,15 +227,35 @@ async function generateContentFromDescription(context: CommandContext, descripti
     };
   } catch (error) {
     // Fallback if LLM generation fails
-    return generateContentWithHeuristics(description);
+    return generateContentWithHeuristics(description, changeName);
   }
 }
 
 // Helper function to generate content using heuristics (fallback)
-function generateContentWithHeuristics(description: string): {proposal: string, tasks: string, design: string} {
+function generateContentWithHeuristics(description: string, changeName: string): {proposal: string, tasks: string, design: string} {
   // For heuristic fallback, we'll use the template structure directly
-  return {
-    proposal: `# ${description}
+  // Apply the same filtering to remove tool mentions
+  const proposal = filterToolMentions(`# Technical Design for ${changeName}
+
+## Approach
+Describe the technical approach for implementing this change.
+
+## Architecture
+Outline any architectural considerations or changes.
+
+## Dependencies
+List any dependencies or prerequisites for this change.`);
+  
+  const tasks = filterToolMentions(`# Implementation Tasks
+
+- [ ] Task 1: Describe the first implementation task
+  Subagent: [appropriate-subagent-type]
+- [ ] Task 2: Describe the second implementation task
+  Subagent: [appropriate-subagent-type]
+- [ ] Task 3: Describe the third implementation task
+  Subagent: [appropriate-subagent-type]`);
+  
+  const design = filterToolMentions(`# ${changeName}
 
 ## Overview
 Briefly describe what this change proposes to implement.
@@ -353,76 +267,69 @@ Explain why this change is needed and what problem it solves.
 Detail the steps required to implement this change.
 
 ## Impact Assessment
-Describe the potential impact of this change on the system.`,
-    tasks: `# Implementation Tasks
-
-- [ ] Task 1: Describe the first implementation task
-  Subagent: [appropriate-subagent-type]
-- [ ] Task 2: Describe the second implementation task
-  Subagent: [appropriate-subagent-type]
-- [ ] Task 3: Describe the third implementation task
-  Subagent: [appropriate-subagent-type]`,
-    design: `# Technical Design for ${description}
-
-## Approach
-Describe the technical approach for implementing this change.
-
-## Architecture
-Outline any architectural considerations or changes.
-
-## Dependencies
-List any dependencies or prerequisites for this change.`
+Describe the potential impact of this change on the system.`);
+  
+  return {
+    proposal,
+    tasks,
+    design
   };
+}
+
+// Helper function to filter out tool mentions from generated content
+function filterToolMentions(content: string): string {
+  // List of tool names that should not appear in generated documentation
+  // Focus on actual tool call patterns rather than just keywords
+  const toolPatterns = [
+    /\<function=task\>/, /\<function=edit\>/, /\<function=write_file\>/,
+    /\<function=read_file\>/, /\<function=search_file_content\>/, /\<function=glob\>/,
+    /\<function=run_shell_command\>/, /\<function=save_memory\>/, /\<function=todo_write\>/,
+    /\<function=web_fetch\>/,
+    // Also catch tool references in prose
+    /\busing the [a-zA-Z_]+ tool\b/i,
+    /\bthe [a-zA-Z_]+ tool (can|will|should) be used\b/i
+  ];
+  
+  // Remove any lines that contain tool mentions
+  const lines = content.split('\n');
+  const filteredLines = lines.filter(line => {
+    return !toolPatterns.some(pattern => pattern.test(line));
+  });
+  
+  return filteredLines.join('\n');
 }
 
 // Helper functions to generate content from descriptions using LLM
 async function generateProposalContent(context: CommandContext, description: string, changeName: string): Promise<string> {
-  const prompt = `Generate a change proposal DOCUMENTATION with the following description: "${description}".
-  IMPORTANT: Focus ONLY on documentation and specifications. DO NOT include any code implementation details, code examples, or technical implementation specifics.
+  const prompt = `Generate a technical design DOCUMENTATION section for a change proposal with the following description: "${description}".
+  IMPORTANT: Focus ONLY on documentation of the technical design. DO NOT include any code implementation details, code examples, or technical implementation specifics.
+  IMPORTANT: DO NOT mention any tools or tool names in the documentation.
+  IMPORTANT: Do not call any tools and create document only.
   Use this exact template structure:
   
-  # ${changeName}
+  # Technical Design for ${changeName}
   
-  ## Overview
-  Briefly describe what this change proposes to DOCUMENT.
+  ## Approach
+  Describe the approach for DOCUMENTING this technical design.
   
-  ## Motivation
-  Explain WHY this documentation is needed and WHAT problem it solves.
+  ## Architecture
+  Outline the ARCHITECTURAL DOCUMENTATION considerations.
   
-  ## Implementation Plan
-  Detail the steps required to CREATE this documentation.
-  
-  ## Impact Assessment
-  Describe the potential impact of this documentation on the system.`;
+  ## Dependencies
+  List any documentation dependencies or prerequisites.`;
   
   const content = await generateContentWithLLM(context, prompt);
   
-  // Ensure the content follows the template structure
-  if (!content.includes('## Overview') || !content.includes('## Motivation') || 
-      !content.includes('## Implementation Plan') || !content.includes('## Impact Assessment')) {
-    // Fallback to template if LLM didn't follow structure
-    return `# ${changeName}
-
-## Overview
-Briefly describe what this change proposes to DOCUMENT.
-
-## Motivation
-Explain WHY this documentation is needed and WHAT problem it solves.
-
-## Implementation Plan
-Detail the steps required to CREATE this documentation.
-
-## Impact Assessment
-Describe the potential impact of this documentation on the system.`;
-  }
-  
-  return content;
+  // Filter out any tool mentions from the generated content
+  return filterToolMentions(content);
 }
 
 async function generateTasksContent(context: CommandContext, description: string): Promise<string> {
   const prompt = `Generate a list of implementation tasks for a change proposal with the following description: "${description}".
   Include BOTH documentation tasks AND source code implementation tasks based on the proposal and design documents.
   For each task, also suggest an appropriate subagent that would be best suited to handle that task.
+  IMPORTANT: DO NOT mention any tools or tool names in the task descriptions.
+  IMPORTANT: Do not call any tools and create document only.
   Use this exact template structure:
   
   # Implementation Tasks
@@ -445,57 +352,35 @@ async function generateTasksContent(context: CommandContext, description: string
 
   const content = await generateContentWithLLM(context, prompt);
   
-  // Ensure the content follows the template structure
-  if (!content.includes('# Implementation Tasks') || !content.includes('- [ ]')) {
-    // Fallback to template if LLM didn't follow structure
-    return `# Implementation Tasks
-
-- [ ] Task 1: Describe the first implementation task
-  Subagent: [appropriate-subagent-type]
-- [ ] Task 2: Describe the second implementation task
-  Subagent: [appropriate-subagent-type]
-- [ ] Task 3: Describe the third implementation task
-  Subagent: [appropriate-subagent-type]`;
-  }
-  
-  return content;
+  // Filter out any tool mentions from the generated content
+  return filterToolMentions(content);
 }
 
 async function generateDesignContent(context: CommandContext, description: string, changeName: string): Promise<string> {
-  const prompt = `Generate a technical design DOCUMENTATION section for a change proposal with the following description: "${description}".
-  IMPORTANT: Focus ONLY on documentation of the technical design. DO NOT include any code implementation details, code examples, or technical implementation specifics.
+  const prompt = `Generate a change proposal DOCUMENTATION with the following description: "${description}".
+  IMPORTANT: Focus ONLY on documentation and specifications. DO NOT include any code implementation details, code examples, or technical implementation specifics.
+  IMPORTANT: DO NOT mention any tools or tool names in the documentation.
+  IMPORTANT: Do not call any tools and create document only.
   Use this exact template structure:
   
-  # Technical Design for ${changeName}
+  # ${changeName}
   
-  ## Approach
-  Describe the approach for DOCUMENTING this technical design.
+  ## Overview
+  Briefly describe what this change proposes to DOCUMENT.
   
-  ## Architecture
-  Outline the ARCHITECTURAL DOCUMENTATION considerations.
+  ## Motivation
+  Explain WHY this documentation is needed and WHAT problem it solves.
   
-  ## Dependencies
-  List any documentation dependencies or prerequisites.`;
+  ## Implementation Plan
+  Detail the steps required to CREATE this documentation.
+  
+  ## Impact Assessment
+  Describe the potential impact of this documentation on the system.`;
   
   const content = await generateContentWithLLM(context, prompt);
   
-  // Ensure the content follows the template structure
-  if (!content.includes('## Approach') || !content.includes('## Architecture') || 
-      !content.includes('## Dependencies')) {
-    // Fallback to template if LLM didn't follow structure
-    return `# Technical Design for ${changeName}
-
-## Approach
-Describe the approach for DOCUMENTING this technical design.
-
-## Architecture
-Outline the ARCHITECTURAL DOCUMENTATION considerations.
-
-## Dependencies
-List any documentation dependencies or prerequisites.`;
-  }
-  
-  return content;
+  // Filter out any tool mentions from the generated content
+  return filterToolMentions(content);
 }
 
 // Helper function to generate content using LLM
@@ -505,13 +390,13 @@ async function generateContentWithLLM(context: CommandContext, prompt: string): 
     const config = context.services.config;
     if (!config) {
       // Fallback to heuristic-based generation if config is not available
-      return generateContentWithHeuristics(prompt).proposal;
+      return "# Default Title\n\n## Overview\nDefault overview content.";
     }
     
     const geminiClient = config.getGeminiClient();
     if (!geminiClient) {
       // Fallback to heuristic-based generation if LLM client is not available
-      return generateContentWithHeuristics(prompt).proposal;
+      return "# Default Title\n\n## Overview\nDefault overview content.";
     }
     
     // Create a simple prompt for content generation
@@ -537,9 +422,9 @@ async function generateContentWithLLM(context: CommandContext, prompt: string): 
     }
     
     // Fallback if no content was generated
-    return generateContentWithHeuristics(prompt).proposal;
+    return "# Default Title\n\n## Overview\nDefault overview content.";
   } catch (error) {
     // Fallback if LLM generation fails
-    return generateContentWithHeuristics(prompt).proposal;
+    return "# Default Title\n\n## Overview\nDefault overview content.";
   }
 }
