@@ -277,7 +277,9 @@ ${proposalContent.substring(0, 1000)}...
 Design Document:
 ${designContent.substring(0, 1000)}...
 
-Please create a list of implementation tasks that would address the ${activity} described. Format the response as a markdown task list with checkboxes. Include tasks for code implementation, testing, and documentation.`;
+Please create a list of implementation tasks that would address the ${activity} described. Format the response as a markdown task list with checkboxes. Include tasks for code implementation, testing, and documentation.
+
+IMPORTANT: Do not use any tools. Generate document content only.`;
     
     // Use the LLM to generate content
     const response = await geminiClient.generateContent(
