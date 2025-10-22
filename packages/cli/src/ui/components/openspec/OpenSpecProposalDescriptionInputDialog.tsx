@@ -30,13 +30,6 @@ export const OpenSpecProposalDescriptionInputDialog: React.FC<OpenSpecProposalDe
       if (key.name === 'escape') {
         onCancel();
       }
-      if (key.name === 'return' || key.name === 'enter') {
-        if (description.trim().length > 0) {
-          onSubmit(description.trim());
-        } else {
-          setShowError(true);
-        }
-      }
     },
     { isActive: true },
   );
