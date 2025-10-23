@@ -503,35 +503,35 @@ function generateContentWithHeuristics(prompt: string): string {
 // Helper functions to generate content from descriptions using LLM
 async function generateOverviewFromDescription(context: CommandContext, description: string): Promise<string> {
   const prompt = `Generate a brief overview for a change proposal with the following description: "${description}". 
-  The overview should be a single sentence that captures the essence of the change.`;
+  The overview should be a single sentence that captures the essence of the change. DO NOT USE TOOLS.`;
   
   return await generateContentWithLLM(context, prompt);
 }
 
 async function generateMotivationFromDescription(context: CommandContext, description: string): Promise<string> {
   const prompt = `Generate a motivation section for a change proposal with the following description: "${description}". 
-  Explain why this change is needed and what problem it solves.`;
+  Explain why this change is needed and what problem it solves.DO NOT USE TOOLS.`;
   
   return await generateContentWithLLM(context, prompt);
 }
 
 async function generateImplementationPlanFromDescription(context: CommandContext, description: string): Promise<string> {
   const prompt = `Generate an implementation plan for a change proposal with the following description: "${description}". 
-  Detail the steps required to implement this change.`;
+  Detail the steps required to implement this change.DO NOT USE TOOLS.`;
   
   return await generateContentWithLLM(context, prompt);
 }
 
 async function generateImpactAssessmentFromDescription(context: CommandContext, description: string): Promise<string> {
   const prompt = `Generate an impact assessment for a change proposal with the following description: "${description}". 
-  Describe the potential impact of this change on the system.`;
+  Describe the potential impact of this change on the system.DO NOT USE TOOLS.`;
   
   return await generateContentWithLLM(context, prompt);
 }
 
 async function generateTasksFromDescription(context: CommandContext, description: string): Promise<string> {
   const prompt = `Generate a list of implementation tasks for a change proposal with the following description: "${description}". 
-  Provide 3-5 specific tasks in a markdown checklist format.`;
+  Provide 3-5 specific tasks in a markdown checklist format.DO NOT USE TOOLS.`;
   
   const tasks = await generateContentWithLLM(context, prompt);
   
@@ -545,21 +545,21 @@ async function generateTasksFromDescription(context: CommandContext, description
 
 async function generateApproachFromDescription(context: CommandContext, description: string): Promise<string> {
   const prompt = `Generate a technical approach section for a change proposal with the following description: "${description}". 
-  Describe the technical approach for implementing this change.`;
+  Describe the technical approach for implementing this change.DO NOT USE TOOLS.`;
   
   return await generateContentWithLLM(context, prompt);
 }
 
 async function generateArchitectureFromDescription(context: CommandContext, description: string): Promise<string> {
   const prompt = `Generate an architecture section for a change proposal with the following description: "${description}". 
-  Outline any architectural considerations or changes.`;
+  Outline any architectural considerations or changes.DO NOT USE TOOLS.`;
   
   return await generateContentWithLLM(context, prompt);
 }
 
 async function generateDependenciesFromDescription(context: CommandContext, description: string): Promise<string> {
   const prompt = `Generate a dependencies section for a change proposal with the following description: "${description}". 
-  List any dependencies or prerequisites for this change.`;
+  List any dependencies or prerequisites for this change.DO NOT USE TOOLS.`;
   
   return await generateContentWithLLM(context, prompt);
 }
