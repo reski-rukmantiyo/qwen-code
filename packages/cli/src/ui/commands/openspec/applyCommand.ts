@@ -92,6 +92,7 @@ export const applyCommand: SlashCommand = {
       content += '## Tasks to Implement\n';
       content += tasksContent;
       content += '\n\n## Implementation Guidelines\n';
+      content += 'ALWAYS OBEY ./AGENTS.md, ./openspec/project.md, and ./openspec/AGENTS.md.\n';
       content += '1. Follow the tasks in order as listed above\n';
       content += '2. Reference the specifications in the specs/ directory\n';
       content += `3. Mark tasks as complete by checking the boxes as you implement them in "${tasksPath}"\n`;
