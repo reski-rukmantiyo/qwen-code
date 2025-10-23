@@ -14,11 +14,7 @@ import { getOpenSpecCacheService } from '../../hooks/useOpenSpecWatcher.js';
 // Import AGENTS.md templates
 import { 
   ROOT_AGENTS_MD_TEMPLATE, 
-  OPENSPEC_AGENTS_MD_TEMPLATE,
-  QWEN_CODE_AGENTS_TEMPLATE,
-  CLAUDE_AGENTS_TEMPLATE,
-  CHATGPT_AGENTS_TEMPLATE,
-  GITHUB_COPILOT_AGENTS_TEMPLATE
+  OPENSPEC_AGENTS_MD_TEMPLATE
 } from '../../../templates/agentsMdTemplates.js';
 
 // Import chalk for colorful output
@@ -27,108 +23,9 @@ import chalk from 'chalk';
 
 
 
-// Helper function to detect already configured tools
-function detectConfiguredTools(openspecDir: string): string[] {
-  const toolsDir = path.join(openspecDir, 'tools');
-  if (!fs.existsSync(toolsDir)) {
-    return [];
-  }
-  
-  try {
-    const toolFiles = fs.readdirSync(toolsDir);
-    const configuredTools: string[] = [];
-    
-    for (const file of toolFiles) {
-      if (file.endsWith('-agents.md')) {
-        const toolName = file.replace('-agents.md', '');
-        configuredTools.push(toolName);
-      }
-    }
-    
-    return configuredTools;
-  } catch (error) {
-    console.warn('Failed to detect configured tools:', error);
-    return [];
-  }
-}
 
-// Helper function to create tool-specific AGENTS.md files
-function createToolSpecificAgentsFiles(openspecDir: string, tools: string[] | null = [], extensionMode: boolean = false): void {
-  const toolsDir = path.join(openspecDir, 'tools');
-  fs.mkdirSync(toolsDir, { recursive: true });
-  
-  // Normalize tools to empty array if null
-  const normalizedTools = tools || [];
-  
-  // If no tools specified and not in extension mode, create a default set
-  let finalTools = normalizedTools;
-  if (normalizedTools.length === 0 && !extensionMode) {
-    finalTools = ['qwen-code', 'claude', 'chatgpt', 'github-copilot'];
-  }
-  
-  // If in extension mode, pre-select already configured tools
-  if (extensionMode) {
-    const configuredTools = detectConfiguredTools(openspecDir);
-    finalTools = [...new Set([...configuredTools, ...normalizedTools])]; // Merge and deduplicate
-  }
-  
-  // Create tool-specific AGENTS.md files
-  for (const tool of finalTools) {
-    let templateContent = '';
-    
-    switch (tool.toLowerCase()) {
-      case 'qwen-code':
-        templateContent = QWEN_CODE_AGENTS_TEMPLATE;
-        break;
-      case 'claude':
-        templateContent = CLAUDE_AGENTS_TEMPLATE;
-        break;
-      case 'chatgpt':
-        templateContent = CHATGPT_AGENTS_TEMPLATE;
-        break;
-      case 'github-copilot':
-        templateContent = GITHUB_COPILOT_AGENTS_TEMPLATE;
-        break;
-      default:
-        // Create a generic template for unknown tools
-        templateContent = `# ${tool.charAt(0).toUpperCase() + tool.slice(1)} Integration Instructions
 
-These instructions are for ${tool} when working with OpenSpec projects.
 
-## Core Principles
-
-1. **Specification-Driven Development**: Always reference specifications in \`openspec/specs/\` before implementing changes
-2. **Change Management**: Follow the three-stage workflow (Create, Implement, Archive) for all modifications
-3. **Validation First**: Ensure compliance with specifications before implementation
-4. **Context Awareness**: Understand that specifications are the source of truth for requirements
-
-## Working with Specifications
-
-### Reading Specifications
-- Specifications are located in \`openspec/specs/\` directory
-- Each specification follows a structured format with Overview, Requirements, Implementation Details, and Testing sections
-
-## Working with Changes
-
-### Implementing Changes
-When implementing changes:
-- Follow tasks in \`tasks.md\` in sequential order
-- Reference specifications in \`openspec/specs/\` for implementation guidelines
-- Validate implementation against change proposals
-
-## Best Practices for ${tool}
-
-1. **Be Explicit**: Clearly state which specifications and requirements you're addressing
-2. **Ask Questions**: If anything is unclear, ask for clarification before proceeding
-3. **Validate Assumptions**: Double-check your understanding of requirements before implementation
-4. **Follow Structure**: Maintain the structured format of specifications and changes
-`;
-    }
-    
-    const toolAgentsPath = path.join(toolsDir, `${tool}-agents.md`);
-    fs.writeFileSync(toolAgentsPath, templateContent);
-  }
-}
 
 export const initCommand: SlashCommand = {
   name: 'init',
@@ -139,7 +36,6 @@ export const initCommand: SlashCommand = {
       const projectRoot = process.cwd();
       
       // Declare variables at the top to avoid scoping issues
-      let tools: string[] | null = null;
       let description = '';
       
       // Check Node.js version compatibility
@@ -179,38 +75,22 @@ export const initCommand: SlashCommand = {
           const sampleSpecExists = fs.existsSync(path.join(specsDir, 'sample-spec.md')) || 
                                   fs.readdirSync(specsDir).some(file => file.endsWith('.md'));
           const sampleChangeExists = fs.existsSync(path.join(changesDir, 'sample-change'));
-          const toolsDirExists = fs.existsSync(path.join(openspecDir, 'tools'));
           
           // If properly initialized, update instead of failing
-          if (sampleSpecExists || sampleChangeExists || toolsDirExists) {
+          if (sampleSpecExists || sampleChangeExists) {
             // Clear cache since we're re-initializing
             const cacheService = getOpenSpecCacheService();
             if (cacheService) {
               cacheService.clearCache();
             }
             
-            // If tools were specified, update tool-specific AGENTS.md files
-            if (tools !== null) {
-              try {
-                const toolsArray: string[] = tools || [];
-                createToolSpecificAgentsFiles(openspecDir, toolsArray, true); // Use extension mode
-                const toolsMessage = toolsArray.length > 0 
-                  ? `Updated tool-specific AGENTS.md files for: ${toolsArray.join(', ')}`
-                  : "Removed tool-specific AGENTS.md files (none specified)";
-                  
-                return {
-                  type: 'message',
-                  messageType: 'info',
-                  content: `✅ OpenSpec already initialized. ${toolsMessage}\n\nUse /openspec update to refresh all AGENTS.md files.`,
-                };
-              } catch (error) {
-                return {
-                  type: 'message',
-                  messageType: 'error',
-                  content: `Failed to update tool-specific AGENTS.md files: ${(error as Error).message}`,
-                };
-              }
-            }
+            // This section previously handled tool-specific updates (now removed)
+            // Always return the same message for backward compatibility
+            return {
+              type: 'message',
+              messageType: 'info',
+              content: '✅ OpenSpec is already initialized in this project.',
+            };
             
             return {
               type: 'message',
@@ -229,63 +109,22 @@ export const initCommand: SlashCommand = {
       
       // Parse description from args if provided
       const trimmedArgs = args.trim();
-      // description and tools are already declared at the top
+      // description is already declared at the top
       
       // Parse command line arguments
       if (trimmedArgs) {
         const argsArray = trimmedArgs.split(/\s+/);
-        let i = 0;
         
-        // Check for --tools flag
-        while (i < argsArray.length) {
-          if (argsArray[i] === '--tools' || argsArray[i] === '-t') {
-            i++;
-            if (i < argsArray.length) {
-              const toolsArg = argsArray[i];
-              if (toolsArg === 'all') {
-                tools = ['qwen-code', 'claude', 'chatgpt', 'github-copilot'];
-              } else if (toolsArg === 'none') {
-                tools = [];
-              } else {
-                tools = toolsArg.split(',').map(tool => tool.trim()).filter(tool => tool.length > 0);
-                
-                // Validate tool selections
-                const validTools = ['qwen-code', 'claude', 'chatgpt', 'github-copilot'];
-                const invalidTools = tools.filter(tool => !validTools.includes(tool.toLowerCase()));
-                if (invalidTools.length > 0) {
-                  return {
-                    type: 'message',
-                    messageType: 'error',
-                    content: `Invalid tools specified: ${invalidTools.join(', ')}. Valid tools are: ${validTools.join(', ')}`,
-                  };
-                }
-                
-                // Normalize tool names to lowercase
-                tools = tools.map(tool => tool.toLowerCase());
-              }
-              i++;
-            } else {
-              return {
-                type: 'message',
-                messageType: 'error',
-                content: 'Please specify tools after --tools flag. Usage: /openspec init [--tools <tool1,tool2|all|none>] [description]',
-              };
-            }
-          } else {
-            // Treat remaining args as description
-            const remainingArgs = argsArray.slice(i);
-            const remainingStr = remainingArgs.join(' ');
-            
-            // Check if we have a quoted description
-            if (remainingStr.startsWith('"') && remainingStr.endsWith('"') && remainingStr.length > 1) {
-              description = remainingStr.substring(1, remainingStr.length - 1);
-            } else if (remainingStr.startsWith("'") && remainingStr.endsWith("'") && remainingStr.length > 1) {
-              description = remainingStr.substring(1, remainingStr.length - 1);
-            } else {
-              description = remainingStr;
-            }
-            break;
-          }
+        // Treat all args as description
+        const remainingStr = argsArray.join(' ');
+        
+        // Check if we have a quoted description
+        if (remainingStr.startsWith('"') && remainingStr.endsWith('"') && remainingStr.length > 1) {
+          description = remainingStr.substring(1, remainingStr.length - 1);
+        } else if (remainingStr.startsWith("'") && remainingStr.endsWith("'") && remainingStr.length > 1) {
+          description = remainingStr.substring(1, remainingStr.length - 1);
+        } else {
+          description = remainingStr;
         }
       }
       
@@ -360,8 +199,6 @@ Add any project-specific notes, conventions, or guidelines here.
         // Write OpenSpec instructions AGENTS.md file
         fs.writeFileSync(openSpecAgentsPath, OPENSPEC_AGENTS_MD_TEMPLATE);
         
-        // Create tool-specific AGENTS.md files
-        createToolSpecificAgentsFiles(openspecDir, tools, false); // Not in extension mode
         console.log(chalk.green('✅ AGENTS.md files created successfully'));
       } catch (error) {
         return {
@@ -383,10 +220,6 @@ Add any project-specific notes, conventions, or guidelines here.
       const hasDescription = !!description;
       const usedLLM = false; // Flag indicating if LLM was used (currently always false since we removed the LLM functionality)
       const contentSource = usedLLM ? "LLM-generated" : "template";
-      const toolsArray: string[] = tools || [];
-      const toolsMessage = tools !== null 
-        ? `\nTool-specific AGENTS.md files created for: ${toolsArray.length > 0 ? toolsArray.join(', ') : 'no tools (none specified)'}`
-        : "\nDefault tool-specific AGENTS.md files created for common AI tools";
       
       return {
         type: 'message',
@@ -397,7 +230,6 @@ ${
     ? `\nSpecification content was created from your description using ${contentSource} approach.` 
     : "\nNo description provided, using default template."
 }
-${toolsMessage}
 
 Created directory structure:
 openspec/
