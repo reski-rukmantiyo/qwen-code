@@ -282,6 +282,7 @@ Please create a list of implementation tasks that would address the ${activity} 
 
 IMPORTANT: 
 - EXCEPT for SUBAGENT, DO NOT USE TOOLS
+- ALWAYS OBEY ./AGENTS.md, ./openspec/project.md, and ./openspec/AGENTS.md. 
 - Generate task content only.
 - Do not include any explanations or additional text outside of the task list.
 - Ensure the tasks are specific to the provided change and activity type.
