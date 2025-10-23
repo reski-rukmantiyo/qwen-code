@@ -82,7 +82,20 @@ export const applyCommand: SlashCommand = {
         };
       }
       
-      // Prepare the prompt for AI implementation
+      // Filter tasks to include only unchecked tasks (with "[ ]")
+      const taskLines = tasksContent.split('\n');
+      const uncheckedTasks = taskLines.filter(line => line.includes('[ ]'));
+      
+      // If no unchecked tasks are found, return an appropriate message
+      if (uncheckedTasks.length === 0) {
+        return {
+          type: 'message',
+          messageType: 'info',
+          content: `No unchecked tasks found in "${changeName}". All tasks appear to be completed.`,
+        };
+      }
+      
+      // Prepare the prompt for AI implementation with only unchecked tasks
       let content = `# Applying OpenSpec Change: ${changeName}\n\n`;
       content += 'Please implement the following tasks as specified in the OpenSpec change proposal.\n\n';
       content += '## Design Overview\n';
@@ -90,7 +103,7 @@ export const applyCommand: SlashCommand = {
       content += '## Change Proposal\n';
       content += proposalContent + '\n\n';
       content += '## Tasks to Implement\n';
-      content += tasksContent;
+      content += uncheckedTasks.join('\n');
       content += '\n\n## Implementation Guidelines\n';
       content += 'ALWAYS OBEY ./AGENTS.md, ./openspec/project.md, and ./openspec/AGENTS.md.\n';
       content += '1. Follow the tasks in order as listed above\n';
