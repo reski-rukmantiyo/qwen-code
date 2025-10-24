@@ -249,6 +249,149 @@ export class OpenSpecMemoryIntegration {
   }
 
   /**
+   * Summarizes OpenSpec change files using LLM before archiving
+   * @param changeName Name of the change to summarize
+   * @param context Command context containing services needed for LLM interaction
+   * @returns Summary of the change files or null if summarization failed
+   */
+  async summarizeChangeForArchive(changeName: string, context: any): Promise<string | null> {
+    try {
+      const projectRoot = process.cwd();
+      const changeDir = path.join(projectRoot, 'openspec', 'changes', changeName);
+      
+      // Check if change directory exists
+      if (!fs.existsSync(changeDir)) {
+        this.logger.warn(`Change directory not found: ${changeDir}`);
+        return null;
+      }
+      
+      // Collect content from the key files
+      let changeContent = '';
+      
+      // Read proposal.md
+      const proposalPath = path.join(changeDir, 'proposal.md');
+      if (fs.existsSync(proposalPath)) {
+        try {
+          const proposalContent = this.cacheService.getFileContent(proposalPath);
+          if (proposalContent.trim()) {
+            changeContent += `# Change Proposal\n\n${proposalContent}\n\n`;
+          }
+        } catch (error) {
+          this.logger.warn(`Failed to read proposal ${proposalPath}: ${(error as Error).message}`);
+        }
+      }
+      
+      // Read tasks.md
+      const tasksPath = path.join(changeDir, 'tasks.md');
+      if (fs.existsSync(tasksPath)) {
+        try {
+          const tasksContent = this.cacheService.getFileContent(tasksPath);
+          if (tasksContent.trim()) {
+            changeContent += `# Implementation Tasks\n\n${tasksContent}\n\n`;
+          }
+        } catch (error) {
+          this.logger.warn(`Failed to read tasks ${tasksPath}: ${(error as Error).message}`);
+        }
+      }
+      
+      // Read design.md
+      const designPath = path.join(changeDir, 'design.md');
+      if (fs.existsSync(designPath)) {
+        try {
+          const designContent = this.cacheService.getFileContent(designPath);
+          if (designContent.trim()) {
+            changeContent += `# Technical Design\n\n${designContent}\n\n`;
+          }
+        } catch (error) {
+          this.logger.warn(`Failed to read design ${designPath}: ${(error as Error).message}`);
+        }
+      }
+      
+      // If no content was found, return null
+      if (!changeContent.trim()) {
+        this.logger.warn(`No content found for change: ${changeName}`);
+        return null;
+      }
+      
+      // Try to use LLM for summarization if available
+      try {
+        // Get the LLM client from the config
+        const config = context?.services?.config;
+        if (config) {
+          const geminiClient = config.getGeminiClient();
+          if (geminiClient) {
+            // Create a prompt that obeys AGENTS.md, openspec/project.md, and openspec/AGENTS.md
+            const prompt = `Summarize the following OpenSpec change for archiving purposes. 
+This summary should capture the key points from the proposal, tasks, and design documents.
+
+Please ensure your summary:
+1. Follows the guidelines in AGENTS.md
+2. Respects the project context in openspec/project.md (if it exists)
+3. Aligns with the OpenSpec workflow described in openspec/AGENTS.md (if it exists)
+4. Is concise but comprehensive
+5. Highlights the main objectives and outcomes of the change
+
+Change Content:
+${changeContent}
+
+Summary:`;
+
+            // Use the LLM to generate content
+            const response = await geminiClient.generateContent(
+              [{ role: 'user', parts: [{ text: prompt }] }],
+              {},
+              new AbortController().signal
+            );
+            
+            // Extract the text from the response
+            if (response.candidates && response.candidates.length > 0) {
+              const candidate = response.candidates[0];
+              if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
+                const part = candidate.content.parts[0];
+                if (part.text) {
+                  return part.text.trim();
+                }
+              }
+            }
+          }
+        }
+      } catch (error) {
+        this.logger.warn(`LLM summarization failed: ${(error as Error).message}`);
+      }
+      
+      // Fallback to simple extraction if LLM is not available or fails
+      return this.extractSimpleSummary(changeContent);
+    } catch (error) {
+      this.logger.warn(`Failed to summarize change ${changeName}: ${(error as Error).message}`);
+      return null;
+    }
+  }
+
+  /**
+   * Extracts a simple summary from change content as fallback
+   */
+  private extractSimpleSummary(content: string): string {
+    // Simple heuristic to extract key information
+    const lines = content.split('\n');
+    const summaryLines: string[] = [];
+    
+    // Extract headers and first sentences of sections
+    for (let i = 0; i < Math.min(lines.length, 50); i++) {
+      const line = lines[i].trim();
+      if (line.startsWith('#') || line.startsWith('##') || line.startsWith('###')) {
+        summaryLines.push(line);
+      } else if (line.length > 50 && !line.startsWith('-') && !line.startsWith('*')) {
+        // Add first substantial line of content
+        if (summaryLines.length > 0 && !summaryLines[summaryLines.length - 1].startsWith('#')) {
+          summaryLines.push(line);
+        }
+      }
+    }
+    
+    return summaryLines.join('\n').substring(0, 1000) + (summaryLines.join('\n').length > 1000 ? '...' : '');
+  }
+
+  /**
    * Checks for obvious code issues
    */
   private hasObviousIssues(code: string): boolean {

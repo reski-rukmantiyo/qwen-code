@@ -14,6 +14,8 @@ import { OpenSpecTaskProgress } from '../../../services/OpenSpecTaskProgress.js'
 import { OpenSpecArchiveValidator } from '../../../services/OpenSpecArchiveValidator.js';
 import { DeltaOperationsParser } from '../../../services/OpenSpecDeltaOperationsParser.js';
 import { SpecificationValidator } from '../../../services/OpenSpecSpecificationValidator.js';
+import { OpenSpecMemoryIntegration } from '../../../services/OpenSpecMemoryIntegration.js';
+import { OpenSpecCacheService } from '../../../services/OpenSpecCacheService.js';
 
 interface SpecUpdate {
   source: string;
@@ -266,14 +268,14 @@ async function performArchive(
     console.log('Skipping spec updates (--skip-specs flag provided).');
   } else {
     // Find specs to update
-    const specUpdates = await findSpecUpdates(changeDir, mainSpecsDir);
+    const specUpdates = await findSpecUpdates(changeDir, mainSpecsDir, changeName);
     
     if (specUpdates.length > 0) {
       console.log('\nSpecs to update:');
       for (const update of specUpdates) {
         const status = update.exists ? 'update' : 'create';
-        const capability = path.basename(path.dirname(update.target));
-        console.log(`  ${capability}: ${status}`);
+        const specName = changeName; // According to requirements, spec name is same as change name
+        console.log(`  ${specName}: ${status}`);
       }
       
       // In a real implementation, we would show a confirmation dialog here
@@ -297,7 +299,7 @@ async function performArchive(
       // All validations passed; pre-validate rebuilt full spec and then write files and display counts
       let totals = { added: 0, modified: 0, removed: 0, renamed: 0 };
       for (const p of prepared) {
-        const specName = path.basename(path.dirname(p.update.target));
+        const specName = changeName; // According to requirements, spec name is same as change name
         if (!skipValidation) {
           const report = await OpenSpecArchiveValidator.validateSpecContent(specName, p.rebuilt);
           if (!report.valid) {
@@ -313,7 +315,7 @@ async function performArchive(
             };
           }
         }
-        await writeUpdatedSpec(p.update, p.rebuilt, p.counts);
+        await writeUpdatedSpec(p.update, p.rebuilt, p.counts, changeName);
         totals.added += p.counts.added;
         totals.modified += p.counts.modified;
         totals.removed += p.counts.removed;
@@ -348,6 +350,21 @@ async function performArchive(
   // Create archive directory if needed
   fs.mkdirSync(archiveDir, { recursive: true });
   
+  // Summarize the change using LLM before archiving
+  try {
+    const cacheService = new OpenSpecCacheService();
+    const memoryIntegration = new OpenSpecMemoryIntegration(cacheService);
+    const summary = await memoryIntegration.summarizeChangeForArchive(changeName, context);
+    
+    if (summary) {
+      console.log(chalk.blue('\n📝 Change Summary:'));
+      console.log(summary);
+      console.log('');
+    }
+  } catch (error) {
+    console.warn('Failed to generate change summary:', (error as Error).message);
+  }
+  
   // Move change to archive
   fs.renameSync(changeDir, archivePath);
   
@@ -362,45 +379,38 @@ async function performArchive(
  * Finds spec updates for a change
  * @param changeDir Change directory
  * @param mainSpecsDir Main specs directory
+ * @param changeName Name of the change
  * @returns Array of spec updates
  */
-async function findSpecUpdates(changeDir: string, mainSpecsDir: string): Promise<SpecUpdate[]> {
+async function findSpecUpdates(changeDir: string, mainSpecsDir: string, changeName: string): Promise<SpecUpdate[]> {
   const updates: SpecUpdate[] = [];
-  const changeSpecsDir = path.join(changeDir, 'specs');
+  
+  // According to requirements, the spec name should be the same as the change name
+  const specName = changeName;
+  const changeSpecFile = path.join(changeDir, 'spec.md');
+  const targetFile = path.join(mainSpecsDir, specName, 'spec.md');
   
   try {
-    const entries = fs.readdirSync(changeSpecsDir, { withFileTypes: true });
-    
-    for (const entry of entries) {
-      if (entry.isDirectory()) {
-        const specFile = path.join(changeSpecsDir, entry.name, 'spec.md');
-        const targetFile = path.join(mainSpecsDir, entry.name, 'spec.md');
-        
-        try {
-          if (fs.existsSync(specFile)) {
-            // Check if target exists
-            let exists = false;
-            try {
-              if (fs.existsSync(targetFile)) {
-                exists = true;
-              }
-            } catch {
-              exists = false;
-            }
-            
-            updates.push({
-              source: specFile,
-              target: targetFile,
-              exists
-            });
-          }
-        } catch {
-          // Source spec doesn't exist, skip
+    // Check if change has a spec.md file directly in the change directory
+    if (fs.existsSync(changeSpecFile)) {
+      // Check if target exists
+      let exists = false;
+      try {
+        if (fs.existsSync(targetFile)) {
+          exists = true;
         }
+      } catch {
+        exists = false;
       }
+      
+      updates.push({
+        source: changeSpecFile,
+        target: targetFile,
+        exists
+      });
     }
   } catch {
-    // No specs directory in change
+    // Source spec doesn't exist, skip
   }
   
   return updates;
@@ -419,7 +429,7 @@ async function buildUpdatedSpec(update: SpecUpdate, changeName: string): Promise
   // Parse deltas from the change spec file
   const operations = DeltaOperationsParser.parseDeltaOperations(changeContent);
   const plan = DeltaOperationsParser.organizeOperationsByType(operations);
-  const specName = path.basename(path.dirname(update.target));
+  const specName = changeName; // According to requirements, spec name is same as change name
   
   // Pre-validate duplicates within sections
   const addedNames = new Set<string>();
@@ -626,14 +636,15 @@ async function buildUpdatedSpec(update: SpecUpdate, changeName: string): Promise
  * @param update Spec update information
  * @param rebuilt Rebuilt spec content
  * @param counts Operation counts
+ * @param changeName Name of the change (used as spec name)
  */
-async function writeUpdatedSpec(update: SpecUpdate, rebuilt: string, counts: { added: number; modified: number; removed: number; renamed: number }): Promise<void> {
+async function writeUpdatedSpec(update: SpecUpdate, rebuilt: string, counts: { added: number; modified: number; removed: number; renamed: number }, changeName: string): Promise<void> {
   // Create target directory if needed
   const targetDir = path.dirname(update.target);
   fs.mkdirSync(targetDir, { recursive: true });
   fs.writeFileSync(update.target, rebuilt);
   
-  const specName = path.basename(path.dirname(update.target));
+  const specName = changeName; // According to requirements, spec name is same as change name
   console.log(`Applying changes to openspec/specs/${specName}/spec.md:`);
   if (counts.added) console.log(`  + ${counts.added} added`);
   if (counts.modified) console.log(`  ~ ${counts.modified} modified`);
