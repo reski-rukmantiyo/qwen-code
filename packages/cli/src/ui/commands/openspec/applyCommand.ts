@@ -107,14 +107,16 @@ export const applyCommand: SlashCommand = {
       content += '\n\n## Implementation Guidelines\n';
       content += 'ALWAYS OBEY ./AGENTS.md, ./openspec/project.md, and ./openspec/AGENTS.md.\n';
       content += '1. Follow the tasks in order as listed above\n';
-      content += '2. Reference the specifications in the specs/ directory\n';
-      content += `3. Mark tasks as complete by checking the boxes as you implement them in "${tasksPath}"\n`;
-      content += '4. Ensure your implementation matches the technical design if provided\n';
-      content += '5. Validate your implementation against the change proposal. \n';
-      content += '6. Use the todo_write tool to track your progress on these tasks\n';
-      content += '7. Check mark if task already completed in tasks.md file. Do not re-implement completed tasks.\n\n';
+      content += '2. ALWAYS USE SUBAGENT.\n';
+      content += '3. Reference the specifications in the ./openspec/specs/ directory\n';
+      content += `4. Mark tasks as complete by checking the boxes as you implement them in "${tasksPath}"\n`;
+      content += '5. Ensure your implementation matches the technical design if provided\n';
+      content += '6. Validate your implementation against the change proposal. \n';
+      content += '7. Use the todo_write tool to track your progress on these tasks\n';
+      content += '8. Check mark if task already completed in tasks.md file.\n';
+      content += '9. Do not re-implement completed tasks.\n\n';
       content += '## Next Steps\n';
-      content += `After completing these tasks, run "/openspec archive ${changeName}" to archive this change.`;
+      // content += `After completing these tasks, run "/openspec archive ${changeName}" to archive this change.`;
       
       // Return a submit_prompt action to have Qwen Code process this with AI
       return {
