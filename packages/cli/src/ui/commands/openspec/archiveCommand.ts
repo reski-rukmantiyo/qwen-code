@@ -13,7 +13,7 @@ import chalk from 'chalk';
 import { OpenSpecTaskProgress } from '../../../services/OpenSpecTaskProgress.js';
 import { OpenSpecArchiveValidator } from '../../../services/OpenSpecArchiveValidator.js';
 import { DeltaOperationsParser } from '../../../services/OpenSpecDeltaOperationsParser.js';
-import { SpecificationValidator } from '../../../services/OpenSpecSpecificationValidator.js';
+import { SpecificationValidator, type SpecificationRequirement } from '../../../services/OpenSpecSpecificationValidator.js';
 import { OpenSpecMemoryIntegration } from '../../../services/OpenSpecMemoryIntegration.js';
 import { OpenSpecCacheService } from '../../../services/OpenSpecCacheService.js';
 
@@ -21,6 +21,248 @@ interface SpecUpdate {
   source: string;
   target: string;
   exists: boolean;
+}
+
+/**
+ * Generates a specification file by summarizing content from a change directory using LLM
+ * @param changeName Name of the change directory to summarize
+ * @param projectRoot Project root directory
+ * @param context Command context for LLM integration
+ * @returns Path to the generated spec file
+ */
+async function generateSpecFile(changeName: string, projectRoot: string, context?: any): Promise<string> {
+  const changesDir = path.join(projectRoot, 'openspec', 'changes');
+  const changeDir = path.join(changesDir, changeName);
+  const specsDir = path.join(projectRoot, 'openspec', 'specs');
+  const targetSpecDir = path.join(specsDir, changeName);
+  const targetSpecFile = path.join(targetSpecDir, 'specs.md');
+  
+  // Ensure target directory exists
+  fs.mkdirSync(targetSpecDir, { recursive: true });
+  
+  // Read key files from change directory
+  let proposalContent = '';
+  let tasksContent = '';
+  let designContent = '';
+  
+  try {
+    const proposalPath = path.join(changeDir, 'proposal.md');
+    if (fs.existsSync(proposalPath)) {
+      proposalContent = fs.readFileSync(proposalPath, 'utf-8');
+    }
+  } catch (_error) {
+    // Ignore if file doesn't exist
+  }
+  
+  try {
+    const tasksPath = path.join(changeDir, 'tasks.md');
+    if (fs.existsSync(tasksPath)) {
+      tasksContent = fs.readFileSync(tasksPath, 'utf-8');
+    }
+  } catch (_error) {
+    // Ignore if file doesn't exist
+  }
+  
+  try {
+    const designPath = path.join(changeDir, 'design.md');
+    if (fs.existsSync(designPath)) {
+      designContent = fs.readFileSync(designPath, 'utf-8');
+    }
+  } catch (_error) {
+    // Ignore if file doesn't exist
+  }
+  
+  // Initialize content variables
+  let title = changeName;
+  let overview = '';
+  let motivation = '';
+  let implementationApproach = '';
+  let technicalDesign = '';
+  let llmSuccess = false;
+  
+  // Collect all content for LLM processing
+  let allContent = '';
+  
+  if (proposalContent) {
+    allContent += `# Change Proposal\n\n${proposalContent}\n\n`;
+  }
+  
+  if (tasksContent) {
+    allContent += `# Implementation Tasks\n\n${tasksContent}\n\n`;
+  }
+  
+  if (designContent) {
+    allContent += `# Technical Design\n\n${designContent}\n\n`;
+  }
+  
+  if (allContent) {
+    // Try to use LLM for sophisticated summarization
+    try {
+      const config = context?.services?.config;
+      if (config) {
+        const geminiClient = config.getGeminiClient();
+        if (geminiClient) {
+          // Create a prompt for generating structured specification content
+          const prompt = `Generate a structured specification document based on the following OpenSpec change materials.
+Follow the OpenSpec specification format conventions documented in openspec/AGENTS.md and openspec/project.md.
+
+Extract and organize the content into these sections:
+1. Title - Extract from the main heading of the proposal
+2. Overview - Summarize the main purpose and scope
+3. Motivation - Explain why this change is needed
+4. Implementation Approach - Describe how the change will be implemented
+5. Technical Design - Detail the technical architecture (if available)
+
+Change Materials:
+${allContent}
+
+Return ONLY a structured specification in this exact format:
+# [Title]
+## Overview
+[Overview content]
+## Motivation
+[Motivation content]
+## Implementation Approach
+[Implementation approach content]
+## Technical Design
+[Technical design content if available]
+
+Do not include any other text, explanations, or markdown formatting beyond what's shown above.`;
+
+          // Use the LLM to generate content
+          const response = await geminiClient.generateContent(
+            [{ role: 'user', parts: [{ text: prompt }] }],
+            {},
+            new AbortController().signal
+          );
+          
+          // Extract the text from the response
+          if (response.candidates && response.candidates.length > 0) {
+            const candidate = response.candidates[0];
+            if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
+              const part = candidate.content.parts[0];
+              if (part.text) {
+                // Parse the LLM-generated content
+                const llmContent = part.text.trim();
+                
+                // Extract title (first H1 header)
+                const titleMatch = llmContent.match(/^#\s+(.+)$/m);
+                if (titleMatch) {
+                  title = titleMatch[1];
+                  llmSuccess = true;
+                }
+                
+                // Extract overview section
+                const overviewMatch = llmContent.match(/## Overview\n([\s\S]*?)(?=\n## [^\n]|$)/);
+                if (overviewMatch) {
+                  overview = overviewMatch[1].trim();
+                }
+                
+                // Extract motivation section
+                const motivationMatch = llmContent.match(/## Motivation\n([\s\S]*?)(?=\n## [^\n]|$)/);
+                if (motivationMatch) {
+                  motivation = motivationMatch[1].trim();
+                }
+                
+                // Extract implementation approach section
+                const approachMatch = llmContent.match(/## Implementation Approach\n([\s\S]*?)(?=\n## [^\n]|$)/);
+                if (approachMatch) {
+                  implementationApproach = approachMatch[1].trim();
+                }
+                
+                // Extract technical design section
+                const designMatch = llmContent.match(/## Technical Design\n([\s\S]*?)(?=\n## [^\n]|$)/);
+                if (designMatch) {
+                  technicalDesign = designMatch[1].trim();
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.warn(`LLM specification generation failed: ${(error as Error).message}`);
+    }
+  }
+  
+  // Fallback to regex-based extraction if LLM is not available or fails
+  if (!llmSuccess) {
+    if (proposalContent) {
+      // Extract title (first H1 header)
+      const titleMatch = proposalContent.match(/^#\s+(.+)$/m);
+      if (titleMatch) {
+        title = titleMatch[1];
+      }
+      
+      // Extract overview section (everything between ## Overview and the next ## header or end of file)
+      // Handle both actual newlines and escaped newlines
+      const normalizedContent = proposalContent.replace(/\\n/g, '\n');
+      const overviewMatch = normalizedContent.match(/## Overview\n([\s\S]*?)(?=\n## [^\n]|$)/);
+      if (overviewMatch) {
+        overview = overviewMatch[1].trim();
+      }
+      
+      // Extract motivation section
+      const motivationMatch = normalizedContent.match(/## Motivation\n([\s\S]*?)(?=\n## [^\n]|$)/);
+      if (motivationMatch) {
+        motivation = motivationMatch[1].trim();
+      }
+      
+      // Extract implementation plan section (convert to approach)
+      const planMatch = normalizedContent.match(/## Implementation Plan\n([\s\S]*?)(?=\n## [^\n]|$)/);
+      if (planMatch) {
+        implementationApproach = planMatch[1].trim();
+      }
+    }
+    
+    if (designContent) {
+      // Normalize design content and extract content after the first line (which is the title)
+      const normalizedDesign = designContent.replace(/\\n/g, '\n');
+      const designLines = normalizedDesign.split('\n');
+      if (designLines.length > 1) {
+        technicalDesign = designLines.slice(1).join('\n').trim();
+      }
+    }
+  }
+  
+  // Parse tasks to determine completion status
+  let tasksSummary = '';
+  if (tasksContent) {
+    const totalTasks = (tasksContent.match(/-\s*\[.\]/g) || []).length;
+    const completedTasks = (tasksContent.match(/-\s*\[[xX]\]/g) || []).length;
+    tasksSummary = `Completed ${completedTasks} of ${totalTasks} tasks`;
+  }
+  
+  // Generate structured markdown content
+  let specContent = `# ${title} Specification\n\n`;
+  
+  if (overview) {
+    specContent += `## Overview\n${overview}\n\n`;
+  }
+  
+  if (motivation) {
+    specContent += `## Motivation\n${motivation}\n\n`;
+  }
+  
+  if (implementationApproach) {
+    specContent += `## Implementation Approach\n${implementationApproach}\n\n`;
+  }
+  
+  if (tasksSummary) {
+    specContent += `## Implementation Status\n${tasksSummary}\n\n`;
+  }
+  
+  if (technicalDesign) {
+    specContent += `## Technical Design\n${technicalDesign}\n\n`;
+  }
+  
+  // Add reference to archived change
+  specContent += `## Archived Change Reference\nThis specification was automatically generated from the archived change: ${changeName}\n\n`;
+  
+  // Write to spec file
+  fs.writeFileSync(targetSpecFile, specContent);
+  
+  return targetSpecFile;
 }
 
 export const archiveCommand: SlashCommand = {
@@ -179,7 +421,7 @@ export const archiveCommand: SlashCommand = {
  * @param changeName Name of the change
  * @returns True if there are validation errors, false otherwise
  */
-async function validateChangesAndSpecs(changeDir: string, changesDir: string, changeName: string): Promise<boolean> {
+async function validateChangesAndSpecs(changeDir: string, _changesDir: string, _changeName: string): Promise<boolean> {
   let hasValidationErrors = false;
   
   // Validate proposal.md (non-blocking unless strict mode desired in future)
@@ -214,10 +456,14 @@ async function validateChangesAndSpecs(changeDir: string, changesDir: string, ch
               break;
             }
           }
-        } catch {}
+        } catch (_error) {
+          // Continue to next candidate
+        }
       }
     }
-  } catch {}
+  } catch (_error) {
+    // No delta specs directory
+  }
   
   if (hasDeltaSpecs) {
     const deltaReport = await OpenSpecArchiveValidator.validateChangeDeltaSpecs(changeDir);
@@ -263,6 +509,15 @@ async function performArchive(
   archiveDir: string,
   mainSpecsDir: string
 ) {
+  // Generate specification file before archiving
+  try {
+    const specFilePath = await generateSpecFile(changeName, projectRoot, context);
+    console.log(chalk.green(`✅ Generated specification file: ${specFilePath}`));
+  } catch (error) {
+    console.warn(chalk.yellow(`⚠️  Warning: Failed to generate specification file: ${(error as Error).message}`));
+    // Continue with archiving even if spec generation fails
+  }
+  
   // Handle spec updates unless skipSpecs flag is set
   if (skipSpecs) {
     console.log('Skipping spec updates (--skip-specs flag provided).');
@@ -288,16 +543,17 @@ async function performArchive(
           const built = await buildUpdatedSpec(update, changeName);
           prepared.push({ update, rebuilt: built.rebuilt, counts: built.counts });
         }
-      } catch (err: any) {
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : String(err);
         return {
           type: 'message' as const,
           messageType: 'error' as const,
-          content: String(err.message || err) + '\nAborted. No files were changed.'
+          content: errorMessage + '\nAborted. No files were changed.'
         };
       }
       
       // All validations passed; pre-validate rebuilt full spec and then write files and display counts
-      let totals = { added: 0, modified: 0, removed: 0, renamed: 0 };
+      const totals = { added: 0, modified: 0, removed: 0, renamed: 0 };
       for (const p of prepared) {
         const specName = changeName; // According to requirements, spec name is same as change name
         if (!skipValidation) {
@@ -341,8 +597,8 @@ async function performArchive(
         content: `Archive '${archiveName}' already exists.`
       };
     }
-  } catch (error: any) {
-    if (error.code !== 'ENOENT') {
+  } catch (error) {
+    if (error instanceof Error && (error as NodeJS.ErrnoException).code !== 'ENOENT') {
       throw error;
     }
   }
@@ -542,7 +798,7 @@ async function buildUpdatedSpec(update: SpecUpdate, changeName: string): Promise
   
   // Extract requirements section and build name->block map
   const requirements = SpecificationValidator.parseSpecificationRequirements(targetContent);
-  const nameToBlock = new Map<string, any>();
+  const nameToBlock = new Map<string, SpecificationRequirement>();
   for (const req of requirements) {
     nameToBlock.set(req.header, req);
   }
