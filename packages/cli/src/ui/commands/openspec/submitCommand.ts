@@ -5,6 +5,7 @@
  */
 
 import type { SlashCommand, CommandContext, SlashCommandActionReturn } from '../types.js';
+import type { SubmitPromptActionReturn } from '../types.js';
 import { CommandKind } from '../types.js';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -12,9 +13,9 @@ import process from 'node:process';
 
 export const submitCommand: SlashCommand = {
   name: 'submit',
-  description: 'Submit a new change proposal with activity type and description',
+  description: 'Submit a new change proposal with activity type and description, or ask questions about the codebase',
   kind: CommandKind.BUILT_IN,
-  action: async (context: CommandContext, args: string): Promise<SlashCommandActionReturn> => {
+  action: async (context: CommandContext, args: string): Promise<SlashCommandActionReturn | SubmitPromptActionReturn> => {
     try {
       // Check if this is a question-mode request with specific syntax
       const trimmedArgs = args.trim();
@@ -439,7 +440,7 @@ export async function processSubmitDescriptionInput(context: CommandContext, cha
   }
 }
 
-export async function processSubmitQuestionInput(context: CommandContext, changeName: string, question: string): Promise<SlashCommandActionReturn> {
+export async function processSubmitQuestionInput(context: CommandContext, changeName: string, question: string): Promise<SlashCommandActionReturn | SubmitPromptActionReturn> {
   try {
     console.log(`[OpenSpec] Processing question input for change "${changeName}": ${question}`);
     // Process the question using the QA handler

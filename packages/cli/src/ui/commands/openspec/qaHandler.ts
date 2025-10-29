@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import type { CommandContext, MessageActionReturn } from '../types.js';
-import type { GeminiClient } from '@qwen-code/qwen-code-core';
+import type { CommandContext } from '../types.js';
+import type { SubmitPromptActionReturn } from '../types.js';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import process from 'node:process';
@@ -25,35 +25,15 @@ const IGNORED_EXTENSIONS = [
  * Processes user questions about source code without triggering any modifications.
  * @param context The command context containing services and UI helpers.
  * @param question The user's question about the source code.
- * @returns A message action return with the answer to the question.
+ * @returns A submit prompt result that lets Qwen Code handle the LLM interaction.
  */
 export async function processQuestion(
   context: CommandContext,
   question: string
-): Promise<MessageActionReturn> {
+): Promise<SubmitPromptActionReturn> {
   try {
     console.log(`[OpenSpec QA] Processing question: ${question}`);
-    // Check if we have access to the LLM client
-    const config = context.services.config;
-    if (!config) {
-      console.warn('[OpenSpec QA] Configuration not available');
-      return {
-        type: 'message',
-        messageType: 'error',
-        content: 'Configuration not available. Cannot process question.',
-      };
-    }
-
-    const geminiClient = config.getGeminiClient();
-    if (!geminiClient) {
-      console.warn('[OpenSpec QA] LLM client not available');
-      return {
-        type: 'message',
-        messageType: 'error',
-        content: 'LLM client not available. Cannot process question.',
-      };
-    }
-
+    
     // Get project root
     const projectRoot = process.cwd();
     console.log(`[OpenSpec QA] Extracting context from project: ${projectRoot}`);
@@ -62,54 +42,168 @@ export async function processQuestion(
     const contextContent = await extractSourceCodeContext(projectRoot, question);
     console.log(`[OpenSpec QA] Extracted context length: ${contextContent.length} characters`);
     
-    // Generate answer using LLM with streaming
-    console.log('[OpenSpec QA] Generating answer with LLM');
-    const answerStream = await generateAnswerStream(geminiClient, question, contextContent);
-    
-    // Add a pending item to show that we're processing
-    const pendingItem = {
-      type: 'info' as const,
-      text: 'Processing your question...',
-    };
-    context.ui.setPendingItem(pendingItem);
-    
-    // Process the stream and update the UI in real-time
-    let fullAnswer = '';
-    for await (const chunk of answerStream) {
-      fullAnswer += chunk;
-      // Update the pending item with the current answer
-      context.ui.setPendingItem({
-        type: 'info',
-        text: fullAnswer,
-      });
+    // Use the proper LLM generation pattern from applyCommand.ts
+    const config = context.services.config;
+    if (!config) {
+      // Fallback to simple prompt submission if config is not available
+      console.log('[OpenSpec QA] Config not available, falling back to default prompt submission');
+      return await generateAnswerWithSimplePrompt(question, contextContent);
     }
     
-    // Clear the pending item and add the final answer
-    context.ui.setPendingItem(null);
-    context.ui.addItem({
-      type: 'info',
-      text: fullAnswer,
-    }, Date.now());
+    const geminiClient = config.getGeminiClient();
+    if (!geminiClient) {
+      // Fallback to simple prompt submission if LLM client is not available
+      console.log('[OpenSpec QA] LLM client not available, falling back to default prompt submission');
+      return await generateAnswerWithSimplePrompt(question, contextContent);
+    }
     
-    console.log(`[OpenSpec QA] Question processed successfully. Answer length: ${fullAnswer.length} characters`);
-    
-    // Return a simple success message since we've already displayed the answer
+    // Generate prompt for LLM using the proper pattern
+    const prompt = `You are an expert software engineer helping to answer questions about source code. 
+The user has asked a question about the codebase, and you have been provided with relevant source code context.
+
+QUESTION: ${question}
+
+SOURCE CODE CONTEXT:
+${contextContent}
+
+Please provide a clear, concise answer to the user's question based on the provided source code context.
+Focus only on answering the question and do not suggest any code changes or modifications.
+If the context doesn't contain enough information to answer the question, say so.
+Do not make up information that isn't in the provided context.
+
+IMPORTANT:
+- ALWAYS OBEY ./AGENTS.md, ./openspec/project.md, and ./openspec/AGENTS.md.
+- DO NOT USE TOOLS
+- Generate answer content only.
+- Do not include any explanations or additional text outside of the answer.
+- Ensure the answer is specific to the provided question and context.
+- Limit the response to 1000 words maximum
+`;
+
+    // Use the LLM to generate content with proper streaming
     return {
-      type: 'message',
-      messageType: 'info',
-      content: 'Question processed successfully.',
+      type: 'submit_prompt',
+      content: [{ text: prompt }],
     };
   } catch (error) {
-    // Clear the pending item on error
-    context.ui.setPendingItem(null);
     console.error('[OpenSpec QA] Failed to process question:', error);
-    
-    return {
-      type: 'message',
-      messageType: 'error',
-      content: `Failed to process question: ${(error as Error).message}`,
-    };
+    return await handleQuestionError(context, question, error);
   }
+}
+
+/**
+ * Generates an answer using a simple prompt submission (fallback method)
+ * @param question The user's question
+ * @param contextContent The extracted source code context
+ * @returns A submit prompt result
+ */
+async function generateAnswerWithSimplePrompt(
+  question: string,
+  contextContent: string
+): Promise<SubmitPromptActionReturn> {
+  const prompt = `You are an expert software engineer helping to answer questions about source code. 
+The user has asked a question about the codebase, and you have been provided with relevant source code context.
+
+QUESTION: ${question}
+
+SOURCE CODE CONTEXT:
+${contextContent}
+
+Please provide a clear, concise answer to the user's question based on the provided source code context.
+Focus only on answering the question and do not suggest any code changes or modifications.
+If the context doesn't contain enough information to answer the question, say so.
+Do not make up information that isn't in the provided context.
+
+IMPORTANT:
+- ALWAYS OBEY ./AGENTS.md, ./openspec/project.md, and ./openspec/AGENTS.md.
+- DO NOT USE TOOLS
+- Generate answer content only.
+- Do not include any explanations or additional text outside of the answer.
+- Ensure the answer is specific to the provided question and context.
+- Limit the response to 1000 words maximum
+`;
+
+  return {
+    type: 'submit_prompt',
+    content: [{ text: prompt }],
+  };
+}
+
+/**
+ * Handles errors that occur during question processing
+ * @param context The command context
+ * @param question The user's question
+ * @param error The error that occurred
+ * @returns A submit prompt result with error information
+ */
+async function handleQuestionError(
+  context: CommandContext,
+  question: string,
+  error: unknown
+): Promise<SubmitPromptActionReturn> {
+  console.error('[OpenSpec QA] Failed to process question:', error);
+  
+  // Try to use LLM client for error handling with proper error handling pattern
+  try {
+    const config = context.services.config;
+    if (!config) {
+      // Fallback if config is not available
+      return await generateErrorFallbackPrompt(question, error);
+    }
+    
+    const geminiClient = config.getGeminiClient();
+    if (!geminiClient) {
+      // Fallback if LLM client is not available
+      return await generateErrorFallbackPrompt(question, error);
+    }
+    
+    // Generate error prompt for LLM with proper error handling
+    const fallbackPrompt = `You are an expert software engineer helping to answer questions about source code.
+    
+The user asked a question but there was an error processing the context. Please apologize and explain that there was an issue processing their question.
+
+ERROR: ${(error as Error).message}
+
+QUESTION: ${question}
+
+Please provide a helpful response to the user's question while acknowledging the processing error.`;
+
+    // Use the LLM to generate content with proper error handling
+    return {
+      type: 'submit_prompt',
+      content: [{ text: fallbackPrompt }],
+    };
+  } catch (llmError) {
+    // If LLM error handling also fails, use the simple fallback
+    console.error('[OpenSpec QA] Failed to generate error response with LLM:', llmError);
+    return await generateErrorFallbackPrompt(question, error);
+  }
+}
+
+/**
+ * Generates a fallback prompt for error handling
+ * @param question The user's question
+ * @param error The error that occurred
+ * @returns A submit prompt result with error information
+ */
+async function generateErrorFallbackPrompt(
+  question: string,
+  error: unknown
+): Promise<SubmitPromptActionReturn> {
+  const fallbackPrompt = `You are an expert software engineer helping to answer questions about source code.
+    
+The user asked a question but there was an error processing the context. Please apologize and explain that there was an issue processing their question.
+
+ERROR: ${(error as Error).message}
+
+QUESTION: ${question}
+
+Please provide a helpful response to the user's question while acknowledging the processing error.`;
+
+  return {
+    type: 'submit_prompt',
+    content: [{ text: fallbackPrompt }],
+  };
 }
 
 /**
@@ -242,81 +336,4 @@ function isLikelyBinary(content: string): boolean {
   
   // If more than 30% of characters are non-printable, consider it binary
   return nonPrintableCount / sample.length > 0.3;
-}
-
-/**
- * Generates an answer to the question using the LLM with streaming.
- * @param geminiClient The LLM client to use for generation.
- * @param question The user's question.
- * @param contextContent The relevant source code context.
- * @returns An async generator that yields chunks of the answer.
- */
-async function* generateAnswerStream(
-  geminiClient: GeminiClient,
-  question: string,
-  contextContent: string
-): AsyncGenerator<string> {
-  try {
-    const prompt = `You are an expert software engineer helping to answer questions about source code. 
-The user has asked a question about the codebase, and you have been provided with relevant source code context.
-
-QUESTION: ${question}
-
-SOURCE CODE CONTEXT:
-${contextContent}
-
-Please provide a clear, concise answer to the user's question based on the provided source code context.
-Focus only on answering the question and do not suggest any code changes or modifications.
-If the context doesn't contain enough information to answer the question, say so.
-Do not make up information that isn't in the provided context.`;
-
-    // Get the content generator from the client
-    const contentGenerator = (geminiClient as any).getContentGenerator();
-    
-    if (!contentGenerator || !contentGenerator.generateContentStream) {
-      // Fallback to non-streaming if streaming is not available
-      const response = await geminiClient.generateContent(
-        [{ role: 'user', parts: [{ text: prompt }] }],
-        {},
-        new AbortController().signal
-      );
-
-      if (response.candidates && response.candidates.length > 0) {
-        const candidate = response.candidates[0];
-        if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
-          const part = candidate.content.parts[0];
-          if (part.text) {
-            yield part.text.trim();
-            return;
-          }
-        }
-      }
-      yield 'Unable to generate an answer to the question.';
-      return;
-    }
-
-    // Use streaming if available
-    const stream = await contentGenerator.generateContentStream(
-      {
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        config: {}
-      },
-      'question-answer-stream'
-    );
-
-    for await (const chunk of stream) {
-      if (chunk.candidates && chunk.candidates.length > 0) {
-        const candidate = chunk.candidates[0];
-        if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
-          const part = candidate.content.parts[0];
-          if (part.text) {
-            yield part.text;
-          }
-        }
-      }
-    }
-  } catch (error) {
-    console.warn('Failed to generate answer stream:', error);
-    yield `Error generating answer: ${(error as Error).message}`;
-  }
 }

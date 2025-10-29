@@ -199,13 +199,12 @@ describe('submitCommand - Integration Tests for Question Activity', () => {
     // Act: Run the command to trigger interactive flow (no description provided)
     const result = await submitCommand.action!(mockContext, 'submit-question question');
     
-    // Assert: Verify we get the description input dialog
+    // Assert: Verify we get the question input dialog
     expect(result).toEqual({
       type: 'dialog',
-      dialog: 'openspec_submit_description_input',
+      dialog: 'openspec_question_input',
       data: {
-        changeName: 'submit-question',
-        activity: 'question'
+        changeName: 'submit-question'
       }
     });
   });

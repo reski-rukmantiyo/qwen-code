@@ -61,11 +61,7 @@ export const Help: React.FC<Help> = ({ commands }) => (
       <Text bold color={Colors.AccentPurple}>
         Ask questions
       </Text>
-      : Use{' '}
-      <Text bold color={Colors.AccentPurple}>
-        /openspec submit "question: your question here"
-      </Text>{' '}
-      to ask questions about the codebase without making changes.
+      : Use the interactive question mode by selecting \"question\" as the activity type when using /openspec submit.
     </Text>
 
     <Box height={1} />

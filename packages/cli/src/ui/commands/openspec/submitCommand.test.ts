@@ -289,7 +289,7 @@ describe('submitCommand', () => {
     });
   });
 
-  it('should ask for description when question activity is selected', async () => {
+  it('should ask for question when question activity is selected', async () => {
     // Arrange: Simulate that OpenSpec directory and change exist
     vi.mocked(fs.existsSync).mockImplementation((path) => {
       if (typeof path === 'string' && path.endsWith('openspec')) {
@@ -312,10 +312,9 @@ describe('submitCommand', () => {
     // Assert: Check that we get a dialog for question input
     expect(result).toEqual({
       type: 'dialog',
-      dialog: 'openspec_submit_description_input',
+      dialog: 'openspec_question_input',
       data: {
-        changeName: 'submit-question',
-        activity: 'question'
+        changeName: 'submit-question'
       }
     });
   });
