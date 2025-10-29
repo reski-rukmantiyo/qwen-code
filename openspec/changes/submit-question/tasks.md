@@ -422,3 +422,29 @@ Description: right now, "/openspec submit [change-name] question" then the resul
 - [x] Update project specifications to reflect corrected submit workflow
 - [x] Communicate changes to stakeholders about corrected question functionality
 - [x] Monitor post-deployment feedback to address any unexpected impacts
+
+# Implementation Tasks - Bugs Submission
+Generated on: 2025-10-29T10:36:09.964Z
+
+Description: i want remove this '/openspec submit "question: your question here"' from documentation.
+
+- [ ] Remove all references to the `question:` prefix syntax in the OpenSpec CLI documentation
+- [ ] Update command usage examples in README and help texts to exclude question-mode submissions
+- [ ] Audit and remove any documentation sections describing the question answering feature
+- [ ] Verify that the official OpenSpec user guide no longer mentions question submission capabilities
+- [ ] Update any tutorial or walkthrough documents that referenced the question feature
+- [ ] Remove question-mode examples from CLI auto-generated help documentation
+- [ ] Delete or revise screenshots/showcases that demonstrated the question submission workflow
+- [ ] Update API documentation to reflect the removal of question handling endpoints
+- [ ] Revise any troubleshooting guides that addressed question-mode specific issues
+- [ ] Remove question-related entries from command reference documentation
+- [ ] Update feature comparison tables or lists to exclude the question functionality
+- [ ] Verify all website and external documentation sources are updated to remove question references
+- [ ] Remove any deprecated configuration options related to question handling from documentation
+- [ ] Update changelog or release notes to clearly indicate the removal of question feature
+- [ ] Audit blog posts or articles referencing the question feature and update accordingly
+- [ ] Remove question-related FAQs or knowledge base articles
+- [ ] Update any video transcripts or captions that mentioned the question submission feature
+- [ ] Verify that all localization files no longer contain question-mode related strings
+- [ ] Remove references to question functionality in developer onboarding materials
+- [ ] Update any slide decks or presentation materials that showcased the question feature

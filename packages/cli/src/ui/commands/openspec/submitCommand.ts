@@ -12,7 +12,7 @@ import process from 'node:process';
 
 export const submitCommand: SlashCommand = {
   name: 'submit',
-  description: 'Submit a new change proposal with activity type and description, or ask questions about the codebase',
+  description: 'Submit a new change proposal with activity type and description',
   kind: CommandKind.BUILT_IN,
   action: async (context: CommandContext, args: string): Promise<SlashCommandActionReturn> => {
     try {

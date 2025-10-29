@@ -444,7 +444,7 @@ Qwen Code will then execute the multi-line prompt defined in your TOML file.
 At commands are used to include the content of files or directories as part of your prompt to the model. These commands include git-aware filtering.
 
 - **`@<path_to_file_or_directory>`**
-  - **Description:** Inject the content of the specified file or files into your current prompt. This is useful for asking questions about specific code, text, or collections of files.
+  - **Description:** Inject the content of the specified file or files into your current prompt. This is useful for providing context about specific code, text, or collections of files to the AI.
   - **Examples:**
     - `@path/to/your/file.txt Explain this text.`
     - `@src/my_project/ Summarize the code in this directory.`
