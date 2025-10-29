@@ -20,18 +20,22 @@ The question handling functionality follows a layered architecture:
 
 **Location**: `/packages/cli/src/ui/commands/openspec/submitCommand.ts`
 
-The input detection layer extends the existing command parser to identify question-mode requests via specific syntax:
+The input detection layer extends the existing command parser to identify and reject deprecated question-mode requests via specific syntax:
 
 ```javascript
 // Check if this is a question-mode request with specific syntax
 const trimmedArgs = args.trim();
 if (trimmedArgs.startsWith('"question:') && trimmedArgs.endsWith('"')) {
-  const question = trimmedArgs.substring(10, trimmedArgs.length - 1).trim();
-  return await processQuestion(context, question);
+  console.log('[OpenSpec] Detected deprecated question syntax in submit command');
+  return {
+    type: "message",
+    messageType: "error",
+    content: 'The question feature has been deprecated. Please use other tools for asking questions about the codebase.',
+  };
 }
 ```
 
-This implementation supports the syntax: `/openspec submit "question: how does X work?"`
+This implementation detects and rejects the deprecated syntax: `/openspec submit "question: how does X work?"`
 
 ### 2. Routing Layer
 

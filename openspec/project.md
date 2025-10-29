@@ -34,30 +34,15 @@ This file defines the project-specific conventions and guidelines for using Open
 
 ### Usage Examples
 
-1. **Direct Question Syntax**:
-   ```
-   /openspec submit "question: how does the file search functionality work?"
-   ```
-
-2. **Interactive Question Mode**:
+1. **Interactive Question Mode**:
    ```
    /openspec submit
    # Then select a change, choose "question" as activity type, and enter your question
    ```
 
-3. **Question About Specific Change**:
+2. **Question About Specific Change**:
    ```
    /openspec submit my-change question "What files are modified in this change?"
-   ```
-
-4. **Technical Implementation Questions**:
-   ```
-   /openspec submit "question: how does the LLM integration work in this project?"
-   ```
-
-5. **Architecture Questions**:
-   ```
-   /openspec submit "question: what is the directory structure of the OpenSpec implementation?"
    ```
 
 ## Team-Specific Notes

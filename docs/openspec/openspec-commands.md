@@ -412,7 +412,7 @@ Submits the tasks defined in a change's `tasks.md` file to the AI for implementa
 
 **Parameters**:
 - `[change-name]`: Name of the change folder
-- `[activity]`: Type of activity (bugs, features)
+- `[activity]`: Type of activity (bugs, features, question)
 - `[description]`: Description of the activity
 
 **Description**: 
@@ -425,11 +425,14 @@ Submits a new change proposal with a specific activity type and description.
 
 # Submit a feature request for a change
 /openspec submit add-user-authentication features "Add password strength validation"
+
+# Ask a question about a change
+/openspec submit add-user-authentication question "How does the authentication flow work?"
 ```
 
 **Implementation Details**:
 - Located in `/packages/cli/src/ui/commands/openspec/submitCommand.ts`
-- Supports activities: bugs, features
+- Supports activities: bugs, features, question
 - Provides interactive dialogs for selecting change, activity type, and entering description
 - Integrates with the existing OpenSpec directory structure
 - Handles errors gracefully with appropriate error messages
