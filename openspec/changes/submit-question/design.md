@@ -8,7 +8,7 @@ This change implements a query-only mode for the `/openspec submit` flow, enabli
 ### Core Modifications
 
 1. **Input Detection Layer**
-   - Extend command parser to identify question-mode requests via specific syntax (e.g., `/openspec submit "question: how does X work?"`)
+   - Extend command parser to identify and reject deprecated question-mode requests via specific syntax (e.g., `/openspec submit "question: how does X work?"`)
    - Route detected queries to dedicated question handler instead of standard proposal workflow
 
 2. **Source Code Context Retrieval**

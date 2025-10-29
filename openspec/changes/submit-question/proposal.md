@@ -33,7 +33,7 @@ This change proposal adds interactive question answering capability to the `/ope
 ## Implementation Steps
 
 ### 1. Command Enhancement
-- Modify `/packages/cli/src/ui/commands/openspec/submitCommand.ts` to detect question prompts
+- Modify `/packages/cli/src/ui/commands/openspec/submitCommand.ts` to detect and reject deprecated question-mode syntax
 - Add question detection logic that identifies when user input is a query rather than a command
 - Implement natural language processing to distinguish questions from other inputs
 

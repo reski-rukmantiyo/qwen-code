@@ -6,7 +6,6 @@ This document summarizes the implementation of the `submit-question` change prop
 ## Features Implemented
 
 ### 1. Question Mode Syntax
-- **Direct Syntax**: `/openspec submit "question: your question here"`
 - **Interactive Mode**: Select "question" as activity type in the interactive workflow
 - **Integration**: Works seamlessly with existing OpenSpec commands and workflows
 
@@ -96,13 +95,6 @@ This document summarizes the implementation of the `submit-question` change prop
 
 ## Usage Examples
 
-### Direct Command Syntax
-```
-/openspec submit "question: how does the file search functionality work?"
-/openspec submit "question: what is the architecture of the OpenSpec implementation?"
-/openspec submit "question: how does the LLM integration work in this project?"
-```
-
 ### Interactive Dialog Flow
 1. `/openspec submit` (lists available changes)
 2. Select a change from the list
@@ -154,4 +146,4 @@ The `submit-question` change proposal has been successfully implemented with all
 4. Includes comprehensive test coverage and documentation
 5. Integrates seamlessly with the existing OpenSpec workflow and Qwen Code architecture
 
-Users can now ask questions about the codebase using either direct syntax (`/openspec submit "question: ..."`) or through the interactive dialog flow, receiving immediate, context-aware answers without any risk of unintended modifications to the codebase.
+Users can now ask questions about the codebase through the interactive dialog flow, receiving immediate, context-aware answers without any risk of unintended modifications to the codebase.
