@@ -57,6 +57,16 @@ export const Help: React.FC<Help> = ({ commands }) => (
       </Text>
       ).
     </Text>
+    <Text color={Colors.Foreground}>
+      <Text bold color={Colors.AccentPurple}>
+        Ask questions
+      </Text>
+      : Use{' '}
+      <Text bold color={Colors.AccentPurple}>
+        /openspec submit "question: your question here"
+      </Text>{' '}
+      to ask questions about the codebase without making changes.
+    </Text>
 
     <Box height={1} />
 

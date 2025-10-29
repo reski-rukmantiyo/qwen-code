@@ -42,6 +42,10 @@ export const OpenSpecSubmitActivitySelectionDialog: React.FC<OpenSpecSubmitActiv
       label: 'Features',
       value: 'features',
     },
+    {
+      label: 'Question',
+      value: 'question',
+    },
   ];
 
   const handleSelect = (activity: string) => {

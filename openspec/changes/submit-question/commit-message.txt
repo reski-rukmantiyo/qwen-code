@@ -1,0 +1,19 @@
+feat(openspec): implement question-answering capability for submit command
+
+This change implements the question-answering feature for the `/openspec submit` command, allowing users to ask questions about the codebase without triggering any modifications. 
+
+Key features:
+- Added "question" as a valid activity type in the submit command
+- Created a QA handler that extracts relevant source code context based on question keywords
+- Implemented streaming response generation for real-time answer delivery
+- Added comprehensive unit and integration tests
+- Updated documentation to reflect the new functionality
+- Added logging for debugging and monitoring
+
+The implementation enforces zero side effects by:
+- Only reading files to extract context, never writing to them
+- Generating responses through LLM prompting that explicitly prohibits modifications
+- Isolating the QA functionality from proposal submission workflows
+- Returning only informational responses without file system changes
+
+All tests pass and the build succeeds. Backward compatibility is maintained for existing non-question submissions.

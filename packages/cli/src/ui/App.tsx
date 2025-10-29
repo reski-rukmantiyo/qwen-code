@@ -134,6 +134,7 @@ import { WelcomeBackDialog } from './components/WelcomeBackDialog.js';
 import { OpenSpecProposalDirSelectionDialog } from './components/openspec/OpenSpecProposalDirSelectionDialog.js';
 import { OpenSpecProposalDescriptionInputDialog } from './components/openspec/OpenSpecProposalDescriptionInputDialog.js';
 import { OpenSpecSubmitActivitySelectionDialog } from './components/openspec/OpenSpecSubmitActivitySelectionDialog.js';
+import { OpenSpecQuestionInputDialog } from './components/openspec/OpenSpecQuestionInputDialog.js';
 
 // Maximum number of queued messages to display in UI to prevent performance issues
 const MAX_DISPLAYED_QUEUED_MESSAGES = 3;
@@ -722,6 +723,7 @@ const App = ({ config, settings, startupWarnings = [], version }: AppProps) => {
     openSpecSubmitDirSelectionRequest,
     openSpecSubmitActivitySelectionRequest,
     openSpecSubmitDescriptionInputRequest,
+    openSpecQuestionInputRequest,
     openSpecProposalDescriptionInputRequest,
   } = useSlashCommandProcessor(
     config,
@@ -1522,6 +1524,12 @@ const App = ({ config, settings, startupWarnings = [], version }: AppProps) => {
               changeName={openSpecSubmitActivitySelectionRequest.changeName}
               onSelect={openSpecSubmitActivitySelectionRequest.onSelect}
               onCancel={openSpecSubmitActivitySelectionRequest.onCancel}
+            />
+          ) : openSpecQuestionInputRequest ? (
+            <OpenSpecQuestionInputDialog
+              changeName={openSpecQuestionInputRequest.changeName}
+              onSubmit={openSpecQuestionInputRequest.onSubmit}
+              onCancel={openSpecQuestionInputRequest.onCancel}
             />
           ) : openSpecSubmitDescriptionInputRequest ? (
             <OpenSpecProposalDescriptionInputDialog

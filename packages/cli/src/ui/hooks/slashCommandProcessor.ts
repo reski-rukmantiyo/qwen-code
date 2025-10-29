@@ -123,6 +123,13 @@ export const useSlashCommandProcessor = (
       onCancel: () => void;
     }>(null);
 
+  const [openSpecQuestionInputRequest, setOpenSpecQuestionInputRequest] =
+    useState<null | {
+      changeName: string;
+      onSubmit: (question: string) => void;
+      onCancel: () => void;
+    }>(null);
+
   const [sessionShellAllowlist, setSessionShellAllowlist] = useState(
     new Set<string>(),
   );
@@ -576,6 +583,45 @@ export const useSlashCommandProcessor = (
                         });
                       }
                       return { type: 'handled' };
+                    case 'openspec_question_input':
+                      // Handle OpenSpec question input dialog
+                      if ('data' in result && result.data && typeof result.data === 'object' && 'changeName' in result.data) {
+                        const data = result.data as { changeName: string };
+                        setOpenSpecQuestionInputRequest({
+                          changeName: data.changeName,
+                          onSubmit: (question: string) => {
+                            setOpenSpecQuestionInputRequest(null);
+                            // Import and call the processing function
+                            import('../commands/openspec/submitCommand.js').then(module => {
+                              module.processSubmitQuestionInput(
+                                commandContext,
+                                data.changeName,
+                                question
+                              ).then(response => {
+                                if (response.type === 'message') {
+                                  addMessage({
+                                    type: response.messageType === 'info' ? MessageType.INFO : MessageType.ERROR,
+                                    content: response.content,
+                                    timestamp: new Date(),
+                                  });
+                                }
+                              });
+                            });
+                          },
+                          onCancel: () => {
+                            setOpenSpecQuestionInputRequest(null);
+                            // Add a message indicating cancellation
+                            addItem(
+                              {
+                                type: MessageType.INFO,
+                                text: 'Question input cancelled.',
+                              },
+                              Date.now(),
+                            );
+                          }
+                        });
+                      }
+                      return { type: 'handled' };
                     case 'openspec_submit_description_input':
                       // Handle OpenSpec submit description input dialog
                       if ('data' in result && result.data && typeof result.data === 'object' && 'changeName' in result.data && 'activity' in result.data) {
@@ -885,6 +931,7 @@ export const useSlashCommandProcessor = (
     openSpecSubmitDirSelectionRequest,
     openSpecSubmitActivitySelectionRequest,
     openSpecSubmitDescriptionInputRequest,
+    openSpecQuestionInputRequest,
     openSpecProposalDescriptionInputRequest,
   };
 };

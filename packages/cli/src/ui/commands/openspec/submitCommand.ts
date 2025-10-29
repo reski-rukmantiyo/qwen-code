@@ -12,10 +12,21 @@ import process from 'node:process';
 
 export const submitCommand: SlashCommand = {
   name: 'submit',
-  description: 'Submit a new change proposal with activity type and description',
+  description: 'Submit a new change proposal with activity type and description, or ask questions about the codebase',
   kind: CommandKind.BUILT_IN,
   action: async (context: CommandContext, args: string): Promise<SlashCommandActionReturn> => {
     try {
+      // Check if this is a question-mode request with specific syntax
+      const trimmedArgs = args.trim();
+      if (trimmedArgs.startsWith('"question:') && trimmedArgs.endsWith('"')) {
+        console.log('[OpenSpec] Detected deprecated question syntax in submit command');
+        return {
+          type: "message",
+          messageType: "error",
+          content: 'The question feature has been deprecated. Please use other tools for asking questions about the codebase.',
+        };
+      }
+      
       const projectRoot = process.cwd();
       const openspecDir = path.join(projectRoot, 'openspec');
       const changesDir = path.join(openspecDir, 'changes');
@@ -100,11 +111,11 @@ export const submitCommand: SlashCommand = {
       }
       
       // Validate activity
-      if (activity && activity !== 'bugs' && activity !== 'features') {
+      if (activity && activity !== 'bugs' && activity !== 'features' && activity !== 'question') {
         return {
           type: "message",
           messageType: "error",
-          content: 'Activity must be either "bugs" or "features"',
+          content: 'Activity must be either "bugs", "features", or "question"',
         };
       }
       
@@ -122,6 +133,12 @@ export const submitCommand: SlashCommand = {
       
       // If all arguments provided, process the submission
       if (changeName && activity && description) {
+        if (activity === 'question') {
+          console.log(`[OpenSpec] Processing question for change "${changeName}": ${description}`);
+          // Handle question activity
+          const { processQuestion } = await import('./qaHandler.js');
+          return await processQuestion(context, description);
+        }
         return await processSubmission(context, changeName, activity, description, changesDir);
       }
       
@@ -129,7 +146,7 @@ export const submitCommand: SlashCommand = {
       return {
         type: "message",
         messageType: "info",
-        content: 'Invalid command usage. Use /openspec submit [change-name] [activity] [description]',
+        content: 'Invalid command usage. Use /openspec submit [change-name] [activity] [description] where activity can be "bugs", "features", or "question"',
       };
     } catch (error) {
       return {
@@ -346,11 +363,22 @@ export async function processSubmitChangeSelection(context: CommandContext, sele
 export async function processSubmitActivitySelection(context: CommandContext, changeName: string, selectedActivity: string): Promise<SlashCommandActionReturn> {
   try {
     // After selecting activity, ask for description
-    if (selectedActivity !== 'bugs' && selectedActivity !== 'features') {
+    if (selectedActivity !== 'bugs' && selectedActivity !== 'features' && selectedActivity !== 'question') {
       return {
         type: 'message',
         messageType: 'error',
-        content: 'Activity must be either "bugs" or "features"',
+        content: 'Activity must be either "bugs", "features", or "question"',
+      };
+    }
+    
+    // Special handling for question activity - ask for the question directly
+    if (selectedActivity === 'question') {
+      return {
+        type: 'dialog',
+        dialog: 'openspec_question_input',
+        data: {
+          changeName
+        }
       };
     }
     
@@ -382,6 +410,22 @@ export async function processSubmitDescriptionInput(context: CommandContext, cha
       type: 'message',
       messageType: 'error',
       content: `Failed to process description input: ${(error as Error).message}`,
+    };
+  }
+}
+
+export async function processSubmitQuestionInput(context: CommandContext, changeName: string, question: string): Promise<SlashCommandActionReturn> {
+  try {
+    console.log(`[OpenSpec] Processing question input for change "${changeName}": ${question}`);
+    // Process the question using the QA handler
+    const { processQuestion } = await import('./qaHandler.js');
+    return await processQuestion(context, question);
+  } catch (error) {
+    console.error('[OpenSpec] Failed to process question input:', error);
+    return {
+      type: 'message',
+      messageType: 'error',
+      content: `Failed to process question input: ${(error as Error).message}`,
     };
   }
 }

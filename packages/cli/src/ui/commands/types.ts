@@ -124,7 +124,8 @@ export interface OpenDialogActionReturn {
     | 'openspec_proposal_description_input'
     | 'openspec_submit_change_selection'
     | 'openspec_submit_activity_selection'
-    | 'openspec_submit_description_input';
+    | 'openspec_submit_description_input'
+    | 'openspec_question_input';
 }
 
 /**

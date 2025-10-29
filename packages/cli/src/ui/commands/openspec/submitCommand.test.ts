@@ -66,7 +66,7 @@ describe('submitCommand', () => {
 
   it('should have the correct name and description', () => {
     expect(submitCommand.name).toBe('submit');
-    expect(submitCommand.description).toBe('Submit a new change proposal with activity type and description');
+    expect(submitCommand.description).toBe('Submit a new change proposal with activity type and description, or ask questions about the codebase');
     expect(submitCommand.kind).toBe('built-in');
   });
 
@@ -200,7 +200,7 @@ describe('submitCommand', () => {
     expect(result).toEqual({
       type: 'message',
       messageType: 'error',
-      content: 'Activity must be either "bugs" or "features"',
+      content: 'Activity must be either "bugs", "features", or "question"',
     });
   });
 
@@ -266,6 +266,108 @@ describe('submitCommand', () => {
       type: 'message',
       messageType: 'error',
       content: expect.stringContaining('Missing required files'),
+    });
+  });
+
+  it('should reject question-mode requests with specific syntax', async () => {
+    // Arrange: Set up mock context
+    vi.mocked(fs.existsSync).mockImplementation((path) => {
+      if (typeof path === 'string' && path.endsWith('openspec')) {
+        return true;
+      }
+      return false;
+    });
+    
+    // Act: Run the command with question-mode syntax
+    const result = await submitCommand.action!(mockContext, '"question: how does the file search work?"');
+    
+    // Assert: Check that we get an error message
+    expect(result).toEqual({
+      type: 'message',
+      messageType: 'error',
+      content: 'The question feature has been deprecated. Please use other tools for asking questions about the codebase.',
+    });
+  });
+
+  it('should ask for description when question activity is selected', async () => {
+    // Arrange: Simulate that OpenSpec directory and change exist
+    vi.mocked(fs.existsSync).mockImplementation((path) => {
+      if (typeof path === 'string' && path.endsWith('openspec')) {
+        return true;
+      }
+      if (typeof path === 'string' && path.endsWith('changes')) {
+        return true;
+      }
+      if (typeof path === 'string' && path.endsWith('submit-question')) {
+        return true;
+      }
+      return false;
+    });
+    
+    vi.mocked(fs.statSync).mockReturnValue({ isDirectory: () => true } as any);
+    
+    // Act: Run the command's action with change name and question activity but no description
+    const result = await submitCommand.action!(mockContext, 'submit-question question');
+    
+    // Assert: Check that we get a dialog for question input
+    expect(result).toEqual({
+      type: 'dialog',
+      dialog: 'openspec_submit_description_input',
+      data: {
+        changeName: 'submit-question',
+        activity: 'question'
+      }
+    });
+  });
+
+  it('should process question activity correctly when all arguments provided', async () => {
+    // Arrange: Mock the processQuestion function
+    const mockProcessQuestion = vi.fn().mockResolvedValue({
+      type: 'message',
+      messageType: 'info',
+      content: 'Question processed successfully.',
+    });
+    
+    // Mock the dynamic import of qaHandler
+    vi.doMock('./qaHandler.js', () => ({
+      processQuestion: mockProcessQuestion,
+    }));
+    
+    // Simulate that OpenSpec directory and change exist
+    vi.mocked(fs.existsSync).mockImplementation((path) => {
+      if (typeof path === 'string' && path.endsWith('openspec')) {
+        return true;
+      }
+      if (typeof path === 'string' && path.endsWith('changes')) {
+        return true;
+      }
+      if (typeof path === 'string' && path.endsWith('submit-question')) {
+        return true;
+      }
+      if (typeof path === 'string' && path.endsWith('proposal.md')) {
+        return true;
+      }
+      if (typeof path === 'string' && path.endsWith('design.md')) {
+        return true;
+      }
+      return false;
+    });
+    
+    vi.mocked(fs.statSync).mockReturnValue({ isDirectory: () => true } as any);
+    vi.mocked(fs.readFileSync).mockReturnValue('# Test Content');
+    
+    // Reload the module to pick up the mock
+    const { submitCommand } = await import('./submitCommand.js');
+    
+    // Act: Run the command's action with all arguments including question activity
+    const result = await submitCommand.action!(mockContext, 'submit-question question How does this feature work?');
+    
+    // Assert: Check that processQuestion was called with correct parameters
+    expect(mockProcessQuestion).toHaveBeenCalledWith(mockContext, 'How does this feature work?');
+    expect(result).toEqual({
+      type: 'message',
+      messageType: 'info',
+      content: 'Question processed successfully.',
     });
   });
 });

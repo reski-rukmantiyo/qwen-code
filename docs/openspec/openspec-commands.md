@@ -401,7 +401,48 @@ Submits the tasks defined in a change's `tasks.md` file to the AI for implementa
 - Integrates with the existing OpenSpec directory structure
 - Handles errors gracefully with appropriate error messages
 
-### 11. clear
+### 11. submit
+
+**Purpose**: Submit a new change proposal with activity type and description, or ask questions about the codebase.
+
+**Usage Syntax**:
+```bash
+/openspec submit [change-name] [activity] [description]
+```
+
+**Parameters**:
+- `[change-name]`: Name of the change folder
+- `[activity]`: Type of activity (bugs, features, question)
+- `[description]`: Description of the activity or question
+
+**Description**: 
+Submits a new change proposal with a specific activity type and description, or asks questions about the codebase without triggering any modifications. When using the "question" activity type, you can get immediate answers about the codebase without making any changes.
+
+**Examples**:
+```bash
+# Submit a bug report for a change
+/openspec submit add-user-authentication bugs "Fix login issue with OAuth providers"
+
+# Submit a feature request for a change
+/openspec submit add-user-authentication features "Add password strength validation"
+
+# Ask a question about a change
+/openspec submit add-user-authentication question "How does the authentication flow work?"
+
+# Ask a general question about the codebase (through interactive flow)
+/openspec submit
+```
+
+**Implementation Details**:
+- Located in `/packages/cli/src/ui/commands/openspec/submitCommand.ts`
+- Supports activities: bugs, features, question
+- For question activity, routes to dedicated QA handler for processing
+- Provides interactive dialogs for selecting change, activity type, and entering description/question
+- Follows Qwen Code's AI interaction patterns for question answering
+- Integrates with the existing OpenSpec directory structure
+- Handles errors gracefully with appropriate error messages
+
+### 12. clear
 
 **Purpose**: Completely reset OpenSpec (removes all files and directories).
 
@@ -414,7 +455,7 @@ Submits the tasks defined in a change's `tasks.md` file to the AI for implementa
 - `--cache-only`, `-c`: Only clear the cache, don't remove files
 
 **Description**: 
-Completely removes the OpenSpec directory structure by default. With the `--cache-only` flag, it only clears the OpenSpec cache and reinitializes it. This is useful when you want to start fresh with OpenSpec, particularly after making significant changes to your specifications or when experiencing issues.
+Completely removes the OpenSpec directory structure by default. With the `--cache-only` flag, it only clears the OpenSpec cache and reinitialize it. This is useful when you want to start fresh with OpenSpec, particularly after making significant changes to your specifications or when experiencing issues.
 
 **Examples**:
 ```bash
