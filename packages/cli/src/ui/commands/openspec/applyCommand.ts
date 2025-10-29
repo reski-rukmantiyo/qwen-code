@@ -114,8 +114,11 @@ export const applyCommand: SlashCommand = {
       content += '6. Validate your implementation against the change proposal. \n';
       content += '7. Use the todo_write tool to track your progress on these tasks\n';
       content += '8. Check mark if task already completed in tasks.md file.\n';
-      content += '9. Do not re-implement completed tasks.\n\n';
+      content += '9. DO NOT re-implement completed tasks.\n';
+      content += '10. DO NOT create unused documentation file. If it is necessary than create in ./docs/"${changeName}" directory.\n\n';
       content += '## Next Steps\n';
+      content += '1. DO Delete unused documentation\n';
+      content += '2. DO Delete unused test files\n';
       // content += `After completing these tasks, run "/openspec archive ${changeName}" to archive this change.`;
       
       // Return a submit_prompt action to have Qwen Code process this with AI
