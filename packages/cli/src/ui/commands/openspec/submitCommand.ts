@@ -51,6 +51,13 @@ export const submitCommand: SlashCommand = {
       const activity = argParts[1];
       const description = argParts.slice(2).join(' ');
       
+      // Debug logging to understand argument parsing
+      console.log(`[OpenSpec Debug] args: "${args}"`);
+      console.log(`[OpenSpec Debug] argParts:`, argParts);
+      console.log(`[OpenSpec Debug] changeName: "${changeName}"`);
+      console.log(`[OpenSpec Debug] activity: "${activity}"`);
+      console.log(`[OpenSpec Debug] description: "${description}"`);
+      
       // If no arguments provided, list available changes
       if (!changeName) {
         // List directories under openspec/changes (excluding archive)
@@ -111,16 +118,30 @@ export const submitCommand: SlashCommand = {
       }
       
       // Validate activity
+      console.log(`[OpenSpec Debug] Validating activity: "${activity}"`);
       if (activity && activity !== 'bugs' && activity !== 'features' && activity !== 'question') {
+        console.log(`[OpenSpec Debug] Invalid activity: "${activity}"`);
         return {
           type: "message",
           messageType: "error",
           content: 'Activity must be either "bugs", "features", or "question"',
         };
       }
+      console.log(`[OpenSpec Debug] Valid activity: "${activity}"`);
       
       // If change name and activity provided but no description, ask for description
       if (changeName && activity && !description) {
+        // Special handling for question activity - ask for the question directly
+        if (activity === 'question') {
+          return {
+            type: 'dialog',
+            dialog: 'openspec_question_input',
+            data: {
+              changeName
+            }
+          };
+        }
+        
         return {
           type: 'dialog',
           dialog: 'openspec_submit_description_input',
@@ -133,12 +154,15 @@ export const submitCommand: SlashCommand = {
       
       // If all arguments provided, process the submission
       if (changeName && activity && description) {
+        console.log(`[OpenSpec Debug] All arguments provided, processing submission`);
+        console.log(`[OpenSpec Debug] changeName: "${changeName}", activity: "${activity}", description: "${description}"`);
         if (activity === 'question') {
           console.log(`[OpenSpec] Processing question for change "${changeName}": ${description}`);
           // Handle question activity
           const { processQuestion } = await import('./qaHandler.js');
           return await processQuestion(context, description);
         }
+        console.log(`[OpenSpec Debug] Not a question, processing as regular submission`);
         return await processSubmission(context, changeName, activity, description, changesDir);
       }
       
@@ -149,6 +173,7 @@ export const submitCommand: SlashCommand = {
         content: 'Invalid command usage. Use /openspec submit [change-name] [activity] [description] where activity can be "bugs", "features", or "question"',
       };
     } catch (error) {
+      console.error('[OpenSpec] Failed to process submission:', error);
       return {
         type: "message",
         messageType: "error",

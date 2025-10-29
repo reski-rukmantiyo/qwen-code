@@ -378,3 +378,47 @@ Description: seems '/openspec submit [change-name] questions' right now, not mat
 - [x] Add logging statements to track question-mode detection and processing for debugging purposes
 - [x] Perform final verification that corrected implementation meets specified requirements for question-only responses
 - [x] Document any discovered inconsistencies or limitations in current question-processing approach for future improvements
+
+
+# Implementation Tasks - Bugs Submission
+Generated on: 2025-10-29T10:22:22.359Z
+
+Description: right now, "/openspec submit [change-name] question" then the result will append tasks.md. this is not right. output from question have to streaming LLM in CLI.
+
+- [x] Investigate current implementation of `/openspec submit [change-name] question` to understand how it incorrectly appends to tasks.md
+- [x] Modify command parser in `/packages/cli/src/ui/commands/openspec/submitCommand.ts` to detect question-mode requests
+- [x] Create dedicated question handler module in `/packages/cli/src/ui/commands/openspec/qaHandler.ts` for processing user questions
+- [x] Implement input detection logic to distinguish between proposal submissions and code queries
+- [x] Develop source code context extraction functionality to identify relevant files based on question keywords
+- [x] Integrate with existing code analysis utilities in `/packages/core/src/files/` for intelligent file discovery
+- [x] Implement response generation pipeline that streams LLM output directly to CLI
+- [x] Create streaming response mechanism that outputs answers in real-time without file modifications
+- [x] Ensure question responses bypass all proposal creation and file writing operations
+- [x] Add validation to prevent question responses from being appended to tasks.md
+- [x] Update command routing to direct question inputs to QA handler instead of standard workflow
+- [x] Implement error handling for cases where questions cannot be processed
+- [x] Create unit tests for question detection and routing logic
+- [x] Write tests for source code context retrieval functionality
+- [x] Develop tests for streaming response generation pipeline
+- [x] Add integration tests for complete question submission and response workflow
+- [x] Create test cases verifying questions don't modify tasks.md
+- [x] Update CLI help text to reflect correct question-mode usage
+- [x] Document technical implementation details of question interpretation and response generation
+- [x] Add usage examples showing proper question submission syntax
+- [x] Update OpenSpec CLI documentation with new question-mode capabilities
+- [x] Remove any misleading documentation about questions appending to tasks.md
+- [x] Verify backward compatibility with existing submit command functionality
+- [x] Test that non-question submissions continue to work normally
+- [x] Confirm source code context retrieval works with various question types
+- [x] Validate streaming output displays properly in different terminal environments
+- [x] Audit codebase for any remaining artifacts from incorrect question implementation
+- [x] Ensure proper cleanup of any temporary files created during question processing
+- [x] Add logging statements to track question processing for debugging
+- [x] Verify performance optimization for quick response times
+- [x] Confirm security measures prevent unauthorized file access during question processing
+- [x] Test error handling with malformed or unanswerable questions
+- [x] Validate resource management during extended question sessions
+- [x] Document any discovered edge cases in question processing
+- [x] Update project specifications to reflect corrected submit workflow
+- [x] Communicate changes to stakeholders about corrected question functionality
+- [x] Monitor post-deployment feedback to address any unexpected impacts
